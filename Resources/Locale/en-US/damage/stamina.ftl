@@ -1,1 +1,1 @@
-stamina-resist = Resisted
+pain-resist = Resisted

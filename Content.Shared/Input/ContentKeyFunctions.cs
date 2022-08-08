@@ -29,6 +29,7 @@ namespace Content.Shared.Input
         public static readonly BoundKeyFunction SmartEquipBelt = "SmartEquipBelt";
         public static readonly BoundKeyFunction Slide = "Slide";
         public static readonly BoundKeyFunction OpenInfo = "OpenInfo";
+        public static readonly BoundKeyFunction Slide = "Slide";
         public static readonly BoundKeyFunction SwapHands = "SwapHands";
         public static readonly BoundKeyFunction ThrowItemInHand = "ThrowItemInHand";
         public static readonly BoundKeyFunction TryPullObject = "TryPullObject";

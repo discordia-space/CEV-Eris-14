@@ -23,7 +23,7 @@ namespace Content.Server.Weapon.Ranged.Systems;
 public sealed partial class GunSystem : SharedGunSystem
 {
     [Dependency] private readonly EffectSystem _effects = default!;
-    [Dependency] private readonly StaminaSystem _stamina = default!;
+    [Dependency] private readonly PainSystem _pain = default!;
 
     public const float DamagePitchVariation = MeleeWeaponSystem.DamagePitchVariation;
 
@@ -116,8 +116,8 @@ public sealed partial class GunSystem : SharedGunSystem
                         var distance = result.Distance;
                         FireEffects(fromCoordinates, distance, entityDirection.ToAngle(), hitscan, result.HitEntity);
 
-                        if (hitscan.StaminaDamage > 0f)
-                            _stamina.TakeStaminaDamage(result.HitEntity, hitscan.StaminaDamage);
+                        if (hitscan.PainDamage > 0f)
+                            _pain.TakePainDamage(result.HitEntity, hitscan.PainDamage);
 
                         var dmg = hitscan.Damage;
 

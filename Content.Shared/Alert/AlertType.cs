@@ -29,6 +29,7 @@ namespace Content.Shared.Alert
         Overhydrated,
         Thirsty,
         Parched,
+        Pain,
         Stamina,
         Pulled,
         Pulling,

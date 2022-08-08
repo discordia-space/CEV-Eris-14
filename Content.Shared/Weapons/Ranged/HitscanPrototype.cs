@@ -14,8 +14,8 @@ public sealed class HitscanPrototype : IPrototype, IShootable
     [IdDataFieldAttribute]
     public string ID { get; } = default!;
 
-    [ViewVariables(VVAccess.ReadWrite), DataField("staminaDamage")]
-    public float StaminaDamage;
+    [ViewVariables(VVAccess.ReadWrite), DataField("painDamage")]
+    public float PainDamage;
 
     [ViewVariables(VVAccess.ReadWrite), DataField("damage")]
     public DamageSpecifier? Damage;
