@@ -1,4 +1,4 @@
-﻿namespace Content.Shared.Alert
+namespace Content.Shared.Alert
 {
     /// <summary>
     /// Every kind of alert. Corresponds to alertType field in alert prototypes defined in YML
@@ -15,6 +15,7 @@
         Cold,
         Hot,
         Weightless,
+        Pain,
         Stun,
         Handcuffed,
         Buckled,
