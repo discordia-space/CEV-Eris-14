@@ -1,4 +1,4 @@
-﻿namespace Content.Shared.Alert;
+namespace Content.Shared.Alert;
 
 /// <summary>
 /// Every category of alert. Corresponds to category field in alert prototypes defined in YML
@@ -10,6 +10,7 @@ public enum AlertCategory
     Breathing,
     Buckled,
     Health,
+    Pain,
     Stamina,
     Piloting,
     Hunger,

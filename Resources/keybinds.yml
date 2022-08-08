@@ -36,6 +36,9 @@ binds:
 - function: MoveDown
   type: State
   key: S
+- function: Slide
+  type: State
+  key: C
 - function: Walk
   type: State
   key: Shift

@@ -13,7 +13,7 @@
     sound: /Audio/Weapons/bolathrow.ogg
   - type: EmitSoundOnLand
     sound: /Audio/Effects/snap.ogg
-  - type: StaminaDamageOnCollide
+  - type: PainDamageOnCollide
     damage: 80
   - type: Construction
     graph: Bola

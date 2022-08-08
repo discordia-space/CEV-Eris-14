@@ -1,0 +1,1 @@
+pain-resist = Resisted
