@@ -7,6 +7,8 @@ using Robust.Shared.Map;
 using Robust.Shared.Players;
 using Content.Shared.Standing;
 using Robust.Shared.Serialization;
+using Content.Shared.Popups;
+using Robust.Shared.Player;
 
 namespace Content.Shared.Stamina
 {
@@ -19,6 +21,7 @@ namespace Content.Shared.Stamina
         [Dependency] private readonly SharedContainerSystem _container = default!;
         [Dependency] private readonly StandingStateSystem _standing = default!;
         [Dependency] private readonly SharedPhysicsSystem _phys = default!;
+        [Dependency] private readonly SharedPopupSystem _popup = default!;
 
         public ISawmill Sawmill = default!;
         private float _accumulatedFrameTime;
@@ -94,12 +97,18 @@ namespace Content.Shared.Stamina
             {
                 if (_jetpack.IsUserFlying(stam.Owner) || _container.IsEntityInContainer(stam.Owner))
                     return false;
+                if(stam.SlideCost > stam.StaminaThresholds[StaminaThreshold.Collapsed] - stam.CurrentStamina)
+                {
+                    return false;
+                }
                 if (TryComp(stam.Owner, out PhysicsComponent? physics) && TryComp(stam.Owner, out StandingStateComponent? state)
                     && TryComp(stam.Owner, out MovementIgnoreGravityComponent? grav) && TryComp(stam.Owner, out SharedPlayerInputMoverComponent? input))
                 {
                     // too little to slide.
                     if ((Math.Abs(physics.LinearVelocity.X) + Math.Abs(physics.LinearVelocity.Y)) < 2f)
+                    {
                         return false;
+                    }
                     _phys.SetLinearVelocity(physics, physics.LinearVelocity * 4);
                     physics.LinearDamping += 1.5f;
                     physics.BodyType = Robust.Shared.Physics.BodyType.Dynamic; // Necesarry for linear dampening to be applied
