@@ -12,7 +12,7 @@ using Robust.Shared.Timing;
 
 namespace Content.Server.Damage.Systems;
 
-public sealed class StaminaSystem : EntitySystem
+public sealed class PainSystem : EntitySystem
 {
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly AlertsSystem _alerts = default!;
@@ -34,36 +34,36 @@ public sealed class StaminaSystem : EntitySystem
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<StaminaDamageOnCollideComponent, StartCollideEvent>(OnCollide);
-        SubscribeLocalEvent<StaminaDamageOnHitComponent, MeleeHitEvent>(OnHit);
-        SubscribeLocalEvent<StaminaComponent, ComponentStartup>(OnStartup);
-        SubscribeLocalEvent<StaminaComponent, ComponentShutdown>(OnShutdown);
+        SubscribeLocalEvent<PainDamageOnCollideComponent, StartCollideEvent>(OnCollide);
+        SubscribeLocalEvent<PainDamageOnHitComponent, MeleeHitEvent>(OnHit);
+        SubscribeLocalEvent<PainComponent, ComponentStartup>(OnStartup);
+        SubscribeLocalEvent<PainComponent, ComponentShutdown>(OnShutdown);
     }
 
-    private void OnShutdown(EntityUid uid, StaminaComponent component, ComponentShutdown args)
+    private void OnShutdown(EntityUid uid, PainComponent component, ComponentShutdown args)
     {
-        SetStaminaAlert(uid);
+        SetPainAlert(uid);
     }
 
-    private void OnStartup(EntityUid uid, StaminaComponent component, ComponentStartup args)
+    private void OnStartup(EntityUid uid, PainComponent component, ComponentStartup args)
     {
-        SetStaminaAlert(uid, component);
+        SetPainAlert(uid, component);
     }
 
-    private void OnHit(EntityUid uid, StaminaDamageOnHitComponent component, MeleeHitEvent args)
+    private void OnHit(EntityUid uid, PainDamageOnHitComponent component, MeleeHitEvent args)
     {
         if (component.Damage <= 0f) return;
 
-        var ev = new StaminaDamageOnHitAttemptEvent();
+        var ev = new PainDamageOnHitAttemptEvent();
         RaiseLocalEvent(uid, ref ev);
 
         if (ev.Cancelled) return;
 
         args.HitSoundOverride = ev.HitSoundOverride;
-        var stamQuery = GetEntityQuery<StaminaComponent>();
-        var toHit = new ValueList<StaminaComponent>();
+        var stamQuery = GetEntityQuery<PainComponent>();
+        var toHit = new ValueList<PainComponent>();
 
-        // Split stamina damage between all eligible targets.
+        // Split Pain damage between all eligible targets.
         foreach (var ent in args.HitEntities)
         {
             if (!stamQuery.TryGetComponent(ent, out var stam)) continue;
@@ -72,73 +72,73 @@ public sealed class StaminaSystem : EntitySystem
 
         foreach (var comp in toHit)
         {
-            var oldDamage = comp.StaminaDamage;
-            TakeStaminaDamage(comp.Owner, component.Damage / toHit.Count, comp);
-            if (comp.StaminaDamage.Equals(oldDamage))
+            var oldDamage = comp.PainDamage;
+            TakePainDamage(comp.Owner, component.Damage / toHit.Count, comp);
+            if (comp.PainDamage.Equals(oldDamage))
             {
-                _popup.PopupEntity(Loc.GetString("stamina-resist"), comp.Owner, Filter.Entities(args.User));
+                _popup.PopupEntity(Loc.GetString("Pain-resist"), comp.Owner, Filter.Entities(args.User));
             }
         }
     }
 
-    private void OnCollide(EntityUid uid, StaminaDamageOnCollideComponent component, StartCollideEvent args)
+    private void OnCollide(EntityUid uid, PainDamageOnCollideComponent component, StartCollideEvent args)
     {
         if (!args.OurFixture.ID.Equals(CollideFixture)) return;
 
-        TakeStaminaDamage(args.OtherFixture.Body.Owner, component.Damage);
+        TakePainDamage(args.OtherFixture.Body.Owner, component.Damage);
     }
 
-    private void SetStaminaAlert(EntityUid uid, StaminaComponent? component = null)
+    private void SetPainAlert(EntityUid uid, PainComponent? component = null)
     {
         if (!Resolve(uid, ref component, false) || component.Deleted)
         {
-            _alerts.ClearAlert(uid, AlertType.Stamina);
+            _alerts.ClearAlert(uid, AlertType.Pain);
             return;
         }
 
-        var severity = ContentHelpers.RoundToLevels(MathF.Max(0f, component.CritThreshold - component.StaminaDamage), component.CritThreshold, 7);
-        _alerts.ShowAlert(uid, AlertType.Stamina, (short) severity);
+        var severity = ContentHelpers.RoundToLevels(MathF.Max(0f, component.CritThreshold - component.PainDamage), component.CritThreshold, 7);
+        _alerts.ShowAlert(uid, AlertType.Pain, (short) severity);
     }
 
-    public void TakeStaminaDamage(EntityUid uid, float value, StaminaComponent? component = null)
+    public void TakePainDamage(EntityUid uid, float value, PainComponent? component = null)
     {
         if (!Resolve(uid, ref component, false) || component.Critical) return;
 
-        var oldDamage = component.StaminaDamage;
-        component.StaminaDamage = MathF.Max(0f, component.StaminaDamage + value);
+        var oldDamage = component.PainDamage;
+        component.PainDamage = MathF.Max(0f, component.PainDamage + value);
 
         // Reset the decay cooldown upon taking damage.
-        if (oldDamage < component.StaminaDamage)
+        if (oldDamage < component.PainDamage)
         {
-            component.StaminaDecayAccumulator = component.DecayCooldown;
+            component.PainDecayAccumulator = component.DecayCooldown;
         }
 
         var slowdownThreshold = component.CritThreshold / 2f;
 
         // If we go above n% then apply slowdown
         if (oldDamage < slowdownThreshold &&
-            component.StaminaDamage > slowdownThreshold)
+            component.PainDamage > slowdownThreshold)
         {
             _stunSystem.TrySlowdown(uid, TimeSpan.FromSeconds(3), true, 0.8f, 0.8f);
         }
 
-        SetStaminaAlert(uid, component);
+        SetPainAlert(uid, component);
 
         // Can't do it here as resetting prediction gets cooked.
         _dirtyEntities.Add(uid);
 
         if (!component.Critical)
         {
-            if (component.StaminaDamage >= component.CritThreshold)
+            if (component.PainDamage >= component.CritThreshold)
             {
-                EnterStamCrit(uid, component);
+                EnterPainCrit(uid, component);
             }
         }
         else
         {
-            if (component.StaminaDamage < component.CritThreshold)
+            if (component.PainDamage < component.CritThreshold)
             {
-                ExitStamCrit(uid, component);
+                ExitPainCrit(uid, component);
             }
         }
     }
@@ -153,45 +153,45 @@ public sealed class StaminaSystem : EntitySystem
 
         if (_accumulator > 0f) return;
 
-        var stamQuery = GetEntityQuery<StaminaComponent>();
+        var stamQuery = GetEntityQuery<PainComponent>();
 
         foreach (var uid in _dirtyEntities)
         {
             // Don't need to RemComp as they will get handled below.
-            if (!stamQuery.TryGetComponent(uid, out var comp) || comp.StaminaDamage <= 0f) continue;
-            EnsureComp<ActiveStaminaComponent>(uid);
+            if (!stamQuery.TryGetComponent(uid, out var comp) || comp.PainDamage <= 0f) continue;
+            EnsureComp<ActivePainComponent>(uid);
         }
 
         _dirtyEntities.Clear();
         _accumulator += UpdateCooldown;
 
-        foreach (var active in EntityQuery<ActiveStaminaComponent>())
+        foreach (var active in EntityQuery<ActivePainComponent>())
         {
-            // Just in case we have active but not stamina we'll check and account for it.
+            // Just in case we have active but not Pain we'll check and account for it.
             if (!stamQuery.TryGetComponent(active.Owner, out var comp) ||
-                comp.StaminaDamage <= 0f)
+                comp.PainDamage <= 0f)
             {
-                RemComp<ActiveStaminaComponent>(active.Owner);
+                RemComp<ActivePainComponent>(active.Owner);
                 continue;
             }
 
-            comp.StaminaDecayAccumulator -= UpdateCooldown;
+            comp.PainDecayAccumulator -= UpdateCooldown;
 
-            if (comp.StaminaDecayAccumulator > 0f) continue;
+            if (comp.PainDecayAccumulator > 0f) continue;
 
             // We were in crit so come out of it and continue.
             if (comp.Critical)
             {
-                ExitStamCrit(active.Owner, comp);
+                ExitPainCrit(active.Owner, comp);
                 continue;
             }
 
-            comp.StaminaDecayAccumulator = 0f;
-            TakeStaminaDamage(comp.Owner, -comp.Decay * UpdateCooldown, comp);
+            comp.PainDecayAccumulator = 0f;
+            TakePainDamage(comp.Owner, -comp.Decay * UpdateCooldown, comp);
         }
     }
 
-    private void EnterStamCrit(EntityUid uid, StaminaComponent? component = null)
+    private void EnterPainCrit(EntityUid uid, PainComponent? component = null)
     {
         if (!Resolve(uid, ref component) ||
             component.Critical) return;
@@ -200,23 +200,23 @@ public sealed class StaminaSystem : EntitySystem
         // TODO: Mask?
 
         component.Critical = true;
-        component.StaminaDamage = component.CritThreshold;
-        component.StaminaDecayAccumulator = 0f;
+        component.PainDamage = component.CritThreshold;
+        component.PainDecayAccumulator = 0f;
 
         var stunTime = TimeSpan.FromSeconds(6);
         _stunSystem.TryParalyze(uid, stunTime, true);
 
         // Give them buffer before being able to be re-stunned
-        component.StaminaDecayAccumulator = (float) stunTime.TotalSeconds + StamCritBufferTime;
+        component.PainDecayAccumulator = (float) stunTime.TotalSeconds + StamCritBufferTime;
     }
 
-    private void ExitStamCrit(EntityUid uid, StaminaComponent? component = null)
+    private void ExitPainCrit(EntityUid uid, PainComponent? component = null)
     {
         if (!Resolve(uid, ref component) ||
             !component.Critical) return;
 
         component.Critical = false;
-        component.StaminaDamage = 0f;
-        SetStaminaAlert(uid, component);
+        component.PainDamage = 0f;
+        SetPainAlert(uid, component);
     }
 }

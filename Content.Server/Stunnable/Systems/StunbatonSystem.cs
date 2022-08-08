@@ -29,7 +29,7 @@ namespace Content.Server.Stunnable.Systems
 
             SubscribeLocalEvent<StunbatonComponent, UseInHandEvent>(OnUseInHand);
             SubscribeLocalEvent<StunbatonComponent, ExaminedEvent>(OnExamined);
-            SubscribeLocalEvent<StunbatonComponent, StaminaDamageOnHitAttemptEvent>(OnStaminaHitAttempt);
+            SubscribeLocalEvent<StunbatonComponent, PainDamageOnHitAttemptEvent>(OnPainHitAttempt);
             SubscribeLocalEvent<StunbatonComponent, MeleeHitEvent>(OnMeleeHit);
         }
 
@@ -37,11 +37,11 @@ namespace Content.Server.Stunnable.Systems
         {
             if (!component.Activated) return;
 
-            // Don't apply damage if it's activated; just do stamina damage.
+            // Don't apply damage if it's activated; just do Pain damage.
             args.BonusDamage -= args.BaseDamage;
         }
 
-        private void OnStaminaHitAttempt(EntityUid uid, StunbatonComponent component, ref StaminaDamageOnHitAttemptEvent args)
+        private void OnPainHitAttempt(EntityUid uid, StunbatonComponent component, ref PainDamageOnHitAttemptEvent args)
         {
             if (!component.Activated ||
                 !TryComp<BatteryComponent>(uid, out var battery) || !battery.TryUseCharge(component.EnergyPerUse))

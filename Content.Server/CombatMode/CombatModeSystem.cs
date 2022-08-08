@@ -124,7 +124,7 @@ namespace Content.Server.CombatMode
             }
 
             float chance = (disarmerComp.BaseDisarmFailChance - healthMod - massMod);
-            if (HasComp<SlowedDownComponent>(disarmer)) // might need to revisit this part after stamina damage, right now this is basically "pre-stun"
+            if (HasComp<SlowedDownComponent>(disarmer)) // might need to revisit this part after Pain damage, right now this is basically "pre-stun"
                 chance += 0.35f;
             if (HasComp<SlowedDownComponent>(disarmed))
                 chance -= 0.35f;

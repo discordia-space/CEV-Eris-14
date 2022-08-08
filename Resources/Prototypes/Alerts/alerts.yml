@@ -7,6 +7,8 @@
     - category: Health
     - alertType: Fire
     - alertType: Handcuffed
+    - category: Pain
+    - category: Stamina
     - category: Buckled
     - alertType: Pulling
     - category: Piloting
@@ -165,15 +167,26 @@
   description: Some food would be good right about now.
 
 - type: alert
+  id: Pain
+  category: Pain
+  icon:
+    sprite: /Textures/Interface/Alerts/pain.rsi
+    state: pain
+  name: Pain
+  description: "Stuns you if it is too low."
+  minSeverity: 0
+  maxSeverity: 6
+
+- type: alert
   id: Stamina
   category: Stamina
   icon:
     sprite: /Textures/Interface/Alerts/stamina.rsi
-    state: stamina
+    state: Stamina
   name: Stamina
-  description: "Stuns you if it is too low."
+  description: "Slows you if you get too tired"
   minSeverity: 0
-  maxSeverity: 6
+  maxSeverity: 4
 
 - type: alert
   id: Starving

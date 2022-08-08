@@ -81,6 +81,7 @@ ui-options-function-move-left = Move Left
 ui-options-function-move-down = Move Down
 ui-options-function-move-right = Move Right
 ui-options-function-walk = Walk
+ui-options-function-slide = Slide
 
 ui-options-function-use = Use
 ui-options-function-wide-attack = Wide attack
