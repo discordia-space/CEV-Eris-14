@@ -17,6 +17,8 @@ using Robust.Shared.Audio;
 using Robust.Shared.Utility;
 using Content.Shared.Tools.Components;
 using Content.Server.Station.Systems;
+using Content.Shared.IdentityManagement;
+using Robust.Server.GameObjects;
 
 namespace Content.Server.Disease
 {
@@ -30,8 +32,8 @@ namespace Content.Server.Disease
         [Dependency] private readonly IRobustRandom _random = default!;
         [Dependency] private readonly InventorySystem _inventorySystem = default!;
         [Dependency] private readonly PaperSystem _paperSystem = default!;
-
         [Dependency] private readonly StationSystem _stationSystem = default!;
+        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
         public override void Initialize()
         {
@@ -112,7 +114,7 @@ namespace Content.Server.Disease
 
             if (swab.Used)
             {
-                _popupSystem.PopupEntity(Loc.GetString("swab-already-used"), args.User, Filter.Entities(args.User));
+                _popupSystem.PopupEntity(Loc.GetString("swab-already-used"), args.User, args.User);
                 return;
             }
 
@@ -120,7 +122,7 @@ namespace Content.Server.Disease
                 EntityManager.TryGetComponent<IngestionBlockerComponent>(maskUid, out var blocker) &&
                 blocker.Enabled)
             {
-                _popupSystem.PopupEntity(Loc.GetString("swab-mask-blocked", ("target", args.Target), ("mask", maskUid)), args.User, Filter.Entities(args.User));
+                _popupSystem.PopupEntity(Loc.GetString("swab-mask-blocked", ("target", Identity.Entity(args.Target.Value, EntityManager)), ("mask", maskUid)), args.User, args.User);
                 return;
             }
 
@@ -155,10 +157,10 @@ namespace Content.Server.Disease
 
             if (!TryComp<DiseaseSwabComponent>(args.Used, out var swab))
             {
-                _popupSystem.PopupEntity(Loc.GetString("diagnoser-cant-use-swab", ("machine", uid), ("swab", args.Used)), uid, Filter.Entities(args.User));
+                _popupSystem.PopupEntity(Loc.GetString("diagnoser-cant-use-swab", ("machine", uid), ("swab", args.Used)), uid, args.User);
                 return;
             }
-            _popupSystem.PopupEntity(Loc.GetString("machine-insert-item", ("machine", uid), ("item", args.Used)), uid, Filter.Entities(args.User));
+            _popupSystem.PopupEntity(Loc.GetString("machine-insert-item", ("machine", uid), ("item", args.Used), ("user", args.User)), uid, args.User);
 
 
             machine.Disease = swab.Disease;
@@ -187,10 +189,10 @@ namespace Content.Server.Disease
 
             if (!TryComp<DiseaseSwabComponent>(args.Used, out var swab) || swab.Disease == null || !swab.Disease.Infectious)
             {
-                _popupSystem.PopupEntity(Loc.GetString("diagnoser-cant-use-swab", ("machine", uid), ("swab", args.Used)), uid, Filter.Entities(args.User));
+                _popupSystem.PopupEntity(Loc.GetString("diagnoser-cant-use-swab", ("machine", uid), ("swab", args.Used)), uid, args.User);
                 return;
             }
-            _popupSystem.PopupEntity(Loc.GetString("machine-insert-item", ("machine", uid), ("item", args.Used)), uid, Filter.Entities(args.User));
+            _popupSystem.PopupEntity(Loc.GetString("machine-insert-item", ("machine", uid), ("item", args.Used), ("user", args.User)), uid, args.User);
             var machine = Comp<DiseaseMachineComponent>(uid);
             machine.Disease = swab.Disease;
             EntityManager.DeleteEntity(args.Used);
@@ -229,7 +231,8 @@ namespace Content.Server.Disease
         private FormattedMessage AssembleDiseaseReport(DiseasePrototype disease)
         {
             FormattedMessage report = new();
-            report.AddMarkup(Loc.GetString("diagnoser-disease-report-name", ("disease", disease.Name)));
+            var diseaseName = Loc.GetString(disease.Name);
+            report.AddMarkup(Loc.GetString("diagnoser-disease-report-name", ("disease", diseaseName)));
             report.PushNewline();
 
             if (disease.Infectious)
@@ -296,13 +299,13 @@ namespace Content.Server.Disease
             if (!TryComp<AppearanceComponent>(uid, out var appearance))
                 return;
 
-            appearance.SetData(DiseaseMachineVisuals.IsOn, isOn);
-            appearance.SetData(DiseaseMachineVisuals.IsRunning, isRunning);
+            _appearance.SetData(uid, DiseaseMachineVisuals.IsOn, isOn, appearance);
+            _appearance.SetData(uid, DiseaseMachineVisuals.IsRunning, isRunning, appearance);
         }
         /// <summary>
         /// Makes sure the machine is visually off/on.
         /// </summary>
-        private void OnPowerChanged(EntityUid uid, DiseaseMachineComponent component, PowerChangedEvent args)
+        private void OnPowerChanged(EntityUid uid, DiseaseMachineComponent component, ref PowerChangedEvent args)
         {
             UpdateAppearance(uid, args.Powered, false);
         }
@@ -320,7 +323,7 @@ namespace Content.Server.Disease
                 return;
 
             args.Swab.Used = true;
-            _popupSystem.PopupEntity(Loc.GetString("swab-swabbed", ("target", args.Target)), args.Target.Value, Filter.Entities(args.User));
+            _popupSystem.PopupEntity(Loc.GetString("swab-swabbed", ("target", Identity.Entity(args.Target.Value, EntityManager))), args.Target.Value, args.User);
 
             if (args.Swab.Disease != null || args.Carrier.Diseases.Count == 0)
                 return;
@@ -354,7 +357,8 @@ namespace Content.Server.Disease
             FormattedMessage contents = new();
             if (args.Machine.Disease != null)
             {
-                reportTitle = Loc.GetString("diagnoser-disease-report", ("disease", args.Machine.Disease.Name));
+                var diseaseName = Loc.GetString(args.Machine.Disease.Name);
+                reportTitle = Loc.GetString("diagnoser-disease-report", ("disease", diseaseName));
                 contents = AssembleDiseaseReport(args.Machine.Disease);
 
                 var known = false;

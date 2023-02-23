@@ -1,24 +1,34 @@
-using Content.Shared.Actions;
-using Content.Shared.Toggleable;
-using Content.Shared.Inventory;
-using Content.Shared.Inventory.Events;
-using Content.Shared.Item;
 using Content.Server.Actions;
 using Content.Server.Atmos.Components;
+using Content.Server.Atmos.EntitySystems;
 using Content.Server.Body.Components;
+using Content.Server.Body.Systems;
 using Content.Server.Clothing.Components;
 using Content.Server.Disease.Components;
+using Content.Server.IdentityManagement;
 using Content.Server.Nutrition.EntitySystems;
 using Content.Server.Popups;
+using Content.Server.VoiceMask;
+using Content.Shared.Actions;
+using Content.Shared.Clothing.Components;
+using Content.Shared.Clothing.EntitySystems;
+using Content.Shared.IdentityManagement.Components;
+using Content.Shared.Inventory;
+using Content.Shared.Inventory.Events;
 using Robust.Shared.Player;
 
 namespace Content.Server.Clothing
 {
     public sealed class MaskSystem : EntitySystem
     {
-        [Dependency] private readonly PopupSystem _popupSystem = default!;
-        [Dependency] private readonly InventorySystem _inventorySystem = default!;
         [Dependency] private readonly ActionsSystem _actionSystem = default!;
+        [Dependency] private readonly AtmosphereSystem _atmos = default!;
+        [Dependency] private readonly InternalsSystem _internals = default!;
+        [Dependency] private readonly InventorySystem _inventorySystem = default!;
+        [Dependency] private readonly PopupSystem _popupSystem = default!;
+        [Dependency] private readonly IdentitySystem _identity = default!;
+        [Dependency] private readonly ClothingSystem _clothing = default!;
+
         public override void Initialize()
         {
             base.Initialize();
@@ -45,10 +55,13 @@ namespace Content.Server.Clothing
             mask.IsToggled ^= true;
             _actionSystem.SetToggled(mask.ToggleAction, mask.IsToggled);
 
+            // Pulling mask down can change identity, so we want to update that
+            _identity.QueueIdentityUpdate(args.Performer);
+
             if (mask.IsToggled)
-                _popupSystem.PopupEntity(Loc.GetString("action-mask-pull-down-popup-message", ("mask", mask.Owner)), args.Performer, Filter.Entities(args.Performer));
+                _popupSystem.PopupEntity(Loc.GetString("action-mask-pull-down-popup-message", ("mask", mask.Owner)), args.Performer, args.Performer);
             else
-                _popupSystem.PopupEntity(Loc.GetString("action-mask-pull-up-popup-message", ("mask", mask.Owner)), args.Performer, Filter.Entities(args.Performer));
+                _popupSystem.PopupEntity(Loc.GetString("action-mask-pull-up-popup-message", ("mask", mask.Owner)), args.Performer, args.Performer);
 
             ToggleMaskComponents(uid, mask, args.Performer);
         }
@@ -68,28 +81,37 @@ namespace Content.Server.Clothing
         private void ToggleMaskComponents(EntityUid uid, MaskComponent mask, EntityUid wearer, bool isEquip = false)
         {
             //toggle visuals
-            if (TryComp<SharedItemComponent>(mask.Owner, out var item))
+            if (TryComp<ClothingComponent>(mask.Owner, out var clothing))
             {
                 //TODO: sprites for 'pulled down' state. defaults to invisible due to no sprite with this prefix
-                item.EquippedPrefix = mask.IsToggled ? "toggled" : null;
-                Dirty(item);
+                _clothing.SetEquippedPrefix(uid, mask.IsToggled ? "toggled" : null, clothing);
             }
 
-            //toggle ingestion blocking
+            // shouldn't this be an event?
+
+            // toggle ingestion blocking
             if (TryComp<IngestionBlockerComponent>(uid, out var blocker))
                 blocker.Enabled = !mask.IsToggled;
 
-            //toggle disease protection
+            // toggle disease protection
             if (TryComp<DiseaseProtectionComponent>(uid, out var diseaseProtection))
                 diseaseProtection.IsActive = !mask.IsToggled;
 
-            //toggle breath tool connection (skip during equip since that is handled in LungSystem)
+            // toggle identity
+            if (TryComp<IdentityBlockerComponent>(uid, out var identity))
+                identity.Enabled = !mask.IsToggled;
+
+            // toggle voice masking
+            if (TryComp<VoiceMaskComponent>(wearer, out var voiceMask))
+                voiceMask.Enabled = !mask.IsToggled;
+
+            // toggle breath tool connection (skip during equip since that is handled in LungSystem)
             if (isEquip || !TryComp<BreathToolComponent>(uid, out var breathTool))
                 return;
 
             if (mask.IsToggled)
             {
-                breathTool.DisconnectInternals();
+                _atmos.DisconnectInternals(breathTool);
             }
             else
             {
@@ -98,7 +120,7 @@ namespace Content.Server.Clothing
                 if (TryComp(wearer, out InternalsComponent? internals))
                 {
                     breathTool.ConnectedInternalsEntity = wearer;
-                    internals.ConnectBreathTool(uid);
+                    _internals.ConnectBreathTool(internals, uid);
                 }
             }
         }

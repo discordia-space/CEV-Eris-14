@@ -1,9 +1,7 @@
-using Content.Shared.Sound;
-using Content.Shared.Weapons.Ranged.Systems;
+using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
-using Robust.Shared.Utility;
 
 namespace Content.Shared.Weapons.Ranged.Components;
 
@@ -15,8 +13,8 @@ public class AmmoComponent : Component, IShootable
 {
     // Muzzle flash stored on ammo because if we swap a gun to whatever we may want to override it.
 
-    [ViewVariables, DataField("muzzleFlash")]
-    public ResourcePath? MuzzleFlash = new ResourcePath("Objects/Weapons/Guns/Projectiles/projectiles.rsi/muzzle_bullet.png");
+    [ViewVariables(VVAccess.ReadWrite), DataField("muzzleFlash", customTypeSerializer:typeof(PrototypeIdSerializer<EntityPrototype>))]
+    public string? MuzzleFlash = "MuzzleFlashEffect";
 }
 
 /// <summary>
@@ -46,9 +44,9 @@ public sealed class CartridgeAmmoComponent : AmmoComponent
     /// <summary>
     /// Caseless ammunition.
     /// </summary>
-    [ViewVariables, DataField("deleteOnSpawn")]
+    [DataField("deleteOnSpawn")]
     public bool DeleteOnSpawn;
 
-    [ViewVariables, DataField("soundEject")]
+    [DataField("soundEject")]
     public SoundSpecifier? EjectSound = new SoundCollectionSpecifier("CasingEject");
 }

@@ -1,13 +1,12 @@
-using Content.Shared.MobState.Components;
-using Content.Shared.Movement;
 using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Pulling.Components;
+using Robust.Client.GameObjects;
 using Robust.Client.Player;
-using Robust.Shared.Map;
 using Robust.Shared.Physics;
-using Robust.Shared.Player;
+using Robust.Shared.Physics.Components;
 using Robust.Shared.Timing;
+using Robust.Shared.Utility;
 
 namespace Content.Client.Physics.Controllers
 {
@@ -16,20 +15,81 @@ namespace Content.Client.Physics.Controllers
         [Dependency] private readonly IGameTiming _timing = default!;
         [Dependency] private readonly IPlayerManager _playerManager = default!;
 
+        public override void Initialize()
+        {
+            base.Initialize();
+            SubscribeLocalEvent<RelayInputMoverComponent, PlayerAttachedEvent>(OnRelayPlayerAttached);
+            SubscribeLocalEvent<RelayInputMoverComponent, PlayerDetachedEvent>(OnRelayPlayerDetached);
+            SubscribeLocalEvent<InputMoverComponent, PlayerAttachedEvent>(OnPlayerAttached);
+            SubscribeLocalEvent<InputMoverComponent, PlayerDetachedEvent>(OnPlayerDetached);
+        }
+
+        private void OnRelayPlayerAttached(EntityUid uid, RelayInputMoverComponent component, PlayerAttachedEvent args)
+        {
+            if (TryComp<InputMoverComponent>(component.RelayEntity, out var inputMover))
+                SetMoveInput(inputMover, MoveButtons.None);
+        }
+
+        private void OnRelayPlayerDetached(EntityUid uid, RelayInputMoverComponent component, PlayerDetachedEvent args)
+        {
+            if (TryComp<InputMoverComponent>(component.RelayEntity, out var inputMover))
+                SetMoveInput(inputMover, MoveButtons.None);
+        }
+
+        private void OnPlayerAttached(EntityUid uid, InputMoverComponent component, PlayerAttachedEvent args)
+        {
+            SetMoveInput(component, MoveButtons.None);
+        }
+
+        private void OnPlayerDetached(EntityUid uid, InputMoverComponent component, PlayerDetachedEvent args)
+        {
+            SetMoveInput(component, MoveButtons.None);
+        }
+
         public override void UpdateBeforeSolve(bool prediction, float frameTime)
         {
             base.UpdateBeforeSolve(prediction, frameTime);
 
-            if (_playerManager.LocalPlayer?.ControlledEntity is not {Valid: true} player ||
-                !TryComp(player, out IMoverComponent? mover) ||
-                !TryComp(player, out PhysicsComponent? body) ||
-                !TryComp(player, out TransformComponent? xform))
+            if (_playerManager.LocalPlayer?.ControlledEntity is not {Valid: true} player)
+                return;
+
+            if (TryComp<RelayInputMoverComponent>(player, out var relayMover)
+                && TryComp(relayMover.RelayEntity, out MovementRelayTargetComponent? targetComp))
+            {
+                DebugTools.Assert(targetComp.Entities.Count <= 1, "Multiple relayed movers are not supported at the moment");
+                HandleClientsideMovement(relayMover.RelayEntity.Value, frameTime);
+            }
+
+            HandleClientsideMovement(player, frameTime);
+        }
+
+        private void HandleClientsideMovement(EntityUid player, float frameTime)
+        {
+            var xformQuery = GetEntityQuery<TransformComponent>();
+            var moverQuery = GetEntityQuery<InputMoverComponent>();
+            var relayTargetQuery = GetEntityQuery<MovementRelayTargetComponent>();
+
+            if (!TryComp(player, out InputMoverComponent? mover) ||
+                !xformQuery.TryGetComponent(player, out var xform))
             {
                 return;
             }
 
-            if (xform.GridUid != null)
-                mover.LastGridAngle = GetParentGridAngle(xform, mover);
+            PhysicsComponent? body;
+            TransformComponent? xformMover = xform;
+
+            if (mover.ToParent && HasComp<RelayInputMoverComponent>(xform.ParentUid))
+            {
+                if (!TryComp(xform.ParentUid, out body) ||
+                    !TryComp(xform.ParentUid, out xformMover))
+                {
+                    return;
+                }
+            }
+            else if (!TryComp(player, out body))
+            {
+                return;
+            }
 
             // Essentially we only want to set our mob to predicted so every other entity we just interpolate
             // (i.e. only see what the server has sent us).
@@ -41,10 +101,13 @@ namespace Content.Client.Physics.Controllers
 
             if (TryComp(player, out JointComponent? jointComponent))
             {
-                foreach (var joint in jointComponent.GetJoints)
+                foreach (var joint in jointComponent.GetJoints.Values)
                 {
-                    joint.BodyA.Predict = true;
-                    joint.BodyB.Predict = true;
+                    if (TryComp(joint.BodyAUid, out PhysicsComponent? physics))
+                        physics.Predict = true;
+
+                    if (TryComp(joint.BodyBUid, out physics))
+                        physics.Predict = true;
                 }
             }
 
@@ -65,23 +128,12 @@ namespace Content.Client.Physics.Controllers
             }
 
             // Server-side should just be handled on its own so we'll just do this shizznit
-            if (TryComp(player, out IMobMoverComponent? mobMover))
-            {
-                HandleMobMovement(mover, body, mobMover, xform, frameTime);
-                return;
-            }
-
-            HandleKinematicMovement(mover, body);
-        }
-
-        protected override Filter GetSoundPlayers(EntityUid mover)
-        {
-            return Filter.Local();
+            HandleMobMovement(player, mover, body, xformMover, frameTime, xformQuery, moverQuery, relayTargetQuery);
         }
 
         protected override bool CanSound()
         {
-            return _timing.IsFirstTimePredicted && _timing.InSimulation;
+            return _timing is { IsFirstTimePredicted: true, InSimulation: true };
         }
     }
 }

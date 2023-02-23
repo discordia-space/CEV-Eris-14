@@ -1,6 +1,6 @@
 using System.Threading;
 using Content.Shared.Damage;
-using Content.Shared.Sound;
+using Robust.Shared.Audio;
 
 namespace Content.Server.Gatherable.Components
 {
@@ -16,13 +16,6 @@ namespace Content.Server.Gatherable.Components
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("sound")]
         public SoundSpecifier GatheringSound { get; set; } = new SoundPathSpecifier("/Audio/Items/Mining/pickaxe.ogg");
-
-        /// <summary>
-        ///     This directly plugs into the time delay for gathering.
-        /// </summary>
-        [ViewVariables(VVAccess.ReadWrite)]
-        [DataField("gatheringTime")]
-        public float GatheringTime { get; set; } = 1f;
 
         /// <summary>
         ///     What damage should be given to objects when

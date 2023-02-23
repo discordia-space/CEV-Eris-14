@@ -1,15 +1,27 @@
+using Content.Server.Administration.Logs;
 using Content.Server.Construction.Components;
 using Content.Server.DoAfter;
+using Content.Server.Temperature.Components;
+using Content.Server.Temperature.Systems;
 using Content.Shared.Construction;
 using Content.Shared.Construction.EntitySystems;
 using Content.Shared.Construction.Steps;
+using Content.Shared.Database;
 using Content.Shared.Interaction;
 using Robust.Shared.Containers;
+#if EXCEPTION_TOLERANCE
+using Robust.Shared.Exceptions;
+#endif
 
 namespace Content.Server.Construction
 {
     public sealed partial class ConstructionSystem
     {
+        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
+#if EXCEPTION_TOLERANCE
+        [Dependency] private readonly IRuntimeLog _runtimeLog = default!;
+#endif
+
         private readonly HashSet<EntityUid> _constructionUpdateQueue = new();
 
         private void InitializeInteractions()
@@ -29,6 +41,7 @@ namespace Content.Server.Construction
 
             // Event handling. Add your subscriptions here! Just make sure they're all handled by EnqueueEvent.
             SubscribeLocalEvent<ConstructionComponent, InteractUsingEvent>(EnqueueEvent, new []{typeof(AnchorableSystem)});
+            SubscribeLocalEvent<ConstructionComponent, OnTemperatureChangeEvent>(EnqueueEvent);
         }
 
         /// <summary>
@@ -267,6 +280,8 @@ namespace Content.Server.Construction
 
                     // TODO: Sanity checks.
 
+                    user = interactUsing.User;
+
                     // If this step's DoAfter was cancelled, we just fail the interaction.
                     if (doAfterState == DoAfterState.Cancelled)
                         return HandleResult.False;
@@ -275,7 +290,7 @@ namespace Content.Server.Construction
 
                     // Since many things inherit this step, we delegate the "is this entity valid?" logic to them.
                     // While this is very OOP and I find it icky, I must admit that it simplifies the code here a lot.
-                    if(!insertStep.EntityValid(insert, EntityManager))
+                    if(!insertStep.EntityValid(insert, EntityManager, _factory))
                         return HandleResult.False;
 
                     // If we're only testing whether this step would be handled by the given event, then we're done.
@@ -327,7 +342,7 @@ namespace Content.Server.Construction
                         construction.Containers.Add(store);
 
                         // The container doesn't necessarily need to exist, so we ensure it.
-                        _containerSystem.EnsureContainer<Container>(uid, store).Insert(insert);
+                        _container.EnsureContainer<Container>(uid, store).Insert(insert);
                     }
                     else
                     {
@@ -371,6 +386,24 @@ namespace Content.Server.Construction
 
                     construction.WaitingDoAfter = true;
                     return HandleResult.DoAfter;
+                }
+
+                case TemperatureConstructionGraphStep temperatureChangeStep:
+                {
+                    if (ev is not OnTemperatureChangeEvent) {
+                        break;
+                    }
+
+                    if (TryComp<TemperatureComponent>(uid, out var tempComp))
+                    {
+                        if ((!temperatureChangeStep.MinTemperature.HasValue || tempComp.CurrentTemperature >= temperatureChangeStep.MinTemperature.Value) &&
+                            (!temperatureChangeStep.MaxTemperature.HasValue || tempComp.CurrentTemperature <= temperatureChangeStep.MaxTemperature.Value))
+                        {
+                            return HandleResult.True;
+                        }
+                    }
+                    return HandleResult.False;
+
                 }
 
                 #endregion
@@ -453,12 +486,25 @@ namespace Content.Server.Construction
                 if (!Exists(uid) || !TryComp(uid, out ConstructionComponent? construction))
                     continue;
 
+#if EXCEPTION_TOLERANCE
+                try
+                {
+#endif
                 // Handle all queued interactions!
                 while (construction.InteractionQueue.TryDequeue(out var interaction))
                 {
                     // We set validation to false because we actually want to perform the interaction here.
                     HandleEvent(uid, interaction, false, construction);
                 }
+#if EXCEPTION_TOLERANCE
+                }
+                catch (Exception e)
+                {
+                    _sawmill.Error($"Caught exception while processing construction queue. Entity {ToPrettyString(uid)}, graph: {construction.Graph}");
+                    _runtimeLog.LogException(e, $"{nameof(ConstructionSystem)}.{nameof(UpdateInteractions)}");
+                    Del(uid);
+                }
+#endif
             }
 
             _constructionUpdateQueue.Clear();

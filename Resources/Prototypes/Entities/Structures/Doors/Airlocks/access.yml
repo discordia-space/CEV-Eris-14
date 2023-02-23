@@ -70,7 +70,31 @@
   components:
   - type: AccessReader
     access: [["External"]]
+    
+- type: entity
+  parent: AirlockExternal
+  id: AirlockExternalCargoLocked
+  suffix: External, Cargo, Locked
+  components:
+  - type: AccessReader
+    access: [["Cargo"]]    
+    
+- type: entity
+  parent: AirlockExternal
+  id: AirlockExternalEngineeringLocked
+  suffix: External, Engineering, Locked
+  components:
+  - type: AccessReader
+    access: [["Engineering"]]
 
+- type: entity
+  parent: AirlockExternal
+  id: AirlockExternalAtmosphericsLocked
+  suffix: External, Atmospherics, Locked
+  components:
+  - type: AccessReader
+    access: [["Atmospherics"]]
+    
 - type: entity
   parent: AirlockFreezer
   id: AirlockFreezerLocked
@@ -131,6 +155,14 @@
   parent: AirlockMedical
   id: AirlockMedicalLocked
   suffix: Medical, Locked
+  components:
+  - type: AccessReader
+    access: [["Medical"]]
+
+- type: entity
+  parent: AirlockVirology
+  id: AirlockVirologyLocked
+  suffix: Virology, Locked
   components:
   - type: AccessReader
     access: [["Medical"]]
@@ -289,6 +321,30 @@
     access: [["External"]]
 
 - type: entity
+  parent: AirlockExternalGlass
+  id: AirlockExternalGlassCargoLocked
+  suffix: External, Glass, Cargo, Locked
+  components:
+  - type: AccessReader
+    access: [["Cargo"]]
+    
+- type: entity
+  parent: AirlockExternalGlass
+  id: AirlockExternalGlassEngineeringLocked
+  suffix: External, Glass, Engineering, Locked
+  components:
+  - type: AccessReader
+    access: [["Engineering"]]    
+
+- type: entity
+  parent: AirlockExternalGlass
+  id: AirlockExternalGlassAtmosphericsLocked
+  suffix: External, Glass, Atmospherics, Locked
+  components:
+  - type: AccessReader
+    access: [["Atmospherics"]]   
+    
+- type: entity
   parent: AirlockGlass
   id: AirlockKitchenGlassLocked
   suffix: Kitchen, Locked
@@ -356,6 +412,14 @@
   parent: AirlockMedicalGlass
   id: AirlockMedicalGlassLocked
   suffix: Medical, Locked
+  components:
+  - type: AccessReader
+    access: [["Medical"]]
+
+- type: entity
+  parent: AirlockVirologyGlass
+  id: AirlockVirologyGlassLocked
+  suffix: Virology, Locked
   components:
   - type: AccessReader
     access: [["Medical"]]
@@ -468,6 +532,14 @@
 - type: entity
   parent: AirlockMaint
   id: AirlockMaintLocked
+  suffix: Locked
+  components:
+  - type: AccessReader
+    access: [["Maintenance"]]
+
+- type: entity
+  parent: AirlockMaintGlass
+  id: AirlockMaintGlassLocked
   suffix: Locked
   components:
   - type: AccessReader
