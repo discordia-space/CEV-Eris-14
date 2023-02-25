@@ -1,10 +1,11 @@
-using Content.Server.Body.Systems;
+using Content.Server.Body.Components;
 using Content.Shared.Administration;
+using Content.Shared.Body.Components;
 using Robust.Shared.Console;
 
 namespace Content.Server.Administration.Commands
 {
-    [AdminCommand(AdminFlags.Admin)]
+    [AdminCommand(AdminFlags.Fun)]
     public sealed class AddMechanismCommand : IConsoleCommand
     {
         public string Command => "addmechanism";
@@ -19,28 +20,35 @@ namespace Content.Server.Administration.Commands
                 return;
             }
 
-            if (!EntityUid.TryParse(args[0], out var organId))
+            if (!EntityUid.TryParse(args[0], out var entityUid))
             {
                 shell.WriteError(Loc.GetString("shell-entity-uid-must-be-number"));
                 return;
             }
 
-            if (!EntityUid.TryParse(args[1], out var partId))
+            if (!EntityUid.TryParse(args[1], out var storageUid))
             {
                 shell.WriteError(Loc.GetString("shell-entity-uid-must-be-number"));
                 return;
             }
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
-            var bodySystem = entityManager.System<BodySystem>();
 
-            if (bodySystem.AddOrganToFirstValidSlot(organId, partId))
+            if (entityManager.TryGetComponent<BodyPartComponent>(storageUid, out var storage)
+                && entityManager.TryGetComponent<MechanismComponent>(entityUid, out var bodyPart))
             {
-                shell.WriteLine($@"Added {organId} to {partId}.");
+                if (storage.TryAddMechanism(bodyPart))
+                {
+                    shell.WriteLine($@"Added {entityUid} to {storageUid}.");
+                }
+                else
+                {
+                    shell.WriteError($@"Could not add {entityUid} to {storageUid}.");
+                }
             }
             else
             {
-                shell.WriteError($@"Could not add {organId} to {partId}.");
+                shell.WriteError("Could not insert.");
             }
         }
     }

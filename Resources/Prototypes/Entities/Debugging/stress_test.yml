@@ -7,6 +7,5 @@
     tags:
       - Debug
   - type: Sprite
-    sprite: Effects/explosion.rsi
-    state: explosion
+    texture: Effects/explosion.rsi/explosion.png
   - type: StressTestMovement

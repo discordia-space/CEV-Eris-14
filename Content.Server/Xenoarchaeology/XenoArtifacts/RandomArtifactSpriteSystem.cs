@@ -1,7 +1,5 @@
 ﻿using Content.Server.Xenoarchaeology.XenoArtifacts.Events;
-using Content.Shared.Item;
 using Content.Shared.Xenoarchaeology.XenoArtifacts;
-using Robust.Server.GameObjects;
 using Robust.Shared.Random;
 using Robust.Shared.Timing;
 
@@ -11,8 +9,6 @@ public sealed class RandomArtifactSpriteSystem : EntitySystem
 {
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly IGameTiming _time = default!;
-    [Dependency] private readonly AppearanceSystem _appearance = default!;
-    [Dependency] private readonly SharedItemSystem _item = default!;
 
     public override void Initialize()
     {
@@ -33,7 +29,7 @@ public sealed class RandomArtifactSpriteSystem : EntitySystem
             var timeDif = _time.CurTime - component.ActivationStart.Value;
             if (timeDif.Seconds >= component.ActivationTime)
             {
-                _appearance.SetData(appearance.Owner, SharedArtifactsVisuals.IsActivated, false, appearance);
+                appearance.SetData(SharedArtifactsVisuals.IsActivated, false);
                 component.ActivationStart = null;
             }
         }
@@ -41,14 +37,19 @@ public sealed class RandomArtifactSpriteSystem : EntitySystem
 
     private void OnMapInit(EntityUid uid, RandomArtifactSpriteComponent component, MapInitEvent args)
     {
+        if (!TryComp(uid, out AppearanceComponent? appearance))
+            return;
+
         var randomSprite = _random.Next(component.MinSprite, component.MaxSprite + 1);
-        _appearance.SetData(uid, SharedArtifactsVisuals.SpriteIndex, randomSprite);
-        _item.SetHeldPrefix(uid, "ano" + randomSprite.ToString("D2")); //set item artifact inhands
+        appearance.SetData(SharedArtifactsVisuals.SpriteIndex, randomSprite);
     }
 
     private void OnActivated(EntityUid uid, RandomArtifactSpriteComponent component, ArtifactActivatedEvent args)
     {
-        _appearance.SetData(uid, SharedArtifactsVisuals.IsActivated, true);
+        if (!TryComp(uid, out AppearanceComponent? appearance))
+            return;
+
+        appearance.SetData(SharedArtifactsVisuals.IsActivated, true);
         component.ActivationStart = _time.CurTime;
     }
 }

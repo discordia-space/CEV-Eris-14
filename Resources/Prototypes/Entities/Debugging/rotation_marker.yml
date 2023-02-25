@@ -47,7 +47,6 @@
   - type: Sprite
     netsync: false
     visible: true
-    sprite: debugRotation.rsi
-    state: direction1
+    texture: debugRotation.rsi/direction1.png
   placement:
     mode: AlignTileAny

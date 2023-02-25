@@ -40,21 +40,17 @@ namespace Content.Server.Chemistry.ReagentEffects.StatusEffects
         public override void Effect(ReagentEffectArgs args)
         {
             var statusSys = args.EntityManager.EntitySysManager.GetEntitySystem<StatusEffectsSystem>();
-
-            var time = Time;
-            time *= args.Scale;
-
             if (Type == StatusEffectMetabolismType.Add && Component != String.Empty)
             {
-                statusSys.TryAddStatusEffect(args.SolutionEntity, Key, TimeSpan.FromSeconds(time), Refresh, Component);
+                statusSys.TryAddStatusEffect(args.SolutionEntity, Key, TimeSpan.FromSeconds(Time), Refresh, Component);
             }
             else if (Type == StatusEffectMetabolismType.Remove)
             {
-                statusSys.TryRemoveTime(args.SolutionEntity, Key, TimeSpan.FromSeconds(time));
+                statusSys.TryRemoveTime(args.SolutionEntity, Key, TimeSpan.FromSeconds(Time));
             }
             else if (Type == StatusEffectMetabolismType.Set)
             {
-                statusSys.TrySetTime(args.SolutionEntity, Key, TimeSpan.FromSeconds(time));
+                statusSys.TrySetTime(args.SolutionEntity, Key, TimeSpan.FromSeconds(Time));
             }
         }
     }

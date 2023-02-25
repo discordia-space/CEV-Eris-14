@@ -7,15 +7,13 @@ using System.Text.Unicode;
 using BenchmarkDotNet.Attributes;
 using Lidgren.Network;
 using NetSerializer;
-using Robust.Shared.Analyzers;
 
 namespace Content.Benchmarks
 {
     // Code for the *Slow and *Unsafe implementations taken from NetSerializer, licensed under the MIT license.
 
     [MemoryDiagnoser]
-    [Virtual]
-    public class NetSerializerStringBenchmark
+    public sealed class NetSerializerStringBenchmark
     {
         private const int StringByteBufferLength = 256;
         private const int StringCharBufferLength = 128;
@@ -377,7 +375,7 @@ namespace Content.Benchmarks
 					throw new EndOfStreamException();
 
 				streamBytesLeft -= bytesInBuffer;
-				bool flush = streamBytesLeft == 0;
+				bool flush = streamBytesLeft == 0 ? true : false;
 
 				bool completed = false;
 

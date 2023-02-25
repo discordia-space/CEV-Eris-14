@@ -11,12 +11,10 @@ namespace Content.Shared.SubFloor;
 
 public sealed class TrayScannerSystem : EntitySystem
 {
-    [Dependency] private readonly IMapManager _mapManager = default!;
-    [Dependency] private readonly IGameTiming _gameTiming = default!;
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-    [Dependency] private readonly SharedSubFloorHideSystem _subfloorSystem = default!;
-    [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
-    [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private IMapManager _mapManager = default!;
+    [Dependency] private IGameTiming _gameTiming = default!;
+    [Dependency] private SharedSubFloorHideSystem _subfloorSystem = default!;
+    [Dependency] private SharedContainerSystem _containerSystem = default!;
 
     private HashSet<EntityUid> _activeScanners = new();
     private RemQueue<EntityUid> _invalidScanners = new();
@@ -52,7 +50,7 @@ public sealed class TrayScannerSystem : EntitySystem
 
         if (EntityManager.TryGetComponent<AppearanceComponent>(uid, out var appearance))
         {
-            _appearance.SetData(uid, TrayScannerVisual.Visual, scanner.Enabled ? TrayScannerVisual.On : TrayScannerVisual.Off, appearance);
+            appearance.SetData(TrayScannerVisual.Visual, scanner.Enabled == true ? TrayScannerVisual.On : TrayScannerVisual.Off);
         }
     }
 
@@ -85,8 +83,7 @@ public sealed class TrayScannerSystem : EntitySystem
         if (!_gameTiming.IsFirstTimePredicted)
             return;
 
-        if (!_activeScanners.Any())
-            return;
+        if (!_activeScanners.Any()) return;
 
         foreach (var scanner in _activeScanners)
         {
@@ -99,9 +96,7 @@ public sealed class TrayScannerSystem : EntitySystem
         }
 
         foreach (var invalidScanner in _invalidScanners)
-        {
             _activeScanners.Remove(invalidScanner);
-        }
 
         _invalidScanners.List?.Clear();
     }
@@ -153,16 +148,15 @@ public sealed class TrayScannerSystem : EntitySystem
         }
 
         var pos = transform.LocalPosition;
-        var parent = _transform.GetParent(transform);
 
         // zero vector implies container
         //
         // this means we should get the entity transform's parent
         if (pos == Vector2.Zero
-            && parent != null
+            && transform.Parent != null
             && _containerSystem.ContainsEntity(transform.ParentUid, uid))
         {
-            pos = parent.LocalPosition;
+            pos = transform.Parent.LocalPosition;
 
             // if this is also zero, we can check one more time
             //
@@ -171,7 +165,7 @@ public sealed class TrayScannerSystem : EntitySystem
             // that doesn't work, just don't bother any further
             if (pos == Vector2.Zero)
             {
-                var gpTransform = _transform.GetParent(parent);
+                var gpTransform = transform.Parent.Parent;
                 if (gpTransform != null
                     && _containerSystem.ContainsEntity(gpTransform.Owner, transform.ParentUid))
                 {

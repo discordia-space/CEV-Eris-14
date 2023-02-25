@@ -1,4 +1,6 @@
-﻿namespace Content.Shared.Body.Events
+﻿using Content.Shared.Body.Components;
+
+namespace Content.Shared.Body.Events
 {
     // All of these events are raised on a mechanism entity when added/removed to a body in different
     // ways.
@@ -8,9 +10,9 @@
     /// </summary>
     public sealed class AddedToBodyEvent : EntityEventArgs
     {
-        public EntityUid Body;
+        public SharedBodyComponent Body;
 
-        public AddedToBodyEvent(EntityUid body)
+        public AddedToBodyEvent(SharedBodyComponent body)
         {
             Body = body;
         }
@@ -21,9 +23,9 @@
     /// </summary>
     public sealed class AddedToPartEvent : EntityEventArgs
     {
-        public EntityUid Part;
+        public SharedBodyPartComponent Part;
 
-        public AddedToPartEvent(EntityUid part)
+        public AddedToPartEvent(SharedBodyPartComponent part)
         {
             Part = part;
         }
@@ -34,10 +36,10 @@
     /// </summary>
     public sealed class AddedToPartInBodyEvent : EntityEventArgs
     {
-        public EntityUid Body;
-        public EntityUid Part;
+        public SharedBodyComponent Body;
+        public SharedBodyPartComponent Part;
 
-        public AddedToPartInBodyEvent(EntityUid body, EntityUid part)
+        public AddedToPartInBodyEvent(SharedBodyComponent body, SharedBodyPartComponent part)
         {
             Body = body;
             Part = part;
@@ -49,9 +51,9 @@
     /// </summary>
     public sealed class RemovedFromBodyEvent : EntityEventArgs
     {
-        public EntityUid Old;
+        public SharedBodyComponent Old;
 
-        public RemovedFromBodyEvent(EntityUid old)
+        public RemovedFromBodyEvent(SharedBodyComponent old)
         {
             Old = old;
         }
@@ -62,9 +64,9 @@
     /// </summary>
     public sealed class RemovedFromPartEvent : EntityEventArgs
     {
-        public EntityUid Old;
+        public SharedBodyPartComponent Old;
 
-        public RemovedFromPartEvent(EntityUid old)
+        public RemovedFromPartEvent(SharedBodyPartComponent old)
         {
             Old = old;
         }
@@ -75,10 +77,10 @@
     /// </summary>
     public sealed class RemovedFromPartInBodyEvent : EntityEventArgs
     {
-        public EntityUid OldBody;
-        public EntityUid OldPart;
+        public SharedBodyComponent OldBody;
+        public SharedBodyPartComponent OldPart;
 
-        public RemovedFromPartInBodyEvent(EntityUid oldBody, EntityUid oldPart)
+        public RemovedFromPartInBodyEvent(SharedBodyComponent oldBody, SharedBodyPartComponent oldPart)
         {
             OldBody = oldBody;
             OldPart = oldPart;

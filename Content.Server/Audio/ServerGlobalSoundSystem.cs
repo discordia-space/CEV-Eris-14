@@ -3,6 +3,7 @@ using Content.Server.Station.Components;
 using Content.Server.Station.Systems;
 using Content.Shared.Administration;
 using Content.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Server.Player;
 using Robust.Shared.Audio;
 using Robust.Shared.Console;
@@ -28,15 +29,15 @@ public sealed class ServerGlobalSoundSystem : SharedGlobalSoundSystem
         _conHost.UnregisterCommand("playglobalsound");
     }
 
-    private void PlayAdminGlobal(Filter playerFilter, string filename, AudioParams? audioParams = null, bool replay = true)
+    private void PlayAdminGlobal(Filter playerFilter, string filename, AudioParams? audioParams = null)
     {
         var msg = new AdminSoundEvent(filename, audioParams);
-        RaiseNetworkEvent(msg, playerFilter, recordReplay: replay);
+        RaiseNetworkEvent(msg, playerFilter);
     }
 
     private Filter GetStationAndPvs(EntityUid source)
     {
-        var stationFilter = _stationSystem.GetInOwningStation(source);
+        var stationFilter = _stationSystem.GetInStation(source);
         stationFilter.AddPlayersByPvs(source, entityManager: EntityManager);
         return stationFilter;
     }
@@ -50,10 +51,6 @@ public sealed class ServerGlobalSoundSystem : SharedGlobalSoundSystem
 
     public void StopStationEventMusic(EntityUid source, StationEventMusicType type)
     {
-        // TODO REPLAYS
-        // these start & stop events are gonna be a PITA
-        // theres probably some nice way of handling them. Maybe it just needs dedicated replay data (in which case these events should NOT get recorded).
-
         var msg = new StopStationEventMusic(type);
         var filter = GetStationAndPvs(source);
         RaiseNetworkEvent(msg, filter);
@@ -76,9 +73,7 @@ public sealed class ServerGlobalSoundSystem : SharedGlobalSoundSystem
     public void PlayGlobalSoundCommand(IConsoleShell shell, string argStr, string[] args)
     {
         Filter filter;
-        var audio = AudioParams.Default;
-
-        bool replay = true;
+        var audio = AudioParams.Default.WithVolume(-8);
 
         switch (args.Length)
         {
@@ -116,9 +111,6 @@ public sealed class ServerGlobalSoundSystem : SharedGlobalSoundSystem
                 }
                 else
                 {
-                    // TODO REPLAYS uhhh.. what to do with this?
-                    replay = false;
-
                     filter = Filter.Empty();
 
                     // Skip the first argument, which is the sound path.
@@ -139,7 +131,6 @@ public sealed class ServerGlobalSoundSystem : SharedGlobalSoundSystem
                 break;
         }
 
-        audio = audio.AddVolume(-8);
-        PlayAdminGlobal(filter, args[0], audio, replay);
+        PlayAdminGlobal(filter, args[0], audio);
     }
 }

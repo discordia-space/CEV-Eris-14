@@ -2,20 +2,17 @@ using System.Linq;
 using Content.Shared.Damage.Prototypes;
 using Content.Shared.FixedPoint;
 using Content.Shared.Inventory;
+using Content.Shared.MobState;
+using Content.Shared.MobState.Components;
 using Content.Shared.Radiation.Events;
-using Content.Shared.Rejuvenate;
 using Robust.Shared.GameStates;
-using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
-using Robust.Shared.Utility;
 
 namespace Content.Shared.Damage
 {
     public sealed class DamageableSystem : EntitySystem
     {
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-        [Dependency] private readonly INetManager _netMan = default!;
 
         public override void Initialize()
         {
@@ -23,35 +20,6 @@ namespace Content.Shared.Damage
             SubscribeLocalEvent<DamageableComponent, ComponentHandleState>(DamageableHandleState);
             SubscribeLocalEvent<DamageableComponent, ComponentGetState>(DamageableGetState);
             SubscribeLocalEvent<DamageableComponent, OnIrradiatedEvent>(OnIrradiated);
-            SubscribeLocalEvent<DamageableComponent, RejuvenateEvent>(OnRejuvenate);
-        }
-
-        /// <summary>
-        /// Retrieves the damage examine values.
-        /// </summary>
-        public FormattedMessage GetDamageExamine(DamageSpecifier damageSpecifier, string? type = null)
-        {
-            var msg = new FormattedMessage();
-
-            if (string.IsNullOrEmpty(type))
-            {
-                msg.AddMarkup(Loc.GetString("damage-examine"));
-            }
-            else
-            {
-                msg.AddMarkup(Loc.GetString("damage-examine-type", ("type", type)));
-            }
-
-            foreach (var damage in damageSpecifier.DamageDict)
-            {
-                if (damage.Value != FixedPoint2.Zero)
-                {
-                    msg.PushNewline();
-                    msg.AddMarkup(Loc.GetString("damage-value", ("type", damage.Key), ("amount", damage.Value)));
-                }
-            }
-
-            return msg;
         }
 
         /// <summary>
@@ -113,7 +81,7 @@ namespace Content.Shared.Damage
         ///     The damage changed event is used by other systems, such as damage thresholds.
         /// </remarks>
         public void DamageChanged(DamageableComponent component, DamageSpecifier? damageDelta = null,
-            bool interruptsDoAfters = true, EntityUid? origin = null)
+            bool interruptsDoAfters = true)
         {
             component.DamagePerGroup = component.Damage.GetDamagePerGroup(_prototypeManager);
             component.TotalDamage = component.Damage.Total;
@@ -122,9 +90,9 @@ namespace Content.Shared.Damage
             if (EntityManager.TryGetComponent<AppearanceComponent>(component.Owner, out var appearance) && damageDelta != null)
             {
                 var data = new DamageVisualizerGroupData(damageDelta.GetDamagePerGroup(_prototypeManager).Keys.ToList());
-                _appearance.SetData(component.Owner, DamageVisualizerKeys.DamageUpdateGroups, data, appearance);
+                appearance.SetData(DamageVisualizerKeys.DamageUpdateGroups, data);
             }
-            RaiseLocalEvent(component.Owner, new DamageChangedEvent(component, damageDelta, interruptsDoAfters, origin));
+            RaiseLocalEvent(component.Owner, new DamageChangedEvent(component, damageDelta, interruptsDoAfters), false);
         }
 
         /// <summary>
@@ -140,7 +108,7 @@ namespace Content.Shared.Damage
         ///     null if the user had no applicable components that can take damage.
         /// </returns>
         public DamageSpecifier? TryChangeDamage(EntityUid? uid, DamageSpecifier damage, bool ignoreResistances = false,
-            bool interruptsDoAfters = true, DamageableComponent? damageable = null, EntityUid? origin = null)
+            bool interruptsDoAfters = true, DamageableComponent? damageable = null)
         {
             if (!uid.HasValue || !Resolve(uid.Value, ref damageable, false))
             {
@@ -189,7 +157,7 @@ namespace Content.Shared.Damage
 
             if (!delta.Empty)
             {
-                DamageChanged(damageable, delta, interruptsDoAfters, origin);
+                DamageChanged(damageable, delta, interruptsDoAfters);
             }
 
             return delta;
@@ -231,15 +199,7 @@ namespace Content.Shared.Damage
 
         private void DamageableGetState(EntityUid uid, DamageableComponent component, ref ComponentGetState args)
         {
-            if (_netMan.IsServer)
-            {
-                args.State = new DamageableComponentState(component.Damage.DamageDict, component.DamageModifierSetId);
-            }
-            else
-            {
-                // avoid mispredicting damage on newly spawned entities.
-                args.State = new DamageableComponentState(component.Damage.DamageDict.ShallowClone(), component.DamageModifierSetId);
-            }
+            args.State = new DamageableComponentState(component.Damage.DamageDict, component.DamageModifierSetId);
         }
 
         private void OnIrradiated(EntityUid uid, DamageableComponent component, OnIrradiatedEvent args)
@@ -254,11 +214,6 @@ namespace Content.Shared.Damage
             }
 
             TryChangeDamage(uid, damage);
-        }
-
-        private void OnRejuvenate(EntityUid uid, DamageableComponent component, RejuvenateEvent args)
-        {
-            SetAllDamage(component, 0);
         }
 
         private void DamageableHandleState(EntityUid uid, DamageableComponent component, ref ComponentHandleState args)
@@ -280,6 +235,45 @@ namespace Content.Shared.Damage
                 component.Damage = newDamage;
                 DamageChanged(component, delta);
             }
+        }
+
+        /// <summary>
+        /// Takes the damage from one entity and scales it relative to the health of another
+        /// </summary>
+        /// <param name="ent1">The entity whose damage will be scaled</param>
+        /// <param name="ent2">The entity whose health the damage will scale to</param>
+        /// <param name="damage">The newly scaled damage. Can be null</param>
+        public bool GetScaledDamage(EntityUid ent1, EntityUid ent2, out DamageSpecifier? damage)
+        {
+            damage = null;
+
+            if (!TryComp<DamageableComponent>(ent1, out var olddamage))
+                return false;
+
+            if (!TryComp<MobStateComponent>(ent1, out var oldstate) ||
+                !TryComp<MobStateComponent>(ent2, out var newstate))
+                return false;
+
+            int ent1DeadState = 0;
+            foreach (var state in oldstate._highestToLowestStates)
+            {
+                if (state.Value == DamageState.Dead)
+                {
+                    ent1DeadState = state.Key;
+                }
+            }
+
+            int ent2DeadState = 0;
+            foreach (var state in newstate._highestToLowestStates)
+            {
+                if (state.Value == DamageState.Dead)
+                {
+                    ent2DeadState = state.Key;
+                }
+            }
+
+            damage = (olddamage.Damage / ent1DeadState) * ent2DeadState;
+            return true;
         }
     }
 
@@ -333,16 +327,10 @@ namespace Content.Shared.Damage
         /// </summary>
         public readonly bool InterruptsDoAfters = false;
 
-        /// <summary>
-        ///     Contains the entity which caused the change in damage, if any was responsible.
-        /// </summary>
-        public readonly EntityUid? Origin;
-
-        public DamageChangedEvent(DamageableComponent damageable, DamageSpecifier? damageDelta, bool interruptsDoAfters, EntityUid? origin)
+        public DamageChangedEvent(DamageableComponent damageable, DamageSpecifier? damageDelta, bool interruptsDoAfters)
         {
             Damageable = damageable;
             DamageDelta = damageDelta;
-            Origin = origin;
 
             if (DamageDelta == null)
                 return;

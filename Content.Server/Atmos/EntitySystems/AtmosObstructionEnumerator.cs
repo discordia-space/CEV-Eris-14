@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Content.Server.Atmos.Components;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Enumerators;
 
 namespace Content.Server.Atmos.EntitySystems;
 

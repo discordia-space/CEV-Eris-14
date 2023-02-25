@@ -5,16 +5,7 @@ namespace Content.Shared.Weapons.Ranged.Systems;
 
 public abstract class SharedTetherGunSystem : EntitySystem
 {
-    public const string CommandName = "tethergun";
-}
-
-/// <summary>
-/// Sent from server to client if tether gun is toggled on.
-/// </summary>
-[Serializable, NetSerializable]
-public sealed class TetherGunToggleMessage : EntityEventArgs
-{
-    public bool Enabled;
+    protected const string CommandName = "tethergun";
 }
 
 [Serializable, NetSerializable]

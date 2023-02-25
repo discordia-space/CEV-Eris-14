@@ -11,17 +11,13 @@ public sealed class CargoShuttleConsoleBoundUserInterface : BoundUserInterface
 {
     private CargoShuttleMenu? _menu;
 
-    public CargoShuttleConsoleBoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey) {}
+    public CargoShuttleConsoleBoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey) {}
 
     protected override void Open()
     {
         base.Open();
-        var collection = IoCManager.Instance;
+        _menu = new CargoShuttleMenu(IoCManager.Resolve<IGameTiming>(), IoCManager.Resolve<IPrototypeManager>(), EntitySystem.Get<SpriteSystem>());
 
-        if (collection == null)
-            return;
-
-        _menu = new CargoShuttleMenu(collection.Resolve<IGameTiming>(), collection.Resolve<IPrototypeManager>(), collection.Resolve<IEntitySystemManager>().GetEntitySystem<SpriteSystem>());
         _menu.ShuttleCallRequested += OnShuttleCall;
         _menu.ShuttleRecallRequested += OnShuttleRecall;
         _menu.OnClose += Close;

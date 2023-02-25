@@ -1,5 +1,5 @@
 using Content.Server.Nutrition.EntitySystems;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.Nutrition.Components
 {

@@ -7,7 +7,6 @@ using NUnit.Framework;
 using Robust.Shared.GameObjects;
 using Robust.Shared.IoC;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 
 namespace Content.IntegrationTests.Tests
 {
@@ -39,8 +38,8 @@ namespace Content.IntegrationTests.Tests
             EntityUid generator = default;
             var entityMan = server.ResolveDependency<IEntityManager>();
 
-            MapGridComponent grid1 = null;
-            MapGridComponent grid2 = null;
+            IMapGrid grid1 = null;
+            IMapGrid grid2 = null;
 
             // Create grids
             await server.WaitAssertion(() =>
@@ -68,11 +67,11 @@ namespace Content.IntegrationTests.Tests
 
                 Assert.That(generatorComponent.GravityActive, Is.True);
 
-                var grid1Entity = grid1.Owner;
-                var grid2Entity = grid2.Owner;
+                var grid1Entity = grid1.GridEntityId;
+                var grid2Entity = grid2.GridEntityId;
 
-                Assert.That(!entityMan.GetComponent<GravityComponent>(grid1Entity).EnabledVV);
-                Assert.That(entityMan.GetComponent<GravityComponent>(grid2Entity).EnabledVV);
+                Assert.That(!entityMan.GetComponent<GravityComponent>(grid1Entity).Enabled);
+                Assert.That(entityMan.GetComponent<GravityComponent>(grid2Entity).Enabled);
 
                 // Re-enable needs power so it turns off again.
                 // Charge rate is ridiculously high so it finishes in one tick.
@@ -87,9 +86,9 @@ namespace Content.IntegrationTests.Tests
 
                 Assert.That(generatorComponent.GravityActive, Is.False);
 
-                var grid2Entity = grid2.Owner;
+                var grid2Entity = grid2.GridEntityId;
 
-                Assert.That(entityMan.GetComponent<GravityComponent>(grid2Entity).EnabledVV, Is.False);
+                Assert.That(entityMan.GetComponent<GravityComponent>(grid2Entity).Enabled, Is.False);
             });
 
             await pairTracker.CleanReturnAsync();

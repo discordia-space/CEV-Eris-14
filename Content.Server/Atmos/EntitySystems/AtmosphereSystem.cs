@@ -1,7 +1,5 @@
 using Content.Server.Administration.Logs;
 using Content.Server.Atmos.Components;
-using Content.Server.Body.Systems;
-using Content.Server.Maps;
 using Content.Server.NodeContainer.EntitySystems;
 using Content.Shared.Atmos.EntitySystems;
 using Content.Shared.Maps;
@@ -9,7 +7,6 @@ using JetBrains.Annotations;
 using Robust.Server.GameObjects;
 using Robust.Shared.Containers;
 using Robust.Shared.Map;
-using Robust.Shared.Physics.Systems;
 using Robust.Shared.Random;
 
 namespace Content.Server.Atmos.EntitySystems;
@@ -24,12 +21,11 @@ public sealed partial class AtmosphereSystem : SharedAtmosphereSystem
     [Dependency] private readonly ITileDefinitionManager _tileDefinitionManager = default!;
     [Dependency] private readonly IRobustRandom _robustRandom = default!;
     [Dependency] private readonly IAdminLogManager _adminLog = default!;
-    [Dependency] private readonly InternalsSystem _internals = default!;
     [Dependency] private readonly SharedContainerSystem _containers = default!;
     [Dependency] private readonly SharedPhysicsSystem _physics = default!;
     [Dependency] private readonly GasTileOverlaySystem _gasTileOverlaySystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
-    [Dependency] private readonly TileSystem _tile = default!;
+
 
     private const float ExposedUpdateDelay = 1f;
     private float _exposedTimer = 0f;
@@ -40,7 +36,6 @@ public sealed partial class AtmosphereSystem : SharedAtmosphereSystem
 
         UpdatesAfter.Add(typeof(NodeGroupSystem));
 
-        InitializeBreathTool();
         InitializeGases();
         InitializeCommands();
         InitializeCVars();
@@ -59,7 +54,7 @@ public sealed partial class AtmosphereSystem : SharedAtmosphereSystem
         ShutdownCommands();
     }
 
-    private void OnTileChanged(ref TileChangedEvent ev)
+    private void OnTileChanged(TileChangedEvent ev)
     {
         InvalidateTile(ev.NewTile.GridUid, ev.NewTile.GridIndices);
     }

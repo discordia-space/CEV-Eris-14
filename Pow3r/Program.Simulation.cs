@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using Content.Server.Power.Pow3r;
 using static Content.Server.Power.Pow3r.PowerState;
@@ -45,7 +45,7 @@ namespace Pow3r
             _simStopwatch.Restart();
             _tickDataIdx = (_tickDataIdx + 1) % MaxTickData;
 
-            _solvers[_currentSolver].Tick(frameTime, _state, 1);
+            _solvers[_currentSolver].Tick(frameTime, _state);
 
             // Update tick history.
             foreach (var load in _state.Loads.Values)
@@ -111,13 +111,13 @@ namespace Pow3r
                     supply.LinkedNetwork = network.Id;
                 }
 
-                foreach (var batteryId in network.BatteryLoads)
+                foreach (var batteryId in network.BatteriesCharging)
                 {
                     var battery = _state.Batteries[batteryId];
                     battery.LinkedNetworkCharging = network.Id;
                 }
 
-                foreach (var batteryId in network.BatterySupplies)
+                foreach (var batteryId in network.BatteriesDischarging)
                 {
                     var battery = _state.Batteries[batteryId];
                     battery.LinkedNetworkDischarging = network.Id;

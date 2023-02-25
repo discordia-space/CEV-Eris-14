@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Content.Server.Database.Migrations.Sqlite
 {
-    public partial class Whitelist : Migration
+    public partial class whitelist : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

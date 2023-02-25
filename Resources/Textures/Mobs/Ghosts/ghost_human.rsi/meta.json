@@ -12,7 +12,8 @@
       "directions": 4
     },
     {
-      "name": "icon"
+      "name": "icon",
+      "directions": 4
     }
   ]
 }

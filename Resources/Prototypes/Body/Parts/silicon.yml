@@ -6,17 +6,10 @@
   components:
   - type: Damageable
     damageContainer: Inorganic
-  - type: BodyPart
-  - type: ContainerContainer
-    containers:
-      bodypart: !type:Container
-        ents: []
-  - type: StaticPrice
-    price: 100
 
 - type: entity
-  id: LeftArmBorg
-  name: "left borg arm"
+  id: LeftHandDrone
+  name: "left drone hand"
   parent: PartSilicon
   components:
   - type: Sprite
@@ -28,16 +21,17 @@
     state: "l_hand"
   - type: BodyPart
     partType: Hand
+    size: 3
+    compatibility: Biological ##Does this do anything? Revisit when surgery is in
     symmetry: Left
   - type: Tag
     tags:
     - Trash
-    - BorgArm
   - type: Recyclable
 
 - type: entity
-  id: RightArmBorg
-  name: "right borg arm"
+  id: RightHandDrone
+  name: "right drone hand"
   parent: PartSilicon
   components:
   - type: Sprite
@@ -49,9 +43,10 @@
     state: "r_hand"
   - type: BodyPart
     partType: Hand
+    size: 3
+    compatibility: Biological
     symmetry: Right
   - type: Tag
     tags:
     - Trash
-    - BorgArm
   - type: Recyclable

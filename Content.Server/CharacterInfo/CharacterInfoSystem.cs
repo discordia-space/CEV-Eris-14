@@ -55,6 +55,7 @@ public sealed class CharacterInfoSystem : EntitySystem
             briefing = mind.Briefing;
         }
 
-        RaiseNetworkEvent(new CharacterInfoEvent(entity, jobTitle, conditions, briefing), args.SenderSession);
+        RaiseNetworkEvent(new CharacterInfoEvent(entity, jobTitle, conditions, briefing),
+            Filter.SinglePlayer(args.SenderSession));
     }
 }

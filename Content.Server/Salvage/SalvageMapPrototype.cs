@@ -7,24 +7,27 @@ namespace Content.Server.Salvage
     public sealed class SalvageMapPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         /// <summary>
         /// Relative directory path to the given map, i.e. `Maps/Salvage/test.yml`
         /// </summary>
+        [ViewVariables]
         [DataField("mapPath", required: true)]
         public ResourcePath MapPath { get; } = default!;
 
         /// <summary>
-        /// Map rectangle in world coordinates (to check if it fits)
+        /// Size *from 0,0* in units of the map (used to determine if it fits)
         /// </summary>
-        [DataField("bounds", required: true)]
-        public Box2 Bounds { get; } = Box2.UnitCentered;
+        [ViewVariables]
+        [DataField("size", required: true)]
+        public float Size { get; } = 1.0f; // TODO: Find a way to figure out the size automatically
 
         /// <summary>
         /// Name for admin use
         /// </summary>
+        [ViewVariables]
         [DataField("name")]
         public string Name { get; } = "";
     }

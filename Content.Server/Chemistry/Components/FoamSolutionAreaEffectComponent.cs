@@ -1,12 +1,9 @@
-using Content.Server.Body.Components;
+﻿using Content.Server.Body.Components;
 using Content.Server.Body.Systems;
 using Content.Server.Chemistry.EntitySystems;
-using Content.Shared.Administration.Logs;
-using Content.Shared.Database;
 using Content.Shared.FixedPoint;
 using Content.Shared.Foam;
 using Content.Shared.Inventory;
-using Robust.Shared.Prototypes;
 
 namespace Content.Server.Chemistry.Components
 {
@@ -15,8 +12,6 @@ namespace Content.Server.Chemistry.Components
     public sealed class FoamSolutionAreaEffectComponent : SolutionAreaEffectComponent
     {
         [Dependency] private readonly IEntityManager _entMan = default!;
-        [Dependency] private readonly IPrototypeManager _proto = default!;
-        [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
 
         public new const string SolutionName = "solutionArea";
 
@@ -27,7 +22,7 @@ namespace Content.Server.Chemistry.Components
             if (_entMan.TryGetComponent(Owner, out AppearanceComponent? appearance) &&
                 EntitySystem.Get<SolutionContainerSystem>().TryGetSolution(Owner, SolutionName, out var solution))
             {
-                appearance.SetData(FoamVisuals.Color, solution.GetColor(_proto).WithAlpha(0.80f));
+                appearance.SetData(FoamVisuals.Color, solution.Color.WithAlpha(0.80f));
             }
         }
 
@@ -62,15 +57,11 @@ namespace Content.Server.Chemistry.Components
             var bloodstreamSys = EntitySystem.Get<BloodstreamSystem>();
 
             var cloneSolution = solution.Clone();
-            var transferAmount = FixedPoint2.Min(cloneSolution.Volume * solutionFraction * (1 - protection),
+            var transferAmount = FixedPoint2.Min(cloneSolution.TotalVolume * solutionFraction * (1 - protection),
                 bloodstream.ChemicalSolution.AvailableVolume);
             var transferSolution = cloneSolution.SplitSolution(transferAmount);
 
-            if (bloodstreamSys.TryAddToChemicals(entity, transferSolution, bloodstream))
-            {
-                // Log solution addition by foam
-                _adminLogger.Add(LogType.ForceFeed, LogImpact.Medium, $"{_entMan.ToPrettyString(entity):target} was affected by foam {SolutionContainerSystem.ToPrettyString(transferSolution)}");
-            }
+            bloodstreamSys.TryAddToChemicals(entity, transferSolution, bloodstream);
         }
 
         protected override void OnKill()

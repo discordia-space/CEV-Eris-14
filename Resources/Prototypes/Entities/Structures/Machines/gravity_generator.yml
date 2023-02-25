@@ -7,12 +7,10 @@
     mode: AlignTileAny
   components:
   - type: AmbientSound
-    enabled: false
     volume: -6
     range: 7
     sound:
       path: /Audio/Ambience/Objects/gravity_gen_hum.ogg
-
   - type: Sprite
     netsync: false
     sprite: Structures/Machines/gravity_generator.rsi
@@ -26,7 +24,6 @@
   - type: Transform
     anchored: true
   - type: ApcPowerReceiver
-    powerLoad: 2500
   - type: ExtensionCableReceiver
   - type: Physics
     bodyType: Static
@@ -35,7 +32,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-1.5,-1.5,1.5,1.5"
-      density: 50
+      mass: 500
       mask:
       - LargeMobMask
       layer:
@@ -69,13 +66,10 @@
         off: "off"
         on: "on"
   - type: PointLight
-    radius: 2.5
     energy: 0.5
     # Gravity generator is a large machine, not casting shadows is fine within the radius set above.
     castShadows: false
     color: "#a8ffd9"
-  - type: StaticPrice
-    price: 5000
 
 - type: entity
   id: GravityGeneratorMini
@@ -86,7 +80,6 @@
   - type: Sprite
     netsync: false
     sprite: Structures/Machines/gravity_generator_mini.rsi
-    snapCardinals: true
     layers:
       - state: on
         map: ["enum.GravityGeneratorVisualLayers.Base"]
@@ -101,17 +94,13 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.4,-0.4,0.4,0.4"
-      density: 3125
+      mass: 500
       mask:
       - LargeMobMask
       layer:
       - WallLayer
-  - type: ApcPowerReceiver
-    powerLoad: 500
   - type: GravityGenerator
     idlePower: 15
     activePower: 500
     lightRadiusMin: 0.75
     lightRadiusMax: 2.5
-  - type: StaticPrice
-    price: 2000

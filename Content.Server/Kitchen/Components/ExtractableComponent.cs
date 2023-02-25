@@ -10,9 +10,11 @@ namespace Content.Server.Kitchen.Components
     [Access(typeof(ReagentGrinderSystem))]
     public sealed class ExtractableComponent : Component
     {
+        [ViewVariables]
         [DataField("juiceSolution")]
         public Solution? JuiceSolution;
 
+        [ViewVariables]
         [DataField("grindableSolutionName")]
         public string? GrindableSolution;
     }

@@ -1,17 +1,19 @@
-using Content.Shared.IdentityManagement;
-using Robust.Client.GameObjects;
+using System;
+using System.Collections.Generic;
 using System.Linq;
-using Robust.Client.UserInterface.Controllers;
+using Robust.Client.GameObjects;
+using Robust.Shared.GameObjects;
+using Robust.Shared.IoC;
 
 namespace Content.Client.ContextMenu.UI
 {
-    public sealed partial class EntityMenuUIController
+    public sealed partial class EntityMenuPresenter : ContextMenuPresenter
     {
         public const int GroupingTypesCount = 2;
         private int GroupingContextMenuType { get; set; }
         public void OnGroupingChanged(int obj)
         {
-            _context.Close();
+            Close();
             GroupingContextMenuType = obj;
         }
 
@@ -19,7 +21,7 @@ namespace Content.Client.ContextMenu.UI
         {
             if (GroupingContextMenuType == 0)
             {
-                var newEntities = entities.GroupBy(e => Identity.Name(e, _entityManager) + (_entityManager.GetComponent<MetaDataComponent>(e).EntityPrototype?.ID ?? string.Empty)).ToList();
+                var newEntities = entities.GroupBy(e => _entityManager.GetComponent<MetaDataComponent>(e).EntityName + (_entityManager.GetComponent<MetaDataComponent>(e).EntityPrototype?.ID ?? string.Empty)).ToList();
                 return newEntities.Select(grp => grp.ToList()).ToList();
             }
             else
@@ -36,8 +38,8 @@ namespace Content.Client.ContextMenu.UI
                 (a, b, entMan) => entMan.GetComponent<MetaDataComponent>(a).EntityPrototype!.ID == entMan.GetComponent<MetaDataComponent>(b).EntityPrototype!.ID,
                 (a, b, entMan) =>
                 {
-                    entMan.TryGetComponent<SpriteComponent?>(a, out var spriteA);
-                    entMan.TryGetComponent<SpriteComponent?>(b, out var spriteB);
+                    entMan.TryGetComponent<ISpriteComponent?>(a, out var spriteA);
+                    entMan.TryGetComponent<ISpriteComponent?>(b, out var spriteB);
 
                     if (spriteA == null || spriteB == null)
                         return spriteA == spriteB;
@@ -54,7 +56,7 @@ namespace Content.Client.ContextMenu.UI
                 (e, entMan) =>
                 {
                     var hash = 0;
-                    foreach (var element in entMan.GetComponent<SpriteComponent>(e).AllLayers.Where(obj => obj.Visible).Select(s => s.RsiState.Name))
+                    foreach (var element in entMan.GetComponent<ISpriteComponent>(e).AllLayers.Where(obj => obj.Visible).Select(s => s.RsiState.Name))
                     {
                         hash ^= EqualityComparer<string>.Default.GetHashCode(element!);
                     }

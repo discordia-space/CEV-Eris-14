@@ -16,4 +16,5 @@ strip-verb-get-data-text = Strip
 ## UI
 
 strippable-bound-user-interface-stripping-menu-title = {$ownerName}'s inventory
-strippable-bound-user-interface-stripping-menu-ensnare-button = Remove Leg Restraints
+strippable-bound-user-interface-stripping-menu-handcuffs-button = Restraints
+strippable-bound-user-interface-stripping-menu-obfuscate = Occupied

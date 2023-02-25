@@ -9,7 +9,6 @@ using Robust.Shared.IoC;
 using Robust.Shared.Localization;
 using Robust.Shared.Maths;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
 
 namespace Content.Client.Suspicion
 {
@@ -17,7 +16,6 @@ namespace Content.Client.Suspicion
     {
         private readonly IEntityManager _entityManager;
         private readonly IPlayerManager _playerManager;
-        private readonly EntityLookupSystem _lookup;
 
         public override OverlaySpace Space => OverlaySpace.ScreenSpace;
         private readonly Font _font;
@@ -27,12 +25,11 @@ namespace Content.Client.Suspicion
         public TraitorOverlay(
             IEntityManager entityManager,
             IPlayerManager playerManager,
-            IResourceCache resourceCache,
-            EntityLookupSystem lookup)
+            IResourceCache resourceCache)
         {
             _playerManager = playerManager;
+
             _entityManager = entityManager;
-            _lookup = lookup;
 
             _font = new VectorFont(resourceCache.GetResource<FontResource>("/Fonts/NotoSans/NotoSans-Regular.ttf"), 10);
         }
@@ -55,7 +52,7 @@ namespace Content.Client.Suspicion
                     continue;
                 }
 
-                if (!_entityManager.TryGetComponent(ally, out PhysicsComponent? physics))
+                if (!_entityManager.TryGetComponent(ally, out IPhysBody? physics))
                 {
                     continue;
                 }
@@ -79,7 +76,7 @@ namespace Content.Client.Suspicion
 
                 var (allyWorldPos, allyWorldRot) = allyXform.GetWorldPositionRotation();
 
-                var worldBox = _lookup.GetWorldAABB(ally, allyXform);
+                var worldBox = physics.GetWorldAABB(allyWorldPos, allyWorldRot);
 
                 // if not on screen, or too small, continue
                 if (!worldBox.Intersects(in viewport) || worldBox.IsEmpty())

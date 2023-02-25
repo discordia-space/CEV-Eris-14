@@ -8,9 +8,10 @@ namespace Content.Shared.EntityList
     public sealed class EntityListPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
+        [ViewVariables]
         [DataField("entities", customTypeSerializer: typeof(PrototypeIdListSerializer<EntityPrototype>))]
         public ImmutableList<string> EntityIds { get; } = ImmutableList<string>.Empty;
 

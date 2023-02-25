@@ -1,3 +1,4 @@
+using Content.Server.Containers;
 using Content.Server.Objectives.Interfaces;
 using JetBrains.Annotations;
 using Robust.Shared.Containers;
@@ -7,19 +8,13 @@ using Robust.Shared.Utility;
 
 namespace Content.Server.Objectives.Conditions
 {
-    // Oh god my eyes
     [UsedImplicitly]
     [DataDefinition]
     public sealed class StealCondition : IObjectiveCondition, ISerializationHooks
     {
         private Mind.Mind? _mind;
         [DataField("prototype")] private string _prototypeId = string.Empty;
-
-        /// <summary>
-        /// Help newer players by saying e.g. "steal the chief engineer's advanced magboots"
-        /// instead of "steal advanced magboots. Should be a loc string.
-        /// </summary>
-        [DataField("owner")] private string? _owner = null;
+        [DataField("amount")] private int _amount = 1;
 
         public IObjectiveCondition GetAssigned(Mind.Mind mind)
         {
@@ -27,8 +22,16 @@ namespace Content.Server.Objectives.Conditions
             {
                 _mind = mind,
                 _prototypeId = _prototypeId,
-                _owner = _owner
+                _amount = _amount
             };
+        }
+
+        void ISerializationHooks.AfterDeserialization()
+        {
+            if (_amount < 1)
+            {
+                Logger.Error("StealCondition has an amount less than 1 ({0})", _amount);
+            }
         }
 
         private string PrototypeName =>
@@ -36,10 +39,9 @@ namespace Content.Server.Objectives.Conditions
                 ? prototype.Name
                 : "[CANNOT FIND NAME]";
 
-        public string Title =>
-            _owner == null
-                ? Loc.GetString("objective-condition-steal-title-no-owner", ("itemName", Loc.GetString(PrototypeName)))
-                : Loc.GetString("objective-condition-steal-title", ("owner", Loc.GetString(_owner)), ("itemName", Loc.GetString(PrototypeName)));
+        public string Title => Loc.GetString("objective-condition-steal-title",
+                                             ("amount", _amount > 1 ? $"{_amount}x " : string.Empty),
+                                             ("itemName", Loc.GetString(PrototypeName)));
 
         public string Description => Loc.GetString("objective-condition-steal-description",("itemName", Loc.GetString(PrototypeName)));
 
@@ -49,41 +51,11 @@ namespace Content.Server.Objectives.Conditions
         {
             get
             {
-                var uid = _mind?.OwnedEntity;
-                var entMan = IoCManager.Resolve<IEntityManager>();
+                if (_mind?.OwnedEntity is not {Valid: true} owned) return 0f;
+                if (!IoCManager.Resolve<IEntityManager>().TryGetComponent<ContainerManagerComponent?>(owned, out var containerManagerComponent)) return 0f;
 
-                // TODO make this a container system function
-                // or: just iterate through transform children, instead of containers?
-
-                var metaQuery = entMan.GetEntityQuery<MetaDataComponent>();
-                var managerQuery = entMan.GetEntityQuery<ContainerManagerComponent>();
-                var stack = new Stack<ContainerManagerComponent>();
-
-                if (!metaQuery.TryGetComponent(_mind?.OwnedEntity, out var meta))
-                    return 0;
-
-                if (meta.EntityPrototype?.ID == _prototypeId)
-                    return 1;
-
-                if (!managerQuery.TryGetComponent(uid, out var currentManager))
-                    return 0;
-
-                do
-                {
-                    foreach (var container in currentManager.Containers.Values)
-                    {
-                        foreach (var entity in container.ContainedEntities)
-                        {
-                            if (metaQuery.GetComponent(entity).EntityPrototype?.ID == _prototypeId)
-                                return 1;
-                            if (!managerQuery.TryGetComponent(entity, out var containerManager))
-                                continue;
-                            stack.Push(containerManager);
-                        }
-                    }
-                } while (stack.TryPop(out currentManager));
-
-                return 0;
+                float count = containerManagerComponent.CountPrototypeOccurencesRecursive(_prototypeId);
+                return count/_amount;
             }
         }
 
@@ -93,7 +65,7 @@ namespace Content.Server.Objectives.Conditions
         {
             return other is StealCondition stealCondition &&
                    Equals(_mind, stealCondition._mind) &&
-                   _prototypeId == stealCondition._prototypeId;
+                   _prototypeId == stealCondition._prototypeId && _amount == stealCondition._amount;
         }
 
         public override bool Equals(object? obj)
@@ -106,7 +78,7 @@ namespace Content.Server.Objectives.Conditions
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(_mind, _prototypeId);
+            return HashCode.Combine(_mind, _prototypeId, _amount);
         }
     }
 }

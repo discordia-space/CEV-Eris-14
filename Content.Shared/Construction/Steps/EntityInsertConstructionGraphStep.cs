@@ -5,6 +5,6 @@
     {
         [DataField("store")] public string Store { get; } = string.Empty;
 
-        public abstract bool EntityValid(EntityUid uid, IEntityManager entityManager, IComponentFactory compFactory);
+        public abstract bool EntityValid(EntityUid uid, IEntityManager entityManager);
     }
 }

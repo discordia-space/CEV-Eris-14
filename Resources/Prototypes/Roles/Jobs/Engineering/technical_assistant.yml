@@ -1,14 +1,10 @@
 ﻿- type: job
   id: TechnicalAssistant
-  name: job-name-technical-assistant
-  description: job-description-technical-assistant
-  playTimeTracker: JobTechnicalAssistant
-  requirements:
-    - !type:DepartmentTimeRequirement
-      department: Engineering
-      time: 7200
-      inverted: true # stop playing intern if you're good at engineering!
+  name: job-name-assistant
   startingGear: TechnicalAssistantGear
+  departments:
+  - Civilian
+  - Engineering
   icon: "TechnicalAssistant"
   supervisors: job-supervisors-engineering
   canBeAntag: false

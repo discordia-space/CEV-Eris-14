@@ -1,18 +1,13 @@
 using System.Linq;
-using Content.Server.Chat.Systems;
 using Content.Server.DeviceNetwork;
 using Content.Server.DeviceNetwork.Systems;
 using Content.Server.Power.Components;
 using Content.Server.UserInterface;
 using Content.Server.Wires;
 using Content.Shared.Interaction;
-using Content.Shared.Speech;
 using Content.Shared.SurveillanceCamera;
 using Robust.Server.GameObjects;
 using Robust.Server.Player;
-using Robust.Shared.Prototypes;
-using Robust.Shared.Random;
-using Robust.Shared.Timing;
 
 namespace Content.Server.SurveillanceCamera;
 
@@ -186,7 +181,7 @@ public sealed class SurveillanceCameraMonitorSystem : EntitySystem
         TrySwitchCameraByAddress(uid, message.Address, component);
     }
 
-    private void OnPowerChanged(EntityUid uid, SurveillanceCameraMonitorComponent component, ref PowerChangedEvent args)
+    private void OnPowerChanged(EntityUid uid, SurveillanceCameraMonitorComponent component, PowerChangedEvent args)
     {
         if (!args.Powered)
         {
@@ -375,7 +370,8 @@ public sealed class SurveillanceCameraMonitorSystem : EntitySystem
 
         if (monitor.ActiveCamera != null)
         {
-            _surveillanceCameras.RemoveActiveViewer(monitor.ActiveCamera.Value, player);
+            EntityUid? monitorUid = monitor.Viewers.Count == 0 ? uid : null;
+            _surveillanceCameras.RemoveActiveViewer(monitor.ActiveCamera.Value, player, monitorUid);
         }
     }
 

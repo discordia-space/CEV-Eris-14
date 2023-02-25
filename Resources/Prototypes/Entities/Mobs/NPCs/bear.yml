@@ -4,11 +4,13 @@
   parent: SimpleSpaceMobBase
   description: It looks friendly. Why don't you give it a hug?
   components:
-  - type: InputMover
-  - type: MobMover
-  - type: HTN
-    rootTask: SimpleHostileCompound
-  - type: Faction
+  - type: PlayerInputMover
+  - type: PlayerMobMover
+  - type: UtilityAI
+    behaviorSets:
+    - Idle
+    - UnarmedAttackHostiles
+  - type: AiFactionTag
     factions:
     - SimpleHostile
   - type: Sprite
@@ -22,22 +24,16 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.5
-      density: 400
+      mass: 320
       mask:
       - MobMask
       layer:
       - MobLayer
-  - type: MovementAlwaysTouching
+  - type: MovementIgnoreGravity
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       150: Dead
-  - type: Stamina
-    excess: 150
   - type: Appearance
   - type: DamageStateVisuals
     states:
@@ -65,30 +61,11 @@
     heatDamageThreshold: 500
     coldDamageThreshold: 0
   - type: MeleeWeapon
-    hidden: true
-    soundHit:
-        path: /Audio/Weapons/Xeno/alien_claw_flesh3.ogg
-    angle: 0
-    animation: WeaponArcClaw
+    range: 0.5
+    arcwidth: 0
+    arc: claw
     damage:
       groups:
         Brute: 15
   - type: ReplacementAccent
     accent: genericAggressive
-  - type: GhostTakeoverAvailable
-    prob: 0.05
-    name: space bear
-    description: |
-      You're a bear! Do bear things.
-
-- type: entity
-  id: MobBearSpaceSalvage
-  parent: MobBearSpace
-  suffix: "Salvage Ruleset"
-  components:
-  - type: GhostTakeoverAvailable
-    prob: 0.05
-    name: space bear on salvage wreck
-    description: |
-      Defend the loot inside the salvage wreck!
-  - type: SalvageMobRestrictions

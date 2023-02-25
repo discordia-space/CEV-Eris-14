@@ -1,14 +1,16 @@
 using Content.Shared.Pinpointer;
 using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
+using Robust.Shared.GameObjects;
 using Robust.Shared.GameStates;
+using Robust.Shared.IoC;
+using Robust.Shared.Maths;
 
 namespace Content.Client.Pinpointer
 {
     public sealed class ClientPinpointerSystem : SharedPinpointerSystem
     {
         [Dependency] private readonly IEyeManager _eyeManager = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
         public override void Initialize()
         {
@@ -25,21 +27,21 @@ namespace Content.Client.Pinpointer
 
             // because eye can change it rotation anytime
             // we need to update this arrow in a update loop
-            foreach (var pinpointer in EntityQuery<PinpointerComponent>())
+            foreach (var uid in ActivePinpointers)
             {
-                UpdateAppearance(pinpointer.Owner, pinpointer);
-                UpdateEyeDir(pinpointer.Owner, pinpointer);
+                UpdateEyeDir(uid);
             }
         }
 
         private void HandleCompState(EntityUid uid, PinpointerComponent pinpointer, ref ComponentHandleState args)
         {
-            if (args.Current is not PinpointerComponentState state)
-                return;
+            if (args.Current is not PinpointerComponentState state) return;
+            SetActive(uid, state.IsActive, pinpointer);
+            SetDirection(uid, state.DirectionToTarget, pinpointer);
+            SetDistance(uid, state.DistanceToTarget, pinpointer);
 
-            pinpointer.IsActive = state.IsActive;
-            pinpointer.ArrowAngle = state.ArrowAngle;
-            pinpointer.DistanceToTarget = state.DistanceToTarget;
+            UpdateAppearance(uid, pinpointer);
+            UpdateEyeDir(uid, pinpointer);
         }
 
         private void UpdateAppearance(EntityUid uid, PinpointerComponent? pinpointer = null,
@@ -48,17 +50,17 @@ namespace Content.Client.Pinpointer
             if (!Resolve(uid, ref pinpointer, ref appearance))
                 return;
 
-            _appearance.SetData(uid, PinpointerVisuals.IsActive, pinpointer.IsActive, appearance);
-            _appearance.SetData(uid, PinpointerVisuals.TargetDistance, pinpointer.DistanceToTarget, appearance);
+            appearance.SetData(PinpointerVisuals.IsActive, pinpointer.IsActive);
+            appearance.SetData(PinpointerVisuals.TargetDistance, pinpointer.DistanceToTarget);
         }
 
-        private void UpdateArrowAngle(EntityUid uid, Angle angle, PinpointerComponent? pinpointer = null,
+        private void UpdateDirAppearance(EntityUid uid, Direction dir,PinpointerComponent? pinpointer = null,
             AppearanceComponent? appearance = null)
         {
             if (!Resolve(uid, ref pinpointer, ref appearance))
                 return;
 
-            _appearance.SetData(uid, PinpointerVisuals.ArrowAngle, angle, appearance);
+            appearance.SetData(PinpointerVisuals.TargetDirection, dir);
         }
 
         /// <summary>
@@ -67,12 +69,20 @@ namespace Content.Client.Pinpointer
         /// </summary>
         private void UpdateEyeDir(EntityUid uid, PinpointerComponent? pinpointer = null)
         {
-            if (!Resolve(uid, ref pinpointer) || !pinpointer.HasTarget)
+            if (!Resolve(uid, ref pinpointer))
                 return;
 
+            var worldDir = pinpointer.DirectionToTarget;
+            if (worldDir == Direction.Invalid)
+            {
+                UpdateDirAppearance(uid, Direction.Invalid, pinpointer);
+                return;
+            }
+
             var eye = _eyeManager.CurrentEye;
-            var angle = pinpointer.ArrowAngle + eye.Rotation;
-            UpdateArrowAngle(uid, angle, pinpointer);
+            var angle = worldDir.ToAngle() + eye.Rotation;
+            var eyeDir = angle.GetDir();
+            UpdateDirAppearance(uid, eyeDir, pinpointer);
         }
     }
 }

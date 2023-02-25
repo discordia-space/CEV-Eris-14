@@ -22,9 +22,7 @@ namespace Content.Server.DoAfter
 
         public EntityCoordinates TargetGrid { get; }
 
-#pragma warning disable RA0004
         public DoAfterStatus Status => AsTask.IsCompletedSuccessfully ? AsTask.Result : DoAfterStatus.Running;
-#pragma warning restore RA0004
 
         // NeedHand
         private readonly string? _activeHand;

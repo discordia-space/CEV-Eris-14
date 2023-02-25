@@ -1,9 +1,9 @@
 - type: job
   id: CargoTechnician
-  name: job-name-cargotech
-  description: job-description-cargotech
-  playTimeTracker: JobCargoTechnician
+  name: job-name-cargoteh
   startingGear: CargoTechGear
+  departments:
+  - Cargo
   icon: "CargoTechnician"
   supervisors: job-supervisors-hop-qm
   access:
@@ -20,7 +20,6 @@
     shoes: ClothingShoesColorBlack
     id: CargoPDA
     ears: ClothingHeadsetCargo
-    pocket1: AppraisalTool
   innerclothingskirt: ClothingUniformJumpskirtCargo
   satchel: ClothingBackpackSatchelFilled
   duffelbag: ClothingBackpackDuffelFilled

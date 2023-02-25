@@ -19,10 +19,10 @@ namespace Content.Server.Speech
         {
             base.Initialize();
 
-            SubscribeLocalEvent<SpeechComponent, EntitySpokeEvent>(OnEntitySpoke);
+            SubscribeLocalEvent<SharedSpeechComponent, EntitySpokeEvent>(OnEntitySpoke);
         }
 
-        private void OnEntitySpoke(EntityUid uid, SpeechComponent component, EntitySpokeEvent args)
+        private void OnEntitySpoke(EntityUid uid, SharedSpeechComponent component, EntitySpokeEvent args)
         {
             if (component.SpeechSounds == null) return;
 

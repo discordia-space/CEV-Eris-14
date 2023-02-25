@@ -1,9 +1,8 @@
 using Content.Shared.Paper;
-using Robust.Shared.GameStates;
 
 namespace Content.Server.Paper
 {
-    [NetworkedComponent, RegisterComponent]
+    [RegisterComponent]
     public sealed class PaperComponent : SharedPaperComponent
     {
         public PaperAction Mode;
@@ -11,7 +10,7 @@ namespace Content.Server.Paper
         public string Content { get; set; } = "";
 
         [DataField("contentSize")]
-        public int ContentSize { get; set; } = 1000;
+        public int ContentSize { get; set; } = 500;
 
         [DataField("stampedBy")]
         public List<string> StampedBy { get; set; } = new();

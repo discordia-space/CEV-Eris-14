@@ -32,6 +32,7 @@ namespace Content.Server.Holosign
             if (charges > 0 && charges == maxCharges)
             {
                 args.PushMarkup(Loc.GetString("emag-max-charges"));
+                return;
             }
         }
 

@@ -1,52 +1,32 @@
 ﻿- type: entity
   abstract: true
-  parent: ClothingHeadset
+  parent: Clothing
   id: ClothingHeadsetAlt
   name: headset
   description: An updated, modular intercom that fits over the head. Takes encryption keys.
   components:
+  - type: Headset
   - type: Sprite
     state: icon_alt
   - type: Clothing
-    equippedPrefix: alt
-
-- type: entity
-  parent: ClothingHeadsetAlt
-  id: ClothingHeadsetAltCargo
-  name: quartermaster's over-ear headset
-  components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyQM
-  - type: Sprite
-    sprite: Clothing/Ears/Headsets/cargo.rsi
-  - type: Clothing
-    sprite: Clothing/Ears/Headsets/cargo.rsi
-
-- type: entity
-  parent: ClothingHeadsetAlt
-  id: ClothingHeadsetAltCentCom
-  name: CentCom over-ear headset
-  components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyCentCom
-  - type: Sprite
-    sprite: Clothing/Ears/Headsets/centcom.rsi
-  - type: Clothing
-    sprite: Clothing/Ears/Headsets/centcom.rsi
+    Slots:
+    - ears
 
 - type: entity
   parent: ClothingHeadsetAlt
   id: ClothingHeadsetAltCommand
-  name: command over-ear headset
+  name: command overear-headset
   components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyCommand
+  - type: Headset
+    channels:
+    - Common
+    - Command
+    - Engineering
+    - Medical
+    - Science
+    - Security
+    - Service
+    - Supply
   - type: Sprite
     sprite: Clothing/Ears/Headsets/command.rsi
   - type: Clothing
@@ -54,27 +34,14 @@
 
 - type: entity
   parent: ClothingHeadsetAlt
-  id: ClothingHeadsetAltEngineering
-  name: chief engineer's over-ear headset
-  components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyCE
-  - type: Sprite
-    sprite: Clothing/Ears/Headsets/engineering.rsi
-  - type: Clothing
-    sprite: Clothing/Ears/Headsets/engineering.rsi
- 
-- type: entity
-  parent: ClothingHeadsetAlt
   id: ClothingHeadsetAltMedical
-  name: chief medical officer's over-ear headset
+  name: medical overear-headset
   components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyCMO
+  - type: Headset
+    channels:
+    - Command
+    - Common
+    - Medical
   - type: Sprite
     sprite: Clothing/Ears/Headsets/medical.rsi
   - type: Clothing
@@ -83,48 +50,28 @@
 - type: entity
   parent: ClothingHeadsetAlt
   id: ClothingHeadsetAltSecurity
-  name: head of security's over-ear headset
+  name: security overear-headset
   components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyHOS
+  - type: Headset
+    channels:
+    - Command
+    - Common
+    - Security
   - type: Sprite
     sprite: Clothing/Ears/Headsets/security.rsi
   - type: Clothing
     sprite: Clothing/Ears/Headsets/security.rsi
-
-- type: entity
-  parent: ClothingHeadsetAlt
-  id: ClothingHeadsetAltScience
-  name: research director's over-ear headset
-  components:
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeyRD
-  - type: Sprite
-    sprite: Clothing/Ears/Headsets/science.rsi
-  - type: Clothing
-    sprite: Clothing/Ears/Headsets/science.rsi
 
 - type: entity
   parent: ClothingHeadsetAlt
   id: ClothingHeadsetAltSyndicate
-  name: blood-red over-ear headset
-  description: An updated, modular syndicate intercom that fits over the head and takes encryption keys (there are 4 slots for them).
+  name: syndicate overear-headset
+  description: A syndicate headset that can be used to hear all radio frequencies. Protects ears from flashbangs.
   components:
   - type: Headset
-  - type: EncryptionKeyHolder
-    keySlots: 4
-  - type: ContainerFill
-    containers:
-      key_slots:
-      - EncryptionKeySyndie
+    channels:
+    - Syndicate
   - type: Sprite
     sprite: Clothing/Ears/Headsets/syndicate.rsi
   - type: Clothing
     sprite: Clothing/Ears/Headsets/syndicate.rsi
-  - type: Tag
-    tags:
-      - WhitelistChameleon

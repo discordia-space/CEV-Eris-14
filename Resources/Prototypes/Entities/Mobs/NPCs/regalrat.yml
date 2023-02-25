@@ -6,17 +6,15 @@
   components:
   - type: CombatMode
   - type: MovementSpeedModifier
-    baseWalkSpeed : 3.00
-    baseSprintSpeed : 5.00
-  - type: InputMover
-  - type: MobMover
-  - type: HTN
-    rootTask: SimpleHostileCompound
+    baseWalkSpeed : 3.75
+    baseSprintSpeed : 3.75
+  - type: PlayerInputMover
+  - type: PlayerMobMover
   - type: Reactive
     groups:
       Flammable: [Touch]
       Extinguish: [Touch]
-  - type: Faction
+  - type: AiFactionTag
     factions:
     - SimpleHostile
   - type: Sprite
@@ -31,47 +29,28 @@
     fixtures:
     - shape:
         !type:PhysShapeCircle
-        radius: 0.3
-      density: 230
+        radius: 0.25
+      mass: 120
       mask:
-      - SmallMobMask
+      - MobMask
       layer:
-      - SmallMobLayer
+      - MobLayer
   - type: MobState
-  - type: MobThresholds
     thresholds:
       0: Alive
       150: Critical
       200: Dead
   - type: MeleeWeapon
-    hidden: true
-    soundHit:
-        path: /Audio/Weapons/Xeno/alien_claw_flesh1.ogg
-    angle: 0
-    animation: WeaponArcClaw
+    range: 1
+    arcwidth: 0
+    arc: claw
     damage:
       types:
         Slash: 12
         Piercing: 8
   - type: Body
-    prototype: Rat
-    requiredLegs: 1 # TODO: More than 1 leg
-  - type: Hunger # probably should be prototyped
-    thresholds:
-      Overfed: 200
-      Okay: 150
-      Peckish: 100
-      Starving: 50
-      Dead: 0
-    baseDecayRate: 0.01666666666
-  - type: Thirst
-    thresholds:
-      OverHydrated: 600
-      Okay: 450
-      Thirsty: 300
-      Parched: 150
-      Dead: 0
-    baseDecayRate: 0.1
+    template: AnimalTemplate
+    preset: RatPreset
   - type: Appearance
   - type: DamageStateVisuals
     rotate: true
@@ -113,6 +92,10 @@
       event: !type:RatKingDomainActionEvent
     hungerPerDomainUse: 50
   - type: MobsterAccent
+  - type: Access #he's so baller he gets his own access. NT got nothing on him
+    tags:
+    - Maintenance
+    - Service
   - type: Butcherable
     spawned:
     - id: ClothingHeadHatFancyCrown #how did that get there?
@@ -127,56 +110,8 @@
     - VanAusdallsRobovirus
     - BleedersBite
     - Plague
-    - TongueTwister
   - type: MobPrice
     price: 2500 # rat wealth
-  - type: RandomMetadata
-    nameSegments:
-    - RegalRatNameKingdom
-    - RegalRatNameTitle
-
-- type: entity
-  id: MobRatKingBuff
-  parent: MobRatKing
-  suffix: Buff
-  components:
-  - type: Sprite
-    drawdepth: Mobs
-    sprite: Mobs/Animals/buffrat.rsi
-    scale: 1.2, 1.2
-    layers:
-    - map: ["enum.DamageStateVisualLayers.Base"]
-      state: regalrat
-  - type: MobState
-  - type: MobThresholds
-    thresholds:
-      0: Alive
-      300: Critical
-      350: Dead
-  - type: MeleeWeapon
-    hidden: true
-    soundHit:
-        path: /Audio/Weapons/Xeno/alien_claw_flesh2.ogg
-    angle: 0
-    attackRate: 0.75
-    animation: WeaponArcFist
-    damage:
-      types:
-        Blunt: 66 #oof ouch owie my bones
-  - type: Fixtures
-    fixtures:
-    - shape:
-        !type:PhysShapeCircle
-        radius: 0.35
-      density: 400
-      mask:
-      - MobMask
-      layer:
-      - MobLayer
-  - type: SlowOnDamage
-    speedModifierThresholds:
-      200: 0.7
-      250: 0.5
 
 - type: entity
   name: Rat Servant
@@ -188,15 +123,17 @@
   - type: MovementSpeedModifier
     baseWalkSpeed : 3.5
     baseSprintSpeed : 3.5
-  - type: InputMover
-  - type: MobMover
-  - type: HTN
-    rootTask: SimpleHostileCompound
+  - type: PlayerInputMover
+  - type: PlayerMobMover
+  - type: UtilityAI
+    behaviorSets:
+    - Idle
+    - UnarmedAttackHostiles
   - type: Reactive
     groups:
       Flammable: [Touch]
       Extinguish: [Touch]
-  - type: Faction
+  - type: AiFactionTag
     factions:
     - SimpleHostile
   - type: Sprite
@@ -212,48 +149,27 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.2
-      density: 30 #Bulky by mouse standards...
+      mass: 4 #Bulky by mouse standards...
       mask:
       - SmallMobMask
       layer:
       - SmallMobLayer
   - type: MobState
-  - type: MobThresholds
     thresholds:
       0: Alive
-      40: Critical
+      30: Critical
       60: Dead
-  - type: Stamina
-    excess: 60
   - type: MeleeWeapon
-    hidden: true
-    soundHit:
-        path: /Audio/Weapons/bladeslice.ogg
-    angle: 0
-    animation: WeaponArcClaw
+    range: 1
+    arcwidth: 0
+    arc: claw
     damage:
       types:
         Slash: 5
         Piercing: 3
   - type: Body
-    prototype: Rat
-    requiredLegs: 1 # TODO: More than 1 leg
-  - type: Hunger # probably should be prototyped
-    thresholds:
-      Overfed: 200
-      Okay: 150
-      Peckish: 100
-      Starving: 50
-      Dead: 0
-    baseDecayRate: 0.01666666666
-  - type: Thirst
-    thresholds:
-      OverHydrated: 600
-      Okay: 450
-      Thirsty: 300
-      Parched: 150
-      Dead: 0
-    baseDecayRate: 0.1
+    template: AnimalTemplate
+    preset: RatPreset
   - type: Appearance
   - type: DamageStateVisuals
     rotate: true
@@ -276,12 +192,10 @@
     - VanAusdallsRobovirus
     - BleedersBite
     - Plague
-    - TongueTwister
   - type: Vocal
-    sounds:
-      Male: Mouse
-      Female: Mouse
-      Unsexed: Mouse
+    # mice are gender neutral who cares
+    maleScream: /Audio/Animals/mouse_squeak.ogg
+    femaleScream: /Audio/Animals/mouse_squeak.ogg
     wilhelmProbability: 0.001
   - type: GhostTakeoverAvailable
     makeSentient: true

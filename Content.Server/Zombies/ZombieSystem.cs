@@ -1,102 +1,39 @@
 using System.Linq;
+using Robust.Shared.Random;
 using Content.Server.Body.Systems;
-using Content.Server.Chat.Systems;
-using Content.Server.Cloning;
-using Content.Server.Disease;
 using Content.Server.Disease.Components;
 using Content.Server.Drone.Components;
-using Content.Server.Humanoid;
-using Content.Server.Inventory;
-using Content.Server.Speech;
-using Content.Shared.Bed.Sleep;
+using Content.Server.Weapon.Melee;
 using Content.Shared.Chemistry.Components;
-using Content.Server.Chat.Systems;
-using Content.Server.Emoting.Systems;
-using Content.Server.Speech.EntitySystems;
-using Content.Shared.Movement.Systems;
-using Content.Shared.Bed.Sleep;
-using Content.Shared.Damage;
-using Content.Shared.Disease.Events;
+using Content.Shared.MobState.Components;
+using Content.Server.Disease;
 using Content.Shared.Inventory;
-using Content.Shared.Mobs;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Weapons.Melee.Events;
-using Content.Shared.Zombies;
+using Content.Server.Popups;
+using Robust.Shared.Player;
+using Content.Server.Inventory;
 using Robust.Shared.Prototypes;
-using Robust.Shared.Random;
 
 namespace Content.Server.Zombies
 {
-    public sealed class ZombieSystem : SharedZombieSystem
+    public sealed class ZombieSystem : EntitySystem
     {
         [Dependency] private readonly DiseaseSystem _disease = default!;
         [Dependency] private readonly BloodstreamSystem _bloodstream = default!;
         [Dependency] private readonly ZombifyOnDeathSystem _zombify = default!;
         [Dependency] private readonly ServerInventorySystem _inv = default!;
-        [Dependency] private readonly ChatSystem _chat = default!;
         [Dependency] private readonly IPrototypeManager _protoManager = default!;
         [Dependency] private readonly IRobustRandom _robustRandom = default!;
-        [Dependency] private readonly HumanoidAppearanceSystem _humanoidSystem = default!;
 
         public override void Initialize()
         {
             base.Initialize();
 
-            SubscribeLocalEvent<ZombieComponent, ComponentStartup>(OnStartup);
-            SubscribeLocalEvent<ZombieComponent, EmoteEvent>(OnEmote, before:
-                new []{typeof(VocalSystem), typeof(BodyEmotesSystem)});
-
             SubscribeLocalEvent<ZombieComponent, MeleeHitEvent>(OnMeleeHit);
-            SubscribeLocalEvent<ZombieComponent, MobStateChangedEvent>(OnMobState);
-            SubscribeLocalEvent<ZombieComponent, CloningEvent>(OnZombieCloning);
-            SubscribeLocalEvent<ActiveZombieComponent, DamageChangedEvent>(OnDamage);
-            SubscribeLocalEvent<ActiveZombieComponent, AttemptSneezeCoughEvent>(OnSneeze);
-            SubscribeLocalEvent<ActiveZombieComponent, TryingToSleepEvent>(OnSleepAttempt);
-
-        }
-
-        private void OnSleepAttempt(EntityUid uid, ActiveZombieComponent component, ref TryingToSleepEvent args)
-        {
-            args.Cancelled = true;
-        }
-
-        private void OnStartup(EntityUid uid, ZombieComponent component, ComponentStartup args)
-        {
-            if (component.EmoteSoundsId == null)
-                return;
-            _protoManager.TryIndex(component.EmoteSoundsId, out component.EmoteSounds);
-        }
-
-        private void OnEmote(EntityUid uid, ZombieComponent component, ref EmoteEvent args)
-        {
-            // always play zombie emote sounds and ignore others
-            if (args.Handled)
-                return;
-            args.Handled = _chat.TryPlayEmoteSound(uid, component.EmoteSounds, args.Emote);
-        }
-
-        private void OnMobState(EntityUid uid, ZombieComponent component, MobStateChangedEvent args)
-        {
-            if (args.NewMobState == MobState.Alive)
-                EnsureComp<ActiveZombieComponent>(uid);
-            else
-                RemComp<ActiveZombieComponent>(uid);
-        }
-
-        private void OnDamage(EntityUid uid, ActiveZombieComponent component, DamageChangedEvent args)
-        {
-            if (args.DamageIncreased)
-                DoGroan(uid, component);
-        }
-
-        private void OnSneeze(EntityUid uid, ActiveZombieComponent component, ref AttemptSneezeCoughEvent args)
-        {
-            args.Cancelled = true;
         }
 
         private float GetZombieInfectionChance(EntityUid uid, ZombieComponent component)
         {
-            var baseChance = component.MaxZombieInfectionChance;
+            float baseChance = component.MaxZombieInfectionChance;
 
             if (!TryComp<InventoryComponent>(uid, out var inventoryComponent))
                 return baseChance;
@@ -125,7 +62,7 @@ namespace Content.Server.Zombies
             var max = component.MaxZombieInfectionChance;
             var min = component.MinZombieInfectionChance;
             //gets a value between the max and min based on how many items the entity is wearing
-            var chance = (max-min) * ((total - items)/total) + min;
+            float chance = (max-min) * ((total - items)/total) + min;
             return chance;
         }
 
@@ -137,7 +74,7 @@ namespace Content.Server.Zombies
             if (!args.HitEntities.Any())
                 return;
 
-            foreach (var entity in args.HitEntities)
+            foreach (EntityUid entity in args.HitEntities)
             {
                 if (args.User == entity)
                     continue;
@@ -151,86 +88,19 @@ namespace Content.Server.Zombies
                 if (HasComp<ZombieComponent>(entity))
                     args.BonusDamage = -args.BaseDamage * zombieComp.OtherZombieDamageCoefficient;
 
-                if ((mobState.CurrentState == MobState.Dead || mobState.CurrentState == MobState.Critical)
+                if ((mobState.IsDead() || mobState.IsCritical())
                     && !HasComp<ZombieComponent>(entity))
                 {
                     _zombify.ZombifyEntity(entity);
                     args.BonusDamage = -args.BaseDamage;
                 }
-                else if (mobState.CurrentState == MobState.Alive) //heals when zombies bite live entities
+                else if (mobState.IsAlive()) //heals when zombies bite live entities
                 {
                     var healingSolution = new Solution();
                     healingSolution.AddReagent("Bicaridine", 1.00); //if OP, reduce/change chem
                     _bloodstream.TryAddToChemicals(args.User, healingSolution);
                 }
             }
-        }
-
-        private void DoGroan(EntityUid uid, ActiveZombieComponent component)
-        {
-            if (component.LastDamageGroanCooldown > 0)
-                return;
-
-            if (_robustRandom.Prob(0.5f)) //this message is never seen by players so it just says this for admins
-                // What? Is this REALLY the best way we have of letting admins know there are zombies in a round?
-                // [automated maintainer groan]
-                _chat.TrySendInGameICMessage(uid, "[automated zombie groan]", InGameICChatType.Speak, false);
-            else
-                _chat.TryEmoteWithoutChat(uid, component.GroanEmoteId);
-
-            component.LastDamageGroanCooldown = component.GroanCooldown;
-        }
-
-        public override void Update(float frameTime)
-        {
-            base.Update(frameTime);
-
-            foreach (var zombiecomp in EntityQuery<ActiveZombieComponent>())
-            {
-                zombiecomp.Accumulator += frameTime;
-                zombiecomp.LastDamageGroanCooldown -= frameTime;
-
-                if (zombiecomp.Accumulator < zombiecomp.RandomGroanAttempt)
-                    continue;
-                zombiecomp.Accumulator -= zombiecomp.RandomGroanAttempt;
-
-                if (!_robustRandom.Prob(zombiecomp.GroanChance))
-                    continue;
-
-                //either do a random accent line or scream
-                DoGroan(zombiecomp.Owner, zombiecomp);
-            }
-        }
-
-        /// <summary>
-        ///     This is the function to call if you want to unzombify an entity.
-        /// </summary>
-        /// <param name="source">the entity having the ZombieComponent</param>
-        /// <param name="target">the entity you want to unzombify (different from source in case of cloning, for example)</param>
-        /// <remarks>
-        ///     this currently only restore the name and skin/eye color from before zombified
-        ///     TODO: reverse everything else done in ZombifyEntity
-        /// </remarks>
-        public bool UnZombify(EntityUid source, EntityUid target, ZombieComponent? zombiecomp)
-        {
-            if (!Resolve(source, ref zombiecomp))
-                return false;
-
-            foreach (var (layer, info) in zombiecomp.BeforeZombifiedCustomBaseLayers)
-            {
-                _humanoidSystem.SetBaseLayerColor(target, layer, info.Color);
-                _humanoidSystem.SetBaseLayerId(target, layer, info.ID);
-            }
-            _humanoidSystem.SetSkinColor(target, zombiecomp.BeforeZombifiedSkinColor);
-
-            MetaData(target).EntityName = zombiecomp.BeforeZombifiedEntityName;
-            return true;
-        }
-
-        private void OnZombieCloning(EntityUid uid, ZombieComponent zombiecomp, ref CloningEvent args)
-        {
-            if (UnZombify(args.Source, args.Target, zombiecomp))
-                args.NameHandled = true;
         }
     }
 }

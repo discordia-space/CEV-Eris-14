@@ -25,14 +25,6 @@ namespace Content.Shared.Chemistry
             }
         }
 
-        public void DoEntityReaction(EntityUid uid, Solution solution, ReactionMethod method)
-        {
-            foreach (var (reagentId, quantity) in solution.Contents.ToArray())
-            {
-                ReactionEntity(uid, method, reagentId, quantity, solution);
-            }
-        }
-
         public void ReactionEntity(EntityUid uid, ReactionMethod method, string reagentId, FixedPoint2 reactVolume, Solution? source)
         {
             // We throw if the reagent specified doesn't exist.
@@ -47,7 +39,7 @@ namespace Content.Shared.Chemistry
 
             // If we have a source solution, use the reagent quantity we have left. Otherwise, use the reaction volume specified.
             var args = new ReagentEffectArgs(uid, null, source, reagent,
-                source?.GetReagentQuantity(reagent.ID) ?? reactVolume, EntityManager, method, 1f);
+                source?.GetReagentQuantity(reagent.ID) ?? reactVolume, EntityManager, method);
 
             // First, check if the reagent wants to apply any effects.
             if (reagent.ReactiveEffects != null && reactive.ReactiveGroups != null)

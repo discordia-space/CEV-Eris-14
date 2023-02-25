@@ -38,7 +38,6 @@ namespace Content.Client.Stylesheets
         protected StyleBoxTexture BaseButtonSquare { get; }
 
         protected StyleBoxTexture BaseAngleRect { get; }
-        protected StyleBoxTexture AngleBorderRect { get; }
 
         protected StyleBase(IResourceCache resCache)
         {
@@ -114,12 +113,6 @@ namespace Content.Client.Stylesheets
                 Texture = buttonTex,
             };
             BaseAngleRect.SetPatchMargin(StyleBox.Margin.All, 10);
-
-            AngleBorderRect = new StyleBoxTexture
-            {
-                Texture = resCache.GetTexture("/Textures/Interface/Nano/geometric_panel_border.svg.96dpi.png"),
-            };
-            AngleBorderRect.SetPatchMargin(StyleBox.Margin.All, 10);
 
             var vScrollBarGrabberNormal = new StyleBoxFlat
             {

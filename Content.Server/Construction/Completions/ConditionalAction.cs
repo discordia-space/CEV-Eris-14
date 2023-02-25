@@ -7,13 +7,13 @@ namespace Content.Server.Construction.Completions
     [DataDefinition]
     public sealed class ConditionalAction : IGraphAction
     {
-        [DataField("passUser")] public bool PassUser { get; }
+        [DataField("passUser")] public bool PassUser { get; } = false;
 
-        [DataField("condition", required:true)] public IGraphCondition? Condition { get; }
+        [DataField("condition", required:true)] public IGraphCondition? Condition { get; } = null;
 
-        [DataField("action", required:true)] public IGraphAction? Action { get; }
+        [DataField("action", required:true)] public IGraphAction? Action { get; } = null;
 
-        [DataField("else")] public IGraphAction? Else { get; }
+        [DataField("else")] public IGraphAction? Else { get; } = null;
 
         public void PerformAction(EntityUid uid, EntityUid? userUid, IEntityManager entityManager)
         {

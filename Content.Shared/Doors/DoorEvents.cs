@@ -68,13 +68,7 @@ namespace Content.Shared.Doors
     /// </summary>
     public sealed class DoorGetPryTimeModifierEvent : EntityEventArgs
     {
-        public readonly EntityUid User;
         public float PryTimeModifier = 1.0f;
-
-        public DoorGetPryTimeModifierEvent(EntityUid user)
-        {
-            User = user;
-        }
     }
 
     /// <summary>
@@ -84,12 +78,10 @@ namespace Content.Shared.Doors
     public sealed class BeforeDoorPryEvent : CancellableEntityEventArgs
     {
         public readonly EntityUid User;
-        public readonly EntityUid Tool;
 
-        public BeforeDoorPryEvent(EntityUid user, EntityUid tool)
+        public BeforeDoorPryEvent(EntityUid user)
         {
             User = user;
-            Tool = tool;
         }
     }
 }

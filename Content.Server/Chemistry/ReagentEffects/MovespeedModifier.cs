@@ -43,11 +43,7 @@ namespace Content.Server.Chemistry.ReagentEffects
             status.WalkSpeedModifier = WalkSpeedModifier;
             status.SprintSpeedModifier = SprintSpeedModifier;
 
-            // only going to scale application time
-            var statusLifetime = StatusLifetime;
-            statusLifetime *= args.Scale;
-
-            IncreaseTimer(status, statusLifetime);
+            IncreaseTimer(status, StatusLifetime);
 
             if (modified)
                 EntitySystem.Get<MovementSpeedModifierSystem>().RefreshMovementSpeedModifiers(args.SolutionEntity);

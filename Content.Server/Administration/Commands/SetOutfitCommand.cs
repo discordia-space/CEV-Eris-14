@@ -1,7 +1,5 @@
 using Content.Server.Administration.UI;
 using Content.Server.EUI;
-using Content.Server.Hands.Components;
-using Content.Server.Hands.Systems;
 using Content.Server.Preferences.Managers;
 using Content.Shared.Administration;
 using Content.Shared.Inventory;
@@ -19,9 +17,6 @@ namespace Content.Server.Administration.Commands
     [AdminCommand(AdminFlags.Admin)]
     sealed class SetOutfitCommand : IConsoleCommand
     {
-        [Dependency] private readonly IEntityManager _entities = default!;
-        [Dependency] private readonly IPrototypeManager _prototypes = default!;
-        
         public string Command => "setoutfit";
 
         public string Description => Loc.GetString("set-outfit-command-description", ("requiredComponent", nameof(InventoryComponent)));
@@ -42,15 +37,17 @@ namespace Content.Server.Administration.Commands
                 return;
             }
 
+            var entityManager = IoCManager.Resolve<IEntityManager>();
+
             var target = new EntityUid(entityUid);
 
-            if (!target.IsValid() || !_entities.EntityExists(target))
+            if (!target.IsValid() || !entityManager.EntityExists(target))
             {
                 shell.WriteLine(Loc.GetString("shell-invalid-entity-id"));
                 return;
             }
 
-            if (!_entities.HasComponent<InventoryComponent?>(target))
+            if (!entityManager.HasComponent<InventoryComponent?>(target))
             {
                 shell.WriteLine(Loc.GetString("shell-target-entity-does-not-have-message",("missing", "inventory")));
                 return;
@@ -70,7 +67,7 @@ namespace Content.Server.Administration.Commands
                 return;
             }
 
-            if (!SetOutfit(target, args[1], _entities))
+            if (!SetOutfit(target, args[1], entityManager))
                 shell.WriteLine(Loc.GetString("set-outfit-command-invalid-outfit-id-error"));
         }
 
@@ -93,7 +90,7 @@ namespace Content.Server.Administration.Commands
                 profile = prefs.SelectedCharacter as HumanoidCharacterProfile;
             }
 
-            var invSystem = entityManager.System<InventorySystem>();
+            var invSystem = EntitySystem.Get<InventorySystem>();
             if (invSystem.TryGetSlots(target, out var slotDefinitions, inventoryComponent))
             {
                 foreach (var slot in slotDefinitions)
@@ -115,17 +112,6 @@ namespace Content.Server.Administration.Commands
                     invSystem.TryEquip(target, equipmentEntity, slot.Name, true, inventory: inventoryComponent);
 
                     onEquipped?.Invoke(target, equipmentEntity);
-                }
-            }
-
-            if (entityManager.TryGetComponent(target, out HandsComponent? handsComponent))
-            {
-                var handsSystem = entityManager.System<HandsSystem>();
-                var coords = entityManager.GetComponent<TransformComponent>(target).Coordinates;
-                foreach (var (hand, prototype) in startingGear.Inhand)
-                {
-                    var inhandEntity = entityManager.SpawnEntity(prototype, coords);
-                    handsSystem.TryPickup(target, inhandEntity, hand, checkActionBlocker: false, handsComp: handsComponent);
                 }
             }
 

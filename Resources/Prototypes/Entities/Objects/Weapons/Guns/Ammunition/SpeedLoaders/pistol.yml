@@ -4,10 +4,6 @@
   parent: BaseItem
   abstract: true
   components:
-  - type: Tag
-    tags:
-      - SpeedLoaderPistol
-  - type: SpeedLoader
   - type: BallisticAmmoProvider
     whitelist:
       tags:
@@ -16,10 +12,6 @@
   - type: Sprite
     netsync: false
     sprite: Objects/Weapons/Guns/Ammunition/SpeedLoaders/Pistol/pistol_speed_loader.rsi
-  - type: ContainerContainer
-    containers:
-      ballistic-ammo: !type:Container
-        ents: []
 
 - type: entity
   id: SpeedLoaderPistol

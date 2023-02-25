@@ -1,7 +1,6 @@
 using Content.Server.NodeContainer.EntitySystems;
 using Content.Server.NodeContainer.NodeGroups;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 
 namespace Content.Server.NodeContainer.Nodes
 {
@@ -16,6 +15,7 @@ namespace Content.Server.NodeContainer.Nodes
         ///     An ID used as a criteria for combining into groups. Determines which <see cref="INodeGroup"/>
         ///     implementation is used as a group, detailed in <see cref="INodeGroupFactory"/>.
         /// </summary>
+        [ViewVariables]
         [DataField("nodeGroupID")]
         public NodeGroupID NodeGroupID { get; private set; } = NodeGroupID.Default;
 
@@ -98,7 +98,7 @@ namespace Content.Server.NodeContainer.Nodes
         public abstract IEnumerable<Node> GetReachableNodes(TransformComponent xform,
             EntityQuery<NodeContainerComponent> nodeQuery,
             EntityQuery<TransformComponent> xformQuery,
-            MapGridComponent? grid,
+            IMapGrid? grid,
             IEntityManager entMan);
     }
 }

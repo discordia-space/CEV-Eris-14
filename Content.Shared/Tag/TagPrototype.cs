@@ -11,7 +11,7 @@ namespace Content.Shared.Tag
     public sealed class TagPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
     }
 }

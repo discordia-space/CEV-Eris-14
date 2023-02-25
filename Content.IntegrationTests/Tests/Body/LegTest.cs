@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Content.Server.Body.Systems;
+using Content.Server.Body.Components;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Part;
 using Content.Shared.Rotation;
@@ -12,7 +12,7 @@ using Robust.Shared.Maths;
 namespace Content.IntegrationTests.Tests.Body
 {
     [TestFixture]
-    [TestOf(typeof(BodyPartComponent))]
+    [TestOf(typeof(SharedBodyComponent))]
     [TestOf(typeof(BodyComponent))]
     public sealed class LegTest
     {
@@ -23,15 +23,16 @@ namespace Content.IntegrationTests.Tests.Body
   components:
   - type: Appearance
   - type: Body
-    prototype: Human
+    template: HumanoidTemplate
+    preset: HumanPreset
+    centerSlot: torso
   - type: StandingState
 ";
 
         [Test]
         public async Task RemoveLegsFallTest()
         {
-            await using var pairTracker = await PoolManager.GetServerClient(new PoolSettings
-                {NoClient = true, ExtraPrototypes = Prototypes});
+            await using var pairTracker = await PoolManager.GetServerClient(new PoolSettings{NoClient = true, ExtraPrototypes = Prototypes});
             var server = pairTracker.Pair.Server;
 
             AppearanceComponent appearance = null;
@@ -43,20 +44,18 @@ namespace Content.IntegrationTests.Tests.Body
                 var mapId = mapManager.CreateMap();
 
                 var entityManager = IoCManager.Resolve<IEntityManager>();
-                var human = entityManager.SpawnEntity("HumanBodyAndAppearanceDummy",
-                    new MapCoordinates(Vector2.Zero, mapId));
+                var human = entityManager.SpawnEntity("HumanBodyAndAppearanceDummy", new MapCoordinates(Vector2.Zero, mapId));
 
-                Assert.That(entityManager.TryGetComponent(human, out BodyComponent body));
+                Assert.That(entityManager.TryGetComponent(human, out SharedBodyComponent body));
                 Assert.That(entityManager.TryGetComponent(human, out appearance));
 
                 Assert.That(!appearance.TryGetData(RotationVisuals.RotationState, out RotationState _));
 
-                var bodySystem = entityManager.System<BodySystem>();
-                var legs = bodySystem.GetBodyChildrenOfType(body.Owner, BodyPartType.Leg, body);
+                var legs = body.GetPartsOfType(BodyPartType.Leg);
 
                 foreach (var leg in legs)
                 {
-                    bodySystem.DropPart(leg.Id, leg.Component);
+                    body.RemovePart(leg);
                 }
             });
 

@@ -21,7 +21,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.4,-0.5,0.4,0.3"
-      density: 190
+      mass: 25
       mask:
       - MachineMask
       layer:
@@ -32,8 +32,6 @@
   - type: Sprite
     sprite: Structures/Power/power.rsi
     state: generator
-    netsync: false
-    snapCardinals: true
   - type: NodeContainer
     examinable: true
     nodes:
@@ -67,8 +65,6 @@
     maxIntensity: 100
     intensitySlope: 2
     totalIntensity: 200
-  - type: StaticPrice
-    price: 500
 
 # Base Wallmount Generator
 
@@ -96,9 +92,6 @@
   - type: Fixtures
   - type: Transform
     anchored: true
-  - type: Physics
-    bodyType: Static
-    canCollide: false
   - type: Sprite
     drawdepth: WallMountedItems
     netsync: false
@@ -120,7 +113,6 @@
     supplyRate: 3000
     supplyRampRate: 500
     supplyRampTolerance: 500
-  - type: WallMount
 
 # Construction Frames
 
@@ -135,7 +127,6 @@
   - type: Clickable
   - type: InteractionOutline
   - type: Physics
-    canCollide: false
   - type: Fixtures
   - type: Transform
     anchored: true
@@ -148,7 +139,6 @@
   - type: Construction
     graph: WallmountGenerator
     node: frame
-  - type: WallMount
 
 # Generators in use
 
@@ -161,7 +151,7 @@
     supplyRate: 3000
 
 - type: entity
-  parent: [ BaseGenerator, ConstructibleMachine ]
+  parent: BaseGenerator
   id: GeneratorPlasma
   suffix: Plasma, 5kW
   components:
@@ -170,17 +160,21 @@
   - type: Sprite
     sprite: Structures/Power/Generation/portable_generator.rsi
     state: portgen0_1
+  - type: Construction
+    graph: Machine
+    node: machine
   - type: Wires
     BoardName: "GeneratorPlasma"
     LayoutId: GeneratorPlasma
   - type: Machine
     board: GeneratorPlasmaMachineCircuitboard
-  - type: UpgradePowerSupplier
-    powerSupplyMultiplier: 1.25
-    scaling: Exponential
+  - type: ContainerContainer
+    containers:
+      machine_parts: !type:Container
+      machine_board: !type:Container
 
 - type: entity
-  parent: [ BaseGenerator, ConstructibleMachine ]
+  parent: BaseGenerator
   id: GeneratorUranium
   suffix: Uranium, 15kW
   components:
@@ -189,14 +183,18 @@
   - type: Sprite
     sprite: Structures/Power/Generation/portable_generator.rsi
     state: portgen1_1
+  - type: Construction
+    graph: Machine
+    node: machine
   - type: Wires
     BoardName: "GeneratorUranium"
     LayoutId: GeneratorUranium
   - type: Machine
     board: GeneratorUraniumMachineCircuitboard
-  - type: UpgradePowerSupplier
-    powerSupplyMultiplier: 1.25
-    scaling: Exponential
+  - type: ContainerContainer
+    containers:
+      machine_parts: !type:Container
+      machine_board: !type:Container
 
 - type: entity
   parent: BaseGeneratorWallmount
@@ -240,23 +238,6 @@
     range: 5
     sound:
       path: /Audio/Ambience/Objects/buzzing.ogg
-  - type: Destructible
-    thresholds:
-      - trigger:
-          !type:DamageTrigger
-          damage: 300
-        behaviors:
-          - !type:PlaySoundBehavior
-            sound:
-              path: /Audio/Effects/metalbreak.ogg
-          - !type:SpawnEntitiesBehavior
-            spawn:
-              GeneratorRTGDamaged:
-                min: 1
-                max: 1
-          - !type:DoActsBehavior
-            acts: [ "Destruction" ]
-
 # TODO: need radioactive fallout when destroyed
 
 - type: entity
@@ -274,24 +255,8 @@
     layers:
       - state: rtg_damaged
       - state: rtg_glow
-  - type: RadiationSource # ideally only when opened.
-    intensity: 2
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 50
-      behaviors:
-      - !type:PlaySoundBehavior
-        sound:
-          path: /Audio/Effects/metalbreak.ogg
-      - !type:SpawnEntitiesBehavior
-        spawn:
-          SheetSteel1:
-            min: 1
-            max: 5
-          SheetUranium1:
-            min: 1
-            max: 5
-      - !type:DoActsBehavior
-        acts: [ "Destruction" ]
+  - type: RadiationPulse # ideally only when opened.
+    range: 2
+    decay: false
+    minPulseLifespan: 1
+    maxPulseLifespan: 1

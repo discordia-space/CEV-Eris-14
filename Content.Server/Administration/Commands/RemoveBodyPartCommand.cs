@@ -1,10 +1,10 @@
-using Content.Server.Body.Systems;
+using Content.Server.Body.Components;
 using Content.Shared.Administration;
 using Robust.Shared.Console;
 
 namespace Content.Server.Administration.Commands
 {
-    [AdminCommand(AdminFlags.Admin)]
+    [AdminCommand(AdminFlags.Fun)]
     public sealed class RemoveBodyPartCommand : IConsoleCommand
     {
         public string Command => "rmbodypart";
@@ -26,11 +26,16 @@ namespace Content.Server.Administration.Commands
             }
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
-            var bodySystem = entityManager.System<BodySystem>();
 
-            if (bodySystem.DropPart(entityUid))
+            if (!entityManager.TryGetComponent<TransformComponent>(entityUid, out var transform)) return;
+
+            var parent = transform.ParentUid;
+
+            if (entityManager.TryGetComponent<BodyComponent>(parent, out var body) &&
+                entityManager.TryGetComponent<BodyPartComponent>(entityUid, out var part))
             {
-                shell.WriteLine($"Removed body part {entityManager.ToPrettyString(entityUid)}.");
+                body.RemovePart(part);
+
             }
             else
             {

@@ -3,18 +3,21 @@
   "license": "CC-BY-SA-3.0",
   "copyright": "Taken from Paradise Station at https://github.com/ParadiseSS13/Paradise/blob/master/icons/obj/crates.dmi",
   "size": {
-    "x": 32,
-    "y": 32
+      "x": 32,
+      "y": 32
   },
   "states": [
     {
-      "name": "base"
+          "name": "livestockcrate",
+          "select": []
     },
     {
-      "name": "closed"
+           "name": "livestockcrate_door",
+           "select": []
     },
     {
-      "name": "open"
+           "name": "livestockcrate_open",
+           "select": []
     }
   ]
 }

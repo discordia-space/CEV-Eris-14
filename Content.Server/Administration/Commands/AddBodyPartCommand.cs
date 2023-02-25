@@ -1,10 +1,10 @@
-using Content.Server.Body.Systems;
+using Content.Server.Body.Components;
 using Content.Shared.Administration;
 using Robust.Shared.Console;
 
 namespace Content.Server.Administration.Commands
 {
-    [AdminCommand(AdminFlags.Admin)]
+    [AdminCommand(AdminFlags.Fun)]
     public sealed class AddBodyPartCommand : IConsoleCommand
     {
         public string Command => "addbodypart";
@@ -19,28 +19,35 @@ namespace Content.Server.Administration.Commands
                 return;
             }
 
-            if (!EntityUid.TryParse(args[0], out var childId))
+            if (!EntityUid.TryParse(args[0], out var entityUid))
             {
                 shell.WriteError(Loc.GetString("shell-entity-uid-must-be-number"));
                 return;
             }
 
-            if (!EntityUid.TryParse(args[1], out var parentId))
+            if (!EntityUid.TryParse(args[1], out var storageUid))
             {
                 shell.WriteError(Loc.GetString("shell-entity-uid-must-be-number"));
                 return;
             }
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
-            var bodySystem = entityManager.System<BodySystem>();
 
-            if (bodySystem.TryCreatePartSlotAndAttach(parentId, args[3], childId))
+            if (entityManager.TryGetComponent<BodyComponent>(storageUid, out var storage)
+                && entityManager.TryGetComponent<BodyPartComponent>(entityUid, out var bodyPart))
             {
-                shell.WriteLine($@"Added {childId} to {parentId}.");
+                if (storage.TryAddPart(args[3], bodyPart))
+                {
+                    shell.WriteLine($@"Added {entityUid} to {storageUid}.");
+                }
+                else
+                {
+                    shell.WriteError($@"Could not add {entityUid} to {storageUid}.");
+                }
             }
             else
             {
-                shell.WriteError($@"Could not add {childId} to {parentId}.");
+                shell.WriteError("Could not insert.");
             }
         }
     }

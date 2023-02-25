@@ -10,7 +10,6 @@ namespace Content.Server.Chat.TypingIndicator;
 public sealed class TypingIndicatorSystem : SharedTypingIndicatorSystem
 {
     [Dependency] private readonly ActionBlockerSystem _actionBlocker = default!;
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
     public override void Initialize()
     {
@@ -34,24 +33,24 @@ public sealed class TypingIndicatorSystem : SharedTypingIndicatorSystem
         SetTypingIndicatorEnabled(uid, false);
     }
 
-    private void OnClientTypingChanged(TypingChangedEvent ev, EntitySessionEventArgs args)
+    private void OnClientTypingChanged(TypingChangedEvent ev)
     {
-        var uid = args.SenderSession.AttachedEntity;
-        if (!Exists(uid))
+        // make sure that this entity still exist
+        if (!Exists(ev.Uid))
         {
-            Logger.Warning($"Client {args.SenderSession} sent TypingChangedEvent without an attached entity.");
+            Logger.Warning($"Client attached entity {ev.Uid} from TypingChangedEvent doesn't exist on server.");
             return;
         }
 
         // check if this entity can speak or emote
-        if (!_actionBlocker.CanEmote(uid.Value) && !_actionBlocker.CanSpeak(uid.Value))
+        if (!_actionBlocker.CanEmote(ev.Uid) && !_actionBlocker.CanSpeak(ev.Uid))
         {
             // nah, make sure that typing indicator is disabled
-            SetTypingIndicatorEnabled(uid.Value, false);
+            SetTypingIndicatorEnabled(ev.Uid, false);
             return;
         }
 
-        SetTypingIndicatorEnabled(uid.Value, ev.IsTyping);
+        SetTypingIndicatorEnabled(ev.Uid, ev.IsTyping);
     }
 
     private void SetTypingIndicatorEnabled(EntityUid uid, bool isEnabled, AppearanceComponent? appearance = null)
@@ -59,6 +58,6 @@ public sealed class TypingIndicatorSystem : SharedTypingIndicatorSystem
         if (!Resolve(uid, ref appearance, false))
             return;
 
-        _appearance.SetData(uid, TypingIndicatorVisuals.IsTyping, isEnabled, appearance);
+        appearance.SetData(TypingIndicatorVisuals.IsTyping, isEnabled);
     }
 }

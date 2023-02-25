@@ -1,6 +1,4 @@
 using Robust.Shared.Map;
-using Robust.Shared.Prototypes;
-using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Shared.Cargo.Components;
 
@@ -14,7 +12,7 @@ public sealed class CargoShuttleComponent : Component
     public TimeSpan? NextCall;
 
     [ViewVariables(VVAccess.ReadWrite), DataField("cooldown")]
-    public float Cooldown = 30f;
+    public float Cooldown = 150f;
 
     [ViewVariables]
     public bool CanRecall;
@@ -28,13 +26,6 @@ public sealed class CargoShuttleComponent : Component
     /// <summary>
     /// The assigned station for this cargo shuttle.
     /// </summary>
-    [DataField("station")]
+    [ViewVariables, DataField("station")]
     public EntityUid? Station;
-
-    /// <summary>
-    ///     The paper-type prototype to spawn with the order information.
-    /// </summary>
-    [DataField("printerOutput", customTypeSerializer: typeof(PrototypeIdSerializer<EntityPrototype>))]
-    public string PrinterOutput = "PaperCargoInvoice";
-
 }

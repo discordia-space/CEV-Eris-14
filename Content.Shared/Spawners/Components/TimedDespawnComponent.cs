@@ -9,6 +9,7 @@ public sealed class TimedDespawnComponent : Component
     /// <summary>
     /// How long the entity will exist before despawning
     /// </summary>
+    [ViewVariables]
     [DataField("lifetime")]
     public float Lifetime = 5f;
 }

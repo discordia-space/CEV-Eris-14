@@ -102,7 +102,7 @@ public sealed class RoleBanManager
     {
         if (!_prototypeManager.TryIndex(job, out JobPrototype? _))
         {
-            shell.WriteError(Loc.GetString("cmd-roleban-job-parse", ("job", job)));
+            shell.WriteLine($"Job {job} does not exist.");
             return;
         }
 
@@ -115,7 +115,7 @@ public sealed class RoleBanManager
         if (!_cachedRoleBans.TryGetValue(playerUserId, out var roleBans))
             return null;
         return roleBans
-            .Where(ban => ban.Role.StartsWith(JobPrefix, StringComparison.Ordinal))
+            .Where(ban => ban.Role.StartsWith(JobPrefix))
             .Select(ban => ban.Role[JobPrefix.Length..])
             .ToHashSet();
     }
@@ -127,7 +127,7 @@ public sealed class RoleBanManager
         var located = await _playerLocator.LookupIdByNameOrIdAsync(target);
         if (located == null)
         {
-            shell.WriteError(Loc.GetString("cmd-roleban-name-parse"));
+            shell.WriteError("Unable to find a player with that name.");
             return;
         }
 
@@ -167,12 +167,17 @@ public sealed class RoleBanManager
 
         if (!await AddRoleBan(banDef))
         {
-            shell.WriteLine(Loc.GetString("cmd-roleban-existing", ("target", target), ("role", role)));
+            shell.WriteLine($"{target} already has a role ban for {role}");
             return;
         }
 
-        var length = expires == null ? Loc.GetString("cmd-roleban-inf") : Loc.GetString("cmd-roleban-until", ("expires", expires));
-        shell.WriteLine(Loc.GetString("cmd-roleban-success", ("target", target), ("role", role), ("reason", reason), ("length", length)));
+        var response = new StringBuilder($"Role banned {target} with reason \"{reason}\"");
+
+        response.Append(expires == null ?
+            " permanently."
+            : $" until {expires}");
+
+        shell.WriteLine(response.ToString());
     }
     #endregion
 }

@@ -1,4 +1,5 @@
 using Content.Shared.Actions.ActionTypes;
+using Content.Shared.Disease;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
@@ -28,7 +29,7 @@ namespace Content.Server.RatKing
         /// <summary>
         ///     The action for the Domain ability
         /// </summary>
-        [DataField("actionDomain", required: true)]
+        [ViewVariables, DataField("actionDomain", required: true)]
         public InstantAction ActionDomain = new();
 
         /// <summary>
@@ -40,7 +41,7 @@ namespace Content.Server.RatKing
         /// <summary>
         ///     How many moles of Miasma are released after one us of Domain
         /// </summary>
-        [DataField("molesMiasmaPerDomain")]
+        [ViewVariables, DataField("molesMiasmaPerDomain")]
         public float MolesMiasmaPerDomain = 100f;
     }
 };

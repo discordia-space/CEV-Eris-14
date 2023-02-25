@@ -1,14 +1,12 @@
 - type: accessLevel
   id: ChiefMedicalOfficer
-  name: id-card-access-level-chief-medical-officer
+  name: Chief Medical Officer
 
 - type: accessLevel
   id: Medical
-  name: id-card-access-level-medical
 
 - type: accessLevel
   id: Chemistry
-  name: id-card-access-level-chemistry
 
 - type: accessGroup
   id: Medical

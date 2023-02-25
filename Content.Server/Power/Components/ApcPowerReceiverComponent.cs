@@ -70,13 +70,16 @@ namespace Content.Server.Power.Components
 
     /// <summary>
     /// Raised whenever an ApcPowerReceiver becomes powered / unpowered.
-    /// Does nothing on the client.
     /// </summary>
-    [ByRefEvent]
-    public readonly record struct PowerChangedEvent(bool Powered, float ReceivingPower)
+    public sealed class PowerChangedEvent : EntityEventArgs
     {
-        public readonly bool Powered = Powered;
-        public readonly float ReceivingPower = ReceivingPower;
-    }
+        public readonly bool Powered;
+        public readonly float ReceivingPower;
 
+        public PowerChangedEvent(bool powered, float receivingPower)
+        {
+            Powered = powered;
+            ReceivingPower = receivingPower;
+        }
+    }
 }

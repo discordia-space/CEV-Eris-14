@@ -12,14 +12,12 @@
     state: idle
   - type: InteractionOutline
   - type: Physics
-    bodyType: Dynamic
-    canCollide: false
   - type: Fixtures
     fixtures:
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 235
+      mass: 150
       mask:
       - MachineMask
       layer:
@@ -56,5 +54,3 @@
   - type: Appearance
     visuals:
     - type: DeployableBarrierVisualizer
-  - type: StaticPrice
-    price: 200

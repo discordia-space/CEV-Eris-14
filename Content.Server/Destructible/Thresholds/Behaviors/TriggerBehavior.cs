@@ -3,8 +3,8 @@
 [DataDefinition]
 public sealed class TriggerBehavior : IThresholdBehavior
 {
-    public void Execute(EntityUid owner, DestructibleSystem system, EntityUid? cause = null)
+    public void Execute(EntityUid owner, DestructibleSystem system)
     {
-        system.TriggerSystem.Trigger(owner, cause);
+        system.TriggerSystem.Trigger(owner);
     }
 }

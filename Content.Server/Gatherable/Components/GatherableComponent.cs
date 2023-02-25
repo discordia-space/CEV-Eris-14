@@ -10,6 +10,7 @@ public sealed class GatherableComponent : Component
     ///     Whitelist for specifying the kind of tools can be used on a resource
     ///     Supports multiple tags.
     /// </summary>
+    [ViewVariables]
     [DataField("whitelist", required: true)]
     public EntityWhitelist? ToolWhitelist;
 

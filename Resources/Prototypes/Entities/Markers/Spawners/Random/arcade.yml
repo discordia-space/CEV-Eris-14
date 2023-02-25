@@ -6,10 +6,9 @@
   - type: Sprite
     layers:
       - state: red
-      - sprite: Structures/Machines/arcade.rsi
-        state: icon
+      - texture: Structures/Machines/arcade.rsi/arcade.png
   - type: RandomSpawner
     prototypes:
       - BlockGameArcade
-      - SpaceVillainArcadeFilled
+      - SpaceVillainArcade
     chance: 1

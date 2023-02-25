@@ -1,4 +1,5 @@
 ﻿<DefaultWindow xmlns="https://spacestation14.io"
+               xmlns:ui="clr-namespace:Content.Client.Decals.UI"
                Title="{Loc 'decal-placer-window-title'}"
                MinSize="250 500"
                SetSize="250 500">

@@ -1,11 +1,10 @@
 using Content.Server.Storage.Components;
-using Content.Server.Storage.EntitySystems;
 using Content.Shared.Administration;
 using Robust.Shared.Console;
 
 namespace Content.Server.Administration.Commands
 {
-    [AdminCommand(AdminFlags.Admin)]
+    [AdminCommand(AdminFlags.Fun)]
     public sealed class AddEntityStorageCommand : IConsoleCommand
     {
         public string Command => "addstorage";
@@ -34,10 +33,9 @@ namespace Content.Server.Administration.Commands
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
 
-            if (entityManager.HasComponent<EntityStorageComponent>(storageUid) &&
-                entityManager.EntitySysManager.TryGetEntitySystem<EntityStorageSystem>(out var storageSys))
+            if (entityManager.TryGetComponent<EntityStorageComponent>(storageUid, out var storage))
             {
-                storageSys.Insert(entityUid, storageUid);
+                storage.Insert(entityUid);
             }
             else
             {

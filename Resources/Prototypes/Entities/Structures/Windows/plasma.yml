@@ -33,16 +33,15 @@
     graph: Window
     node: plasmaWindow
   - type: Appearance
-  - type: DamageVisuals
-    thresholds: [4, 8, 12]
-    damageDivisor: 12
-    trackAllDamage: true
-    damageOverlay:
-      sprite: Structures/Windows/cracks.rsi
+    visuals:
+    - type: DamageVisualizer
+      thresholds: [4, 8, 12]
+      damageDivisor: 12
+      trackAllDamage: true
+      damageOverlay:
+        sprite: Structures/Windows/cracks.rsi
   - type: StaticPrice
-    price: 60
-  - type: RadiationBlocker
-    resistance: 2
+    price: 20.5
 
 - type: entity
   id: PlasmaWindowDirectional
@@ -81,4 +80,4 @@
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
   - type: StaticPrice
-    price: 30
+    price: 20.5

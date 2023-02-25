@@ -34,20 +34,12 @@ namespace Content.Shared.DoAfter
         }
     }
 
-    // TODO: Merge this with the actual DoAfter
     /// <summary>
     ///     We send a trimmed-down version of the DoAfter for the client for it to use.
     /// </summary>
     [Serializable, NetSerializable]
     public sealed class ClientDoAfter
     {
-        public bool Cancelled = false;
-
-        /// <summary>
-        /// Accrued time when cancelled.
-        /// </summary>
-        public float CancelledAccumulator;
-
         // To see what these do look at DoAfter and DoAfterEventArgs
         public byte ID { get; }
 
@@ -58,8 +50,6 @@ namespace Content.Shared.DoAfter
         public EntityCoordinates TargetGrid { get; }
 
         public EntityUid? Target { get; }
-
-        public float Accumulator;
 
         public float Delay { get; }
 

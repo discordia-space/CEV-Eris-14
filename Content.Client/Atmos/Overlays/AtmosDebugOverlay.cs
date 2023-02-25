@@ -14,16 +14,15 @@ namespace Content.Client.Atmos.Overlays
     {
         private readonly AtmosDebugOverlaySystem _atmosDebugOverlaySystem;
 
-        [Dependency] private readonly IEntityManager _entManager = default!;
         [Dependency] private readonly IMapManager _mapManager = default!;
 
         public override OverlaySpace Space => OverlaySpace.WorldSpace;
 
-        internal AtmosDebugOverlay(AtmosDebugOverlaySystem system)
+        public AtmosDebugOverlay()
         {
             IoCManager.InjectDependencies(this);
 
-            _atmosDebugOverlaySystem = system;
+            _atmosDebugOverlaySystem = EntitySystem.Get<AtmosDebugOverlaySystem>();
         }
 
         protected override void Draw(in OverlayDrawArgs args)
@@ -42,20 +41,19 @@ namespace Content.Client.Atmos.Overlays
 
             foreach (var mapGrid in _mapManager.FindGridsIntersecting(mapId, worldBounds))
             {
-                if (!_atmosDebugOverlaySystem.HasData(mapGrid.Owner) ||
-                    !_entManager.TryGetComponent<TransformComponent>(mapGrid.Owner, out var xform))
+                if (!_atmosDebugOverlaySystem.HasData(mapGrid.GridEntityId))
                     continue;
 
-                drawHandle.SetTransform(xform.WorldMatrix);
+                drawHandle.SetTransform(mapGrid.WorldMatrix);
 
                 for (var pass = 0; pass < 2; pass++)
                 {
                     foreach (var tile in mapGrid.GetTilesIntersecting(worldBounds))
                     {
-                        var dataMaybeNull = _atmosDebugOverlaySystem.GetData(mapGrid.Owner, tile.GridIndices);
+                        var dataMaybeNull = _atmosDebugOverlaySystem.GetData(mapGrid.GridEntityId, tile.GridIndices);
                         if (dataMaybeNull != null)
                         {
-                            var data = (SharedAtmosDebugOverlaySystem.AtmosDebugOverlayData) dataMaybeNull;
+                            var data = (SharedAtmosDebugOverlaySystem.AtmosDebugOverlayData) dataMaybeNull!;
                             if (pass == 0)
                             {
                                 // -- Mole Count --

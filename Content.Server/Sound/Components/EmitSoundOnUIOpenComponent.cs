@@ -1,5 +1,3 @@
-using Content.Shared.Sound.Components;
-
 namespace Content.Server.Sound.Components
 {
     /// <summary>

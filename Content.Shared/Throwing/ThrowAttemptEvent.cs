@@ -2,15 +2,12 @@
 {
     public sealed class ThrowAttemptEvent : CancellableEntityEventArgs
     {
-        public ThrowAttemptEvent(EntityUid uid, EntityUid itemUid)
+        public ThrowAttemptEvent(EntityUid uid)
         {
             Uid = uid;
-            ItemUid = itemUid;
         }
 
         public EntityUid Uid { get; }
-
-        public EntityUid ItemUid { get; }
     }
 
     /// <summary>

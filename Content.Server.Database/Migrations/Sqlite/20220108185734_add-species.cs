@@ -4,7 +4,7 @@
 
 namespace Content.Server.Database.Migrations.Sqlite
 {
-    public partial class AddSpecies : Migration
+    public partial class addspecies : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

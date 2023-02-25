@@ -13,10 +13,7 @@
   - type: Item
     size: 30
     sprite: Objects/Specific/Medical/firstaidkits.rsi
-    heldPrefix: firstaid
-  - type: Tag
-    tags:
-    - Medkit
+    HeldPrefix: firstaid
 
 - type: entity
   name: burn treatment kit
@@ -27,7 +24,7 @@
   - type: Sprite
     state: burnkit
   - type: Item
-    heldPrefix: burnkit
+    HeldPrefix: burnkit
 
 - type: entity
   name: toxin treatment kit
@@ -38,7 +35,7 @@
   - type: Sprite
     state: toxinkit
   - type: Item
-    heldPrefix: toxinkit
+    HeldPrefix: toxinkit
 
 - type: entity
   name: oxygen deprivation treatment kit
@@ -49,7 +46,7 @@
   - type: Sprite
     state: o2kit
   - type: Item
-    heldPrefix: o2kit
+    HeldPrefix: o2kit
 
 - type: entity
   name: brute trauma treatment kit
@@ -60,7 +57,7 @@
   - type: Sprite
     state: brutekit
   - type: Item
-    heldPrefix: brutekit
+    HeldPrefix: brutekit
 
 - type: entity
   name: advanced first aid kit
@@ -71,7 +68,7 @@
   - type: Sprite
     state: advkit
   - type: Item
-    heldPrefix: advkit
+    HeldPrefix: advkit
 
 - type: entity
   name: radiation treatment kit
@@ -82,7 +79,7 @@
   - type: Sprite
     state: radkit
   - type: Item
-    heldPrefix: radkit
+    HeldPrefix: radkit
 
 - type: entity
   name: combat medical kit
@@ -93,4 +90,4 @@
   - type: Sprite
     state: blackkit
   - type: Item
-    heldPrefix: blackkit
+    HeldPrefix: blackkit

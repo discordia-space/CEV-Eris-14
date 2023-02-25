@@ -1,4 +1,3 @@
-using Content.Client.Administration.Systems;
 using Robust.Client.Graphics;
 using Robust.Client.ResourceManagement;
 using Robust.Shared.Enums;
@@ -35,11 +34,11 @@ namespace Content.Client.Administration
             foreach (var playerInfo in _system.PlayerList)
             {
                 // Otherwise the entity can not exist yet
-                if (!_entityManager.EntityExists(playerInfo.EntityUid))
+                var entity = playerInfo.EntityUid;
+                if (!_entityManager.EntityExists(entity))
                 {
                     continue;
                 }
-                var entity = playerInfo.EntityUid.Value;
 
                 // if not on the same map, continue
                 if (_entityManager.GetComponent<TransformComponent>(entity).MapID != _eyeManager.CurrentMap)

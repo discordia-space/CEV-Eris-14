@@ -65,6 +65,8 @@ namespace Content.Server.Engineering.EntitySystems
             _handsSystem.TryPickup(user, entity);
 
             EntityManager.DeleteEntity(component.Owner);
+
+            return;
         }
     }
 }

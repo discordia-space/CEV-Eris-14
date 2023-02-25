@@ -1,4 +1,4 @@
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.AirlockPainter
 {

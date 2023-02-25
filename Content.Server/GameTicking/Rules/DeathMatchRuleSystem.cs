@@ -2,8 +2,7 @@ using Content.Server.Chat.Managers;
 using Content.Server.GameTicking.Rules.Configurations;
 using Content.Shared.CCVar;
 using Content.Shared.Damage;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.MobState.Components;
 using Robust.Server.Player;
 using Robust.Shared.Configuration;
 using Robust.Shared.Enums;
@@ -20,7 +19,6 @@ public sealed class DeathMatchRuleSystem : GameRuleSystem
 
     [Dependency] private readonly IPlayerManager _playerManager = default!;
     [Dependency] private readonly IChatManager _chatManager = default!;
-    [Dependency] private readonly MobStateSystem _mobStateSystem = default!;
     [Dependency] private readonly IConfigurationManager _cfg = default!;
 
     private const float RestartDelay = 10f;
@@ -36,14 +34,14 @@ public sealed class DeathMatchRuleSystem : GameRuleSystem
         SubscribeLocalEvent<DamageChangedEvent>(OnHealthChanged);
     }
 
-    public override void Started()
+    public override void Started(GameRuleConfiguration _)
     {
         _chatManager.DispatchServerAnnouncement(Loc.GetString("rule-death-match-added-announcement"));
 
         _playerManager.PlayerStatusChanged += OnPlayerStatusChanged;
     }
 
-    public override void Ended()
+    public override void Ended(GameRuleConfiguration _)
     {
         _deadCheckTimer = null;
         _restartTimer = null;
@@ -66,7 +64,7 @@ public sealed class DeathMatchRuleSystem : GameRuleSystem
 
     private void RunDelayedCheck()
     {
-        if (!RuleAdded || _deadCheckTimer != null)
+        if (!Enabled || _deadCheckTimer != null)
             return;
 
         _deadCheckTimer = DeadCheckDelay;
@@ -74,7 +72,7 @@ public sealed class DeathMatchRuleSystem : GameRuleSystem
 
     public override void Update(float frameTime)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         // If the restart timer is active, that means the round is ending soon, no need to check for winners.
@@ -108,7 +106,7 @@ public sealed class DeathMatchRuleSystem : GameRuleSystem
                 || !TryComp(playerEntity, out MobStateComponent? state))
                 continue;
 
-            if (!_mobStateSystem.IsAlive(playerEntity, state))
+            if (!state.IsAlive())
                 continue;
 
             // Found a second person alive, nothing decided yet!

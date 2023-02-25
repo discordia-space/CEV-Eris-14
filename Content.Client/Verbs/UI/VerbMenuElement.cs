@@ -24,7 +24,7 @@ namespace Content.Client.Verbs.UI
         public bool TextVisible { set => Label.Visible = value; }
 
         // Top quality variable naming
-        public readonly Verb? Verb;
+        public Verb? Verb;
 
         public VerbMenuElement(Verb verb) : base(verb.Text)
         {
@@ -41,14 +41,12 @@ namespace Content.Client.Verbs.UI
                 ExpansionIndicator.Visible = true;
             }
 
-            var entManager = IoCManager.Resolve<IEntityManager>();
-
             if (verb.Icon == null && verb.IconEntity != null)
             {
                 var spriteView = new SpriteView()
                 {
                     OverrideDirection = Direction.South,
-                    Sprite = entManager.GetComponentOrNull<SpriteComponent>(verb.IconEntity.Value)
+                    Sprite = IoCManager.Resolve<IEntityManager>().GetComponentOrNull<ISpriteComponent>(verb.IconEntity.Value)
                 };
 
                 Icon.AddChild(spriteView);
@@ -57,7 +55,7 @@ namespace Content.Client.Verbs.UI
 
             Icon.AddChild(new TextureRect()
             {
-                Texture = verb.Icon != null ? entManager.System<SpriteSystem>().Frame0(verb.Icon) : null,
+                Texture = verb.Icon?.Frame0(),
                 Stretch = TextureRect.StretchMode.KeepAspectCentered
             });
         }
@@ -68,7 +66,7 @@ namespace Content.Client.Verbs.UI
 
             Icon.AddChild(new TextureRect()
             {
-                Texture = category.Icon != null ? IoCManager.Resolve<IEntitySystemManager>().GetEntitySystem<SpriteSystem>().Frame0(category.Icon) : null,
+                Texture = category.Icon?.Frame0(),
                 Stretch = TextureRect.StretchMode.KeepAspectCentered
             });
         }

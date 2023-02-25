@@ -15,7 +15,7 @@ namespace Content.Server.Database.Migrations.Postgres
 {
     [DbContext(typeof(PostgresServerDbContext))]
     [Migration("20220108185749_add-species")]
-    partial class AddSpecies
+    partial class addspecies
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

@@ -9,7 +9,6 @@ namespace Content.Client.Wall
     [UsedImplicitly]
     public sealed class ReinforcedWallVisualizer : AppearanceVisualizer
     {
-        [Obsolete("Subscribe to AppearanceChangeEvent instead.")]
         public override void OnChangeData(AppearanceComponent component)
         {
             base.OnChangeData(component);
@@ -25,7 +24,7 @@ namespace Content.Client.Wall
             var entity = component.Owner;
 
             var entities = IoCManager.Resolve<IEntityManager>();
-            if (!entities.TryGetComponent(entity, out SpriteComponent? sprite)) return;
+            if (!entities.TryGetComponent(entity, out ISpriteComponent? sprite)) return;
 
             var index = sprite.LayerMapReserveBlank(ReinforcedWallVisualLayers.Deconstruction);
 

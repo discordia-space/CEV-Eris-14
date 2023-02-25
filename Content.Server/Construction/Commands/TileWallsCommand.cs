@@ -5,6 +5,7 @@ using Content.Shared.Tag;
 using Robust.Server.Player;
 using Robust.Shared.Console;
 using Robust.Shared.Map;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.Construction.Commands
 {
@@ -16,7 +17,7 @@ namespace Content.Server.Construction.Commands
         public string Description => "Puts an underplating tile below every wall on a grid.";
         public string Help => $"Usage: {Command} <gridId> | {Command}";
 
-        public const string TilePrototypeId = "Plating";
+        public const string TilePrototypeID = "plating";
         public const string WallTag = "Wall";
 
         public void Execute(IConsoleShell shell, string argStr, string[] args)
@@ -57,18 +58,18 @@ namespace Content.Server.Construction.Commands
                 return;
             }
 
-            if (!entityManager.EntityExists(grid.Owner))
+            if (!entityManager.EntityExists(grid.GridEntityId))
             {
                 shell.WriteLine($"Grid {gridId} doesn't have an associated grid entity.");
                 return;
             }
 
             var tileDefinitionManager = IoCManager.Resolve<ITileDefinitionManager>();
-            var tagSystem = entityManager.EntitySysManager.GetEntitySystem<TagSystem>();
-            var underplating = tileDefinitionManager[TilePrototypeId];
+            var tagSystem = EntitySystem.Get<TagSystem>();
+            var underplating = tileDefinitionManager[TilePrototypeID];
             var underplatingTile = new Tile(underplating.TileId);
             var changed = 0;
-            foreach (var child in entityManager.GetComponent<TransformComponent>(grid.Owner).ChildEntities)
+            foreach (var child in entityManager.GetComponent<TransformComponent>(grid.GridEntityId).ChildEntities)
             {
                 if (!entityManager.EntityExists(child))
                 {
@@ -90,7 +91,7 @@ namespace Content.Server.Construction.Commands
                 var tile = grid.GetTileRef(childTransform.Coordinates);
                 var tileDef = (ContentTileDefinition) tileDefinitionManager[tile.Tile.TypeId];
 
-                if (tileDef.ID == TilePrototypeId)
+                if (tileDef.ID == TilePrototypeID)
                 {
                     continue;
                 }

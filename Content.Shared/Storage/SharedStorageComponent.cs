@@ -43,6 +43,7 @@ namespace Content.Shared.Storage
             Key,
         }
 
+        [Dependency] private readonly IEntityManager _entMan = default!;
         public abstract IReadOnlyList<EntityUid>? StoredEntities { get; }
 
         /// <summary>
@@ -76,7 +77,6 @@ namespace Content.Shared.Storage
     public enum StorageVisuals : byte
     {
         Open,
-        HasContents,
         CanLock,
         Locked
     }

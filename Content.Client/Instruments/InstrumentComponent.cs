@@ -39,6 +39,7 @@ public sealed class InstrumentComponent : SharedInstrumentComponent
     /// <summary>
     ///     Whether this instrument is handheld or not.
     /// </summary>
+    [ViewVariables]
     [DataField("handheld")]
     public bool Handheld { get; set; } // TODO: Replace this by simply checking if the entity has an ItemComponent.
 

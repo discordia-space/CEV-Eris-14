@@ -7,7 +7,7 @@ namespace Content.Server.Construction.Completions
     [DataDefinition]
     public sealed class AddContainer : IGraphAction
     {
-        [DataField("container")] public string? Container { get; private set; }
+        [DataField("container")] public string? Container { get; private set; } = null;
 
         public void PerformAction(EntityUid uid, EntityUid? userUid, IEntityManager entityManager)
         {

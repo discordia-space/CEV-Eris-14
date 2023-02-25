@@ -2,7 +2,6 @@
 using Content.Shared.Maps;
 using Robust.Shared.Console;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 using Robust.Shared.Random;
 
 namespace Content.Server.Administration.Commands;
@@ -33,17 +32,17 @@ public sealed class VariantizeCommand : IConsoleCommand
             return;
         }
 
-        if (!entMan.TryGetComponent(euid, out MapGridComponent? gridComp))
+        if (!entMan.TryGetComponent(euid, out IMapGridComponent? gridComp))
         {
             shell.WriteError($"Euid '{euid}' does not exist or is not a grid.");
             return;
         }
 
-        foreach (var tile in gridComp.GetAllTiles())
+        foreach (var tile in gridComp.Grid.GetAllTiles())
         {
             var def = tile.GetContentTileDefinition();
             var newTile = new Tile(tile.Tile.TypeId, tile.Tile.Flags, random.Pick(def.PlacementVariants));
-            gridComp.SetTile(tile.GridIndices, newTile);
+            gridComp.Grid.SetTile(tile.GridIndices, newTile);
         }
     }
 }

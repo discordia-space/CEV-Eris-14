@@ -13,28 +13,22 @@
     deviceNetId: AtmosDevices
     receiveFrequencyId: AtmosMonitor
     transmitFrequencyId: AtmosMonitor
-    prefix: device-address-prefix-air-alarm
     sendBroadcastAttemptEvent: true
   - type: WiredNetworkConnection
   - type: DeviceList
-  - type: DeviceNetworkRequiresPower
+  - type: AtmosMonitor
+    temperatureThreshold: stationTemperature
+    pressureThreshold: stationPressure
+    gasThresholds:
+      Oxygen: stationOxygen
+      Nitrogen: ignore
+      CarbonDioxide: stationCO2
+      Plasma: danger # everything below is usually bad
+      Tritium: danger
+      WaterVapor: danger
+      Miasma: danger
   - type: AtmosAlarmable
-    syncWith:
-      - AirAlarm
-      - AirSensor
-      - GasVent
-      - GasScrubber
-  - type: AtmosAlarmableVisuals
-    layerMap: "airAlarmBase"
-    alarmStates:
-      Normal: alarm0
-      Warning: alarm2
-      Danger: alarm1
-    setOnDepowered:
-      airAlarmBase: alarmp
-  - type: Tag
-    tags:
-      - AirAlarm
+    alarmedBy: ["AirAlarm"]
   - type: AtmosDevice
   - type: AirAlarm
   - type: Clickable
@@ -51,7 +45,16 @@
   - type: AccessReader
     access: [["Atmospherics"]]
   - type: Appearance
-  - type: WiresVisuals
+    visuals:
+    - type: AtmosMonitorVisualizer
+      layerMap: "airAlarmBase"
+      alarmStates:
+        Normal: alarm0
+        Warning: alarm2
+        Danger: alarm1
+      setOnDepowered:
+        airAlarmBase: alarmp
+    - type: WiresVisualizer
   - type: Sprite
     sprite: Structures/Wallmounts/air_monitors.rsi
     layers:
@@ -64,20 +67,6 @@
   - type: Construction
     graph: AirAlarm
     node: air_alarm
-  - type: Damageable
-    damageContainer: Inorganic
-    damageModifierSet: Metallic
-  - type: Destructible
-    thresholds:
-      - trigger:
-          !type:DamageTrigger
-          damage: 100
-        behaviors:
-          - !type:DoActsBehavior
-            acts: [ "Destruction" ]
-          - !type:PlaySoundBehavior
-            sound:
-              path: /Audio/Effects/metalbreak.ogg
   placement:
     mode: SnapgridCenter
     snap:
@@ -97,8 +86,6 @@
   - type: Construction
     graph: AirAlarm
     node: assembly
-  - type: Transform
-    anchored: true
   placement:
     mode: SnapgridCenter
     snap:

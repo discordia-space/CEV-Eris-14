@@ -1,22 +1,11 @@
 - type: job
   id: HeadOfPersonnel
   name: job-name-hop
-  description: job-description-hop
-  playTimeTracker: JobHeadOfPersonnel
-  requirements:
-    - !type:DepartmentTimeRequirement
-      department: Engineering
-      time: 3600
-    - !type:DepartmentTimeRequirement
-      department: Medical
-      time: 3600
-    - !type:DepartmentTimeRequirement
-      department: Security
-      time: 3600
-    - !type:OverallPlaytimeRequirement
-      time: 108000
   weight: 20
   startingGear: HoPGear
+  departments:
+  - Command
+  - Civilian
   icon: "HeadOfPersonnel"
   requireAdminNotify: true
   supervisors: job-supervisors-captain
@@ -24,15 +13,17 @@
   access:
   - Command
   - HeadOfPersonnel
-  - Bar
+  - Brig
   - Service
+  - Quartermaster
+  - Salvage
+  - Cargo
   - Maintenance
   - Janitor
   - Theatre
   - Kitchen
   - Chapel
   - Hydroponics
-  - External
   # I mean they'll give themselves the rest of the access levels *anyways*.
 
 - type: startingGear

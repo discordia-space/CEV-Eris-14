@@ -6,7 +6,11 @@ namespace Content.Shared.Alert;
 
 public abstract class AlertsSystem : EntitySystem
 {
-    [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
+    [Dependency]
+    private readonly IPrototypeManager _prototypeManager = default!;
+
+    [Dependency] private readonly MetaDataSystem _metaSystem = default!;
+
     private readonly Dictionary<AlertType, AlertPrototype> _typeToAlert = new();
 
     public IReadOnlyDictionary<AlertKey, AlertState>? GetActiveAlerts(EntityUid euid)
@@ -14,22 +18,6 @@ public abstract class AlertsSystem : EntitySystem
         return EntityManager.TryGetComponent(euid, out AlertsComponent? comp)
             ? comp.Alerts
             : null;
-    }
-
-    public short GetSeverityRange(AlertType alertType)
-    {
-        var minSeverity = _typeToAlert[alertType].MinSeverity;
-        return (short)MathF.Max(minSeverity,_typeToAlert[alertType].MaxSeverity - minSeverity);
-    }
-
-    public short GetMaxSeverity(AlertType alertType)
-    {
-        return _typeToAlert[alertType].MaxSeverity;
-    }
-
-    public short GetMinSeverity(AlertType alertType)
-    {
-        return _typeToAlert[alertType].MinSeverity;
     }
 
     public bool IsShowingAlert(EntityUid euid, AlertType alertType)
@@ -123,7 +111,7 @@ public abstract class AlertsSystem : EntitySystem
 
         AfterClearAlert(alertsComponent);
 
-        Dirty(alertsComponent);
+        alertsComponent.Dirty();
     }
 
     /// <summary>
@@ -143,7 +131,7 @@ public abstract class AlertsSystem : EntitySystem
 
             AfterClearAlert(alertsComponent);
 
-            Dirty(alertsComponent);
+            alertsComponent.Dirty();
         }
         else
         {
@@ -170,21 +158,38 @@ public abstract class AlertsSystem : EntitySystem
         SubscribeLocalEvent<AlertsComponent, ComponentStartup>(HandleComponentStartup);
         SubscribeLocalEvent<AlertsComponent, ComponentShutdown>(HandleComponentShutdown);
 
+        SubscribeLocalEvent<AlertsComponent, MetaFlagRemoveAttemptEvent>(OnMetaFlagRemoval);
         SubscribeLocalEvent<AlertsComponent, ComponentGetState>(ClientAlertsGetState);
+        SubscribeLocalEvent<AlertsComponent, ComponentGetStateAttemptEvent>(OnCanGetState);
         SubscribeNetworkEvent<ClickAlertEvent>(HandleClickAlert);
 
         LoadPrototypes();
         _prototypeManager.PrototypesReloaded += HandlePrototypesReloaded;
     }
 
+    private void OnMetaFlagRemoval(EntityUid uid, AlertsComponent component, ref MetaFlagRemoveAttemptEvent args)
+    {
+        if (component.LifeStage == ComponentLifeStage.Running)
+            args.ToRemove &= ~MetaDataFlags.EntitySpecific;
+    }
+
+    private void OnCanGetState(EntityUid uid, AlertsComponent component, ref ComponentGetStateAttemptEvent args)
+    {
+        // Only send alert state data to the relevant player.
+        if (args.Player.AttachedEntity != uid)
+            args.Cancelled = true;
+    }
+
     protected virtual void HandleComponentShutdown(EntityUid uid, AlertsComponent component, ComponentShutdown args)
     {
         RaiseLocalEvent(uid, new AlertSyncEvent(uid), true);
+        _metaSystem.RemoveFlag(uid, MetaDataFlags.EntitySpecific);
     }
 
     private void HandleComponentStartup(EntityUid uid, AlertsComponent component, ComponentStartup args)
     {
         RaiseLocalEvent(uid, new AlertSyncEvent(uid), true);
+        _metaSystem.AddFlag(uid, MetaDataFlags.EntitySpecific);
     }
 
     public override void Shutdown()
@@ -225,8 +230,7 @@ public abstract class AlertsSystem : EntitySystem
     private void HandleClickAlert(ClickAlertEvent msg, EntitySessionEventArgs args)
     {
         var player = args.SenderSession.AttachedEntity;
-        if (player is null || !EntityManager.HasComponent<AlertsComponent>(player))
-            return;
+        if (player is null || !EntityManager.TryGetComponent<AlertsComponent>(player, out var alertComp)) return;
 
         if (!IsShowingAlert(player.Value, msg.Type))
         {

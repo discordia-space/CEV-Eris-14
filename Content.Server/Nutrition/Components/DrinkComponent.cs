@@ -1,8 +1,8 @@
-using System.Threading;
+using Content.Shared.Sound;
+using JetBrains.Annotations;
 using Content.Server.Nutrition.EntitySystems;
 using Content.Shared.FixedPoint;
-using JetBrains.Annotations;
-using Robust.Shared.Audio;
+using System.Threading;
 
 namespace Content.Server.Nutrition.Components
 {
@@ -14,9 +14,11 @@ namespace Content.Server.Nutrition.Components
         public string SolutionName { get; set; } = DefaultSolutionName;
         public const string DefaultSolutionName = "drink";
 
+        [ViewVariables]
         [DataField("useSound")]
         public SoundSpecifier UseSound = new SoundPathSpecifier("/Audio/Items/drink.ogg");
 
+        [ViewVariables]
         [DataField("isOpen")]
         internal bool DefaultToOpened;
 

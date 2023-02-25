@@ -1,5 +1,5 @@
-using Content.Shared.Actions;
-using Robust.Shared.Audio;
+﻿using Content.Shared.Actions;
+using Content.Shared.Sound;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 

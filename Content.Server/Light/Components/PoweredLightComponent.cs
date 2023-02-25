@@ -1,12 +1,12 @@
-using System.Threading;
 using Content.Server.Light.EntitySystems;
 using Content.Shared.Damage;
-using Content.Shared.Light.Component;
-using Content.Shared.MachineLinking;
-using Robust.Shared.Audio;
+using Content.Shared.Light;
+using Content.Shared.Sound;
 using Robust.Shared.Containers;
-using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
+using Robust.Shared.Prototypes;
+using Content.Shared.MachineLinking;
+using System.Threading;
 
 namespace Content.Server.Light.Components
 {
@@ -28,6 +28,7 @@ namespace Content.Server.Light.Components
         [DataField("bulb")]
         public LightBulbType BulbType;
 
+        [ViewVariables]
         [DataField("on")]
         public bool On = true;
 
@@ -35,12 +36,15 @@ namespace Content.Server.Light.Components
         [ViewVariables(VVAccess.ReadWrite)]
         public DamageSpecifier Damage = default!;
 
+        [ViewVariables]
         [DataField("ignoreGhostsBoo")]
         public bool IgnoreGhostsBoo;
 
+        [ViewVariables]
         [DataField("ghostBlinkingTime")]
         public TimeSpan GhostBlinkingTime = TimeSpan.FromSeconds(10);
 
+        [ViewVariables]
         [DataField("ghostBlinkingCooldown")]
         public TimeSpan GhostBlinkingCooldown = TimeSpan.FromSeconds(60);
 

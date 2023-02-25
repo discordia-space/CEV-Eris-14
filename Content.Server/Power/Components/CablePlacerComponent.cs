@@ -6,9 +6,11 @@ namespace Content.Server.Power.Components
     [RegisterComponent]
     public sealed class CablePlacerComponent : Component
     {
+        [ViewVariables]
         [DataField("cablePrototypeID", customTypeSerializer:typeof(PrototypeIdSerializer<EntityPrototype>))]
         public string? CablePrototypeId = "CableHV";
 
+        [ViewVariables]
         [DataField("blockingWireType")]
         public CableType BlockingCableType = CableType.HighVoltage;
     }

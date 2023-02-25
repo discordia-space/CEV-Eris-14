@@ -8,7 +8,7 @@ namespace Content.Shared.Audio
         /// <summary>
         ///     Returns a random pitch.
         /// </summary>
-        [Obsolete("Use variation datafield.")]
+        [Obsolete("Use variant that takes in IRobustRandom instead.")]
         public static AudioParams WithVariation(float amplitude)
         {
             return WithVariation(amplitude, null);
@@ -58,6 +58,13 @@ namespace Content.Shared.Audio
             IoCManager.Resolve(ref rand);
             variation = Math.Clamp(variation, 0, 12);
             return ShiftSemitone(rand.Next(-variation, variation));
+        }
+
+        public static string GetRandomFileFromSoundCollection(string name, IRobustRandom? rand, IPrototypeManager? proto)
+        {
+            IoCManager.Resolve(ref rand, ref proto);
+            var soundCollection = proto.Index<SoundCollectionPrototype>(name);
+            return rand.Pick(soundCollection.PickFiles).ToString();
         }
     }
 }

@@ -113,12 +113,12 @@ namespace Content.Client.NodeContainer
 
             foreach (var grid in _mapManager.FindGridsIntersecting(map, worldAABB))
             {
-                foreach (var entity in _lookup.GetEntitiesIntersecting(grid.Owner, worldAABB))
+                foreach (var entity in _lookup.GetEntitiesIntersecting(grid.GridEntityId, worldAABB))
                 {
                     if (!_system.Entities.TryGetValue(entity, out var nodeData))
                         continue;
 
-                    var gridDict = _gridIndex.GetOrNew(grid.Owner);
+                    var gridDict = _gridIndex.GetOrNew(grid.GridEntityId);
                     var coords = xformQuery.GetComponent(entity).Coordinates;
 
                     // TODO: This probably shouldn't be capable of returning NaN...
@@ -140,9 +140,7 @@ namespace Content.Client.NodeContainer
             foreach (var (gridId, gridDict) in _gridIndex)
             {
                 var grid = _mapManager.GetGrid(gridId);
-                var (_, _, worldMatrix, invMatrix) = _entityManager.GetComponent<TransformComponent>(grid.Owner).GetWorldPositionRotationMatrixWithInv();
-
-                var lCursorBox = invMatrix.TransformBox(cursorBox);
+                var lCursorBox = grid.InvWorldMatrix.TransformBox(cursorBox);
                 foreach (var (pos, list) in gridDict)
                 {
                     var centerPos = (Vector2) pos + grid.TileSize / 2f;
@@ -161,7 +159,7 @@ namespace Content.Client.NodeContainer
                     }
                 }
 
-                handle.SetTransform(worldMatrix);
+                handle.SetTransform(grid.WorldMatrix);
 
                 foreach (var nodeRenderData in _nodeIndex.Values)
                 {

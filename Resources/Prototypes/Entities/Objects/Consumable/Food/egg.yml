@@ -78,13 +78,17 @@
     sprite: Fluids/egg_splat.rsi
     state: egg-0
     netsync: false
+  - type: Puddle
   - type: SolutionContainerManager
     solutions:
       puddle:
-        maxVol: 1000
         reagents:
         - ReagentId: Egg
           Quantity: 2
+  - type: Evaporation
+  - type: Appearance
+    visuals:
+    - type: PuddleVisualizer
 
 - type: entity
   name: eggshells
@@ -122,13 +126,8 @@
   components:
   - type: Sprite
     sprite: Objects/Consumable/Food/egg.rsi
-    layers:
-      - state: icon
-        map: [ "enum.DamageStateVisualLayers.Base" ]
-    netsync: false
-  - type: RandomSprite
-    available:
-      - enum.DamageStateVisualLayers.Base:
-          icon: ""
-      - enum.DamageStateVisualLayers.Base:
-          white: ""
+    state: icon
+  - type: RandomSpriteState
+    spriteStates:
+      - icon
+      - white

@@ -2,10 +2,10 @@
 - type: job
   id: ERTLeader
   name: job-name-ertleader
-  description: job-description-ertleader
-  playTimeTracker: JobERTLeader
   setPreference: false
   startingGear: ERTLeaderGearEVA
+  departments:
+  - Command
   icon: "Nanotrasen"
   supervisors: job-supervisors-centcom
   canBeAntag: false
@@ -15,7 +15,7 @@
 - type: startingGear
   id: ERTLeaderGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTLeader
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTLeaderFilled
     shoes: ClothingShoesBootsJack
     head: ClothingHeadHelmetHelmet
@@ -26,11 +26,12 @@
     ears: ClothingHeadsetAltCommand
     belt: ClothingBeltSecurityWebbing
     pocket1: Flare
+    pocket2:
 
 - type: startingGear
   id: ERTLeaderGearEVA
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTLeader
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTLeaderFilled
     shoes: ClothingShoesBootsMag
     mask: ClothingMaskBreath
@@ -42,15 +43,16 @@
     ears: ClothingHeadsetAltCommand
     belt: ClothingBeltSecurityFilled
     pocket1: Flare
+    pocket2:
 
 # Engineer
 - type: job
   id: ERTEngineer
   name: job-name-ertengineer
-  description: job-description-ertengineer
-  playTimeTracker: JobERTEngineer
   setPreference: false
   startingGear: ERTEngineerGearEVA
+  departments:
+  - Command
   icon: "Nanotrasen"
   supervisors: job-supervisors-centcom
   canBeAntag: false
@@ -60,7 +62,7 @@
 - type: startingGear
   id: ERTEngineerGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTEngineer
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTEngineerFilled
     shoes: ClothingShoesBootsWork
     head: ClothingHeadHelmetHelmet
@@ -71,11 +73,12 @@
     ears: ClothingHeadsetAltCommand
     belt: ClothingBeltChiefEngineerFilled
     pocket1: Flare
+    pocket2:
 
 - type: startingGear
   id: ERTEngineerGearEVA
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTEngineer
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTEngineerFilled
     shoes: ClothingShoesBootsMagAdv
     mask: ClothingMaskBreath
@@ -92,10 +95,10 @@
 - type: job
   id: ERTSecurity
   name: job-name-ertsecurity
-  description: job-description-ertsecurity
-  playTimeTracker: JobERTSecurity
   setPreference: false
   startingGear: ERTEngineerGearEVA
+  departments:
+  - Command
   icon: "Nanotrasen"
   supervisors: job-supervisors-centcom
   canBeAntag: false
@@ -105,7 +108,7 @@
 - type: startingGear
   id: ERTSecurityGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTSecurity
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTSecurityFilled
     shoes: ClothingShoesBootsJack
     head: ClothingHeadHelmetHelmet
@@ -116,11 +119,12 @@
     ears: ClothingHeadsetAltCommand
     belt: ClothingBeltSecurityWebbing
     pocket1: Flare
+    pocket2:
 
 - type: startingGear
   id: ERTSecurityGearEVA
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTSecurity
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTSecurityFilled
     shoes: ClothingShoesBootsMag
     mask: ClothingMaskBreath
@@ -137,10 +141,10 @@
 - type: job
   id: ERTMedical
   name: job-name-ertmedic
-  description: job-description-ertmedic
-  playTimeTracker: JobERTMedical
   setPreference: false
   startingGear: ERTMedicalGearEVA
+  departments:
+  - Command
   icon: "Nanotrasen"
   supervisors: job-supervisors-centcom
   canBeAntag: false
@@ -150,7 +154,7 @@
 - type: startingGear
   id: ERTMedicalGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTMedic
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTMedicalFilled
     shoes: ClothingShoesBootsJack
     head: ClothingHeadHelmetHelmet
@@ -166,7 +170,7 @@
 - type: startingGear
   id: ERTMedicalGearEVA
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTMedic
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTMedicalFilled
     shoes: ClothingShoesBootsMag
     mask: ClothingMaskBreath
@@ -184,10 +188,10 @@
 - type: job
   id: ERTJanitor
   name: job-name-ertjanitor
-  description: job-description-ertjanitor
-  playTimeTracker: JobERTJanitor
   setPreference: false
   startingGear: ERTJanitorGearEVA
+  departments:
+  - Command
   icon: "Nanotrasen"
   supervisors: job-supervisors-centcom
   canBeAntag: false
@@ -197,7 +201,7 @@
 - type: startingGear
   id: ERTJanitorGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTJanitor
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTJanitorFilled
     shoes: ClothingShoesGaloshes
     head: ClothingHeadHelmetHelmet
@@ -207,11 +211,12 @@
     ears: ClothingHeadsetAltCommand
     belt: ClothingBeltJanitorFilled
     pocket1: Flare
+    pocket2:
 
 - type: startingGear
   id: ERTJanitorGearEVA
   equipment:
-    jumpsuit: ClothingUniformJumpsuitERTJanitor
+    jumpsuit: ClothingUniformJumpsuitColorBlue
     back: ClothingBackpackERTJanitorFilled
     shoes: ClothingShoesBootsMag
     mask: ClothingMaskBreath

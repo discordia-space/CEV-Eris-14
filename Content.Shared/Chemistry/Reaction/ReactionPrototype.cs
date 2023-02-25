@@ -1,7 +1,7 @@
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Database;
 using Content.Shared.FixedPoint;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Dictionary;
 
@@ -14,7 +14,7 @@ namespace Content.Shared.Chemistry.Reaction
     public sealed class ReactionPrototype : IPrototype, IComparable<ReactionPrototype>
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         [DataField("name")]
@@ -37,12 +37,6 @@ namespace Content.Shared.Chemistry.Reaction
         /// </summary>
         [DataField("maxTemp")]
         public float MaximumTemperature = float.PositiveInfinity;
-
-        /// <summary>
-        ///     The required mixing categories for an entity to mix the solution with for the reaction to occur
-        /// </summary>
-        [DataField("requiredMixerCategories")]
-        public List<string>? MixingCategories = null;
 
         /// <summary>
         /// Reagents created when the reaction occurs.
@@ -94,7 +88,7 @@ namespace Content.Shared.Chemistry.Reaction
             if (Products.Count != other.Products.Count)
                 return Products.Count - other.Products.Count;
 
-            return string.Compare(ID, other.ID, StringComparison.Ordinal);
+            return ID.CompareTo(other.ID);
         }
     }
 

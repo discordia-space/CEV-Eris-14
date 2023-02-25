@@ -1,3 +1,4 @@
+﻿using System.Globalization;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
 using Robust.Shared.Utility;
@@ -16,27 +17,30 @@ namespace Content.Shared.Alert
         /// <summary>
         /// Type of alert, no 2 alert prototypes should have the same one.
         /// </summary>
-        [IdDataField]
+        [IdDataFieldAttribute]
         public AlertType AlertType { get; private set; }
 
         /// <summary>
-        /// List of icons to use for this alert. Each entry corresponds to a different severity level, starting from the
-        /// minimum and incrementing upwards. If severities are not supported, the first entry is used.
+        /// Path to the icon (png) to show in alert bar. If severity levels are supported,
+        /// this should be the path to the icon without the severity number
+        /// (i.e. hot.png if there is hot1.png and hot2.png). Use <see cref="GetIconPath"/>
+        /// to get the correct icon path for a particular severity level.
         /// </summary>
-        [DataField("icons", required: true)]
-        public readonly List<SpriteSpecifier> Icons = new();
+        [ViewVariables]
+        [DataField("icon")]
+        public SpriteSpecifier Icon { get; private set; } = SpriteSpecifier.Invalid;
 
         /// <summary>
         /// Name to show in tooltip window. Accepts formatting.
         /// </summary>
         [DataField("name")]
-        public string Name { get; private set; } = "";
+        public FormattedMessage Name { get; private set; } = new();
 
         /// <summary>
         /// Description to show in tooltip window. Accepts formatting.
         /// </summary>
         [DataField("description")]
-        public string Description { get; private set; } = "";
+        public FormattedMessage Description { get; private set; } = new();
 
         /// <summary>
         /// Category the alert belongs to. Only one alert of a given category
@@ -99,14 +103,8 @@ namespace Content.Shared.Alert
                 throw new InvalidOperationException($"This alert ({AlertKey}) does not support severity");
             }
 
-            var minIcons = SupportsSeverity
-                ? MaxSeverity - MinSeverity : 1;
-
-            if (Icons.Count < minIcons)
-                throw new InvalidOperationException($"Insufficient number of icons given for alert {AlertType}");
-
             if (!SupportsSeverity)
-                return Icons[0];
+                return Icon;
 
             if (severity == null)
             {
@@ -123,7 +121,20 @@ namespace Content.Shared.Alert
                 throw new ArgumentOutOfRangeException(nameof(severity), $"Severity above maximum severity in {AlertKey}.");
             }
 
-            return Icons[severity.Value - _minSeverity];
+            var severityText = severity.Value.ToString(CultureInfo.InvariantCulture);
+            switch (Icon)
+            {
+                case SpriteSpecifier.EntityPrototype entityPrototype:
+                    throw new InvalidOperationException($"Severity not supported for EntityPrototype icon in {AlertKey}");
+                case SpriteSpecifier.Rsi rsi:
+                    return new SpriteSpecifier.Rsi(rsi.RsiPath, rsi.RsiState + severityText);
+                case SpriteSpecifier.Texture texture:
+                    var newName = texture.TexturePath.FilenameWithoutExtension + severityText;
+                    return new SpriteSpecifier.Texture(
+                        texture.TexturePath.WithName(newName + "." + texture.TexturePath.Extension));
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(Icon));
+            }
         }
     }
 }

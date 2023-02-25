@@ -13,12 +13,9 @@ namespace Content.Server.Light.EntitySystems
 {
     public sealed class MatchstickSystem : EntitySystem
     {
+        private HashSet<MatchstickComponent> _litMatches = new();
         [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
         [Dependency] private readonly TransformSystem _transformSystem = default!;
-        [Dependency] private readonly SharedItemSystem _item = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-
-        private HashSet<MatchstickComponent> _litMatches = new();
 
         public override void Initialize()
         {
@@ -63,7 +60,7 @@ namespace Content.Server.Light.EntitySystems
             if (!isHotEvent.IsHot)
                 return;
 
-            Ignite(uid, component, args.User);
+            Ignite(component, args.User);
             args.Handled = true;
         }
 
@@ -72,23 +69,23 @@ namespace Content.Server.Light.EntitySystems
             args.IsHot = component.CurrentState == SmokableState.Lit;
         }
 
-        public void Ignite(EntityUid uid, MatchstickComponent component, EntityUid user)
+        public void Ignite(MatchstickComponent component, EntityUid user)
         {
             // Play Sound
             SoundSystem.Play(component.IgniteSound.GetSound(), Filter.Pvs(component.Owner),
                 component.Owner, AudioHelpers.WithVariation(0.125f).WithVolume(-0.125f));
 
             // Change state
-            SetState(uid, component, SmokableState.Lit);
+            SetState(component, SmokableState.Lit);
             _litMatches.Add(component);
             component.Owner.SpawnTimer(component.Duration * 1000, delegate
             {
-                SetState(uid, component, SmokableState.Burnt);
+                SetState(component, SmokableState.Burnt);
                 _litMatches.Remove(component);
             });
         }
 
-        private void SetState(EntityUid uid, MatchstickComponent component, SmokableState value)
+        private void SetState(MatchstickComponent component, SmokableState value)
         {
             component.CurrentState = value;
 
@@ -97,22 +94,22 @@ namespace Content.Server.Light.EntitySystems
                 pointLightComponent.Enabled = component.CurrentState == SmokableState.Lit;
             }
 
-            if (EntityManager.TryGetComponent(component.Owner, out ItemComponent? item))
+            if (EntityManager.TryGetComponent(component.Owner, out SharedItemComponent? item))
             {
                 switch (component.CurrentState)
                 {
                     case SmokableState.Lit:
-                        _item.SetHeldPrefix(component.Owner, "lit", item);
+                        item.EquippedPrefix = "lit";
                         break;
                     default:
-                        _item.SetHeldPrefix(component.Owner, "unlit", item);
+                        item.EquippedPrefix = "unlit";
                         break;
                 }
             }
 
             if (EntityManager.TryGetComponent(component.Owner, out AppearanceComponent? appearance))
             {
-                _appearance.SetData(uid, SmokingVisuals.Smoking, component.CurrentState, appearance);
+                appearance.SetData(SmokingVisuals.Smoking, component.CurrentState);
             }
         }
     }

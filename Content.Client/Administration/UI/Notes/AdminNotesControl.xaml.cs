@@ -10,6 +10,8 @@ namespace Content.Client.Administration.UI.Notes;
 [GenerateTypedNameReferences]
 public sealed partial class AdminNotesControl : Control
 {
+    [Dependency] private readonly IUserInterfaceManager _ui = default!;
+
     public event Action<int, string>? OnNoteChanged;
     public event Action<string>? OnNewNoteEntered;
     public event Action<int>? OnNoteDeleted;
@@ -51,7 +53,7 @@ public sealed partial class AdminNotesControl : Control
         OnNoteChanged?.Invoke(input.Id, text);
     }
 
-    private bool NoteClicked(AdminNotesLine line)
+    private bool NoteRightClicked(AdminNotesLine line)
     {
         ClosePopup();
 
@@ -67,7 +69,7 @@ public sealed partial class AdminNotesControl : Control
         };
         _popup.OnDeletePressed += noteId => OnNoteDeleted?.Invoke(noteId);
 
-        var box = UIBox2.FromDimensions(UserInterfaceManager.MousePositionScaled.Position, (1, 1));
+        var box = UIBox2.FromDimensions(_ui.MousePositionScaled.Position, (1, 1));
         _popup.Open(box);
 
         return true;
@@ -100,7 +102,7 @@ public sealed partial class AdminNotesControl : Control
 
             input = new AdminNotesLine(note);
             input.OnSubmitted += NoteSubmitted;
-            input.OnClicked += NoteClicked;
+            input.OnRightClicked += NoteRightClicked;
             Notes.AddChild(input);
             Inputs[note.Id] = input;
         }
@@ -134,7 +136,7 @@ public sealed partial class AdminNotesControl : Control
 
         if (_popup != null)
         {
-            UserInterfaceManager.PopupRoot.RemoveChild(_popup);
+            _ui.PopupRoot.RemoveChild(_popup);
         }
 
         OnNoteChanged = null;

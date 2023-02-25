@@ -1,5 +1,5 @@
 using Content.Shared.Damage;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 

@@ -1,29 +1,24 @@
-using Content.Shared.CartridgeLoader;
 using Robust.Shared.Serialization;
 
 
 namespace Content.Shared.PDA
 {
     [Serializable, NetSerializable]
-    public sealed class PDAUpdateState : CartridgeLoaderUiState
+    public sealed class PDAUpdateState : BoundUserInterfaceState
     {
         public bool FlashlightEnabled;
         public bool HasPen;
         public PDAIdInfoText PDAOwnerInfo;
-        public string? StationName;
         public bool HasUplink;
         public bool CanPlayMusic;
-        public string? Address;
 
-        public PDAUpdateState(bool flashlightEnabled, bool hasPen, PDAIdInfoText pdaOwnerInfo, string? stationName, bool hasUplink = false, bool canPlayMusic = false, string? address = null)
+        public PDAUpdateState(bool flashlightEnabled, bool hasPen, PDAIdInfoText pDAOwnerInfo, bool hasUplink = false, bool canPlayMusic = false)
         {
             FlashlightEnabled = flashlightEnabled;
             HasPen = hasPen;
-            PDAOwnerInfo = pdaOwnerInfo;
+            PDAOwnerInfo = pDAOwnerInfo;
             HasUplink = hasUplink;
             CanPlayMusic = canPlayMusic;
-            StationName = stationName;
-            Address = address;
         }
     }
 

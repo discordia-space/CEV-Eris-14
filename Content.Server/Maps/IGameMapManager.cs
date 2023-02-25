@@ -26,45 +26,35 @@ public interface IGameMapManager
     IEnumerable<GameMapPrototype> AllMaps();
 
     /// <summary>
-    /// Gets the currently selected map
-    /// </summary>
-    /// <returns>selected map</returns>
-    GameMapPrototype? GetSelectedMap();
-
-    /// <summary>
-    /// Clears the selected map, if any
-    /// </summary>
-    void ClearSelectedMap();
-
-    /// <summary>
-    /// Attempts to select the given map, checking eligibility criteria
+    /// Attempts to select the given map.
     /// </summary>
     /// <param name="gameMap">map prototype</param>
     /// <returns>success or failure</returns>
-    bool TrySelectMapIfEligible(string gameMap);
+    bool TrySelectMap(string gameMap);
 
     /// <summary>
-    /// Select the given map regardless of eligibility
+    /// Forces the given map, making sure the game map manager won't reselect if conditions are no longer met at round restart.
     /// </summary>
     /// <param name="gameMap">map prototype</param>
     /// <returns>success or failure</returns>
-    void SelectMap(string gameMap);
+    void ForceSelectMap(string gameMap);
 
     /// <summary>
-    /// Selects a random map eligible map
+    /// Selects a random map.
     /// </summary>
-    void SelectMapRandom();
+    void SelectRandomMap();
 
     /// <summary>
-    /// Selects the map at the front of the rotation queue
+    /// Gets the currently selected map, without double-checking if it can be used.
     /// </summary>
     /// <returns>selected map</returns>
-    void SelectMapFromRotationQueue(bool markAsPlayed = false);
+    GameMapPrototype GetSelectedMap();
 
     /// <summary>
-    /// Selects the map by following rules set in the config
+    /// Gets the currently selected map, double-checking if it can be used.
     /// </summary>
-    public void SelectMapByConfigRules();
+    /// <returns>selected map</returns>
+    GameMapPrototype GetSelectedMapChecked(bool loud = false, bool markAsPlayed = false);
 
     /// <summary>
     /// Checks if the given map exists

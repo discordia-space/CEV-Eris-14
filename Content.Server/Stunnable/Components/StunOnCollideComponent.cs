@@ -27,6 +27,6 @@ namespace Content.Server.Stunnable.Components
         /// <summary>
         /// Fixture we track for the collision.
         /// </summary>
-        [DataField("fixture")] public string FixtureID = "projectile";
+        [ViewVariables, DataField("fixture")] public string FixtureID = "projectile";
     }
 }

@@ -12,4 +12,5 @@
     - state: active
   - type: Item
     sprite: Objects/Devices/gps.rsi
+    state: icon
   - type: HandheldGPS

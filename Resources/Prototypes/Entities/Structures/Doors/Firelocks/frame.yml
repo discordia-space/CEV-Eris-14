@@ -29,7 +29,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.45,-0.45,0.45,0.45"
-      density: 55
+      mass: 50
       mask:
       - Impassable
       - HighImpassable

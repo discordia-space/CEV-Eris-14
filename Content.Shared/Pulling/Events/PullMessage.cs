@@ -1,13 +1,13 @@
-﻿using Robust.Shared.Physics.Components;
+﻿using Robust.Shared.Physics;
 
 namespace Content.Shared.Physics.Pull
 {
     public abstract class PullMessage : EntityEventArgs
     {
-        public readonly PhysicsComponent Puller;
-        public readonly PhysicsComponent Pulled;
+        public readonly IPhysBody Puller;
+        public readonly IPhysBody Pulled;
 
-        protected PullMessage(PhysicsComponent puller, PhysicsComponent pulled)
+        protected PullMessage(IPhysBody puller, IPhysBody pulled)
         {
             Puller = puller;
             Pulled = pulled;

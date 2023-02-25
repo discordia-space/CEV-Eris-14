@@ -6,8 +6,6 @@
   placement:
     mode: SnapgridCenter
   components:
-  - type: Transform
-    anchored: true
   - type: Physics
     bodyType: Static
   - type: Sprite
@@ -21,4 +19,3 @@
           bounds: "-0.5,-0.5,0.5,0.5"
   - type: Airtight
     noAirWhenFullyAirBlocked: false
-  - type: Clickable

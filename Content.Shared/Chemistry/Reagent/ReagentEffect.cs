@@ -82,7 +82,6 @@ namespace Content.Shared.Chemistry.Reagent
         ReagentPrototype Reagent,
         FixedPoint2 Quantity,
         IEntityManager EntityManager,
-        ReactionMethod? Method,
-        float Scale
+        ReactionMethod? Method
     );
 }

@@ -25,11 +25,6 @@
     - gcf
     - gc
     - gc_mode
-    - resetent
-    - resetallents
-    - cvar
-    - fuckrules
-    - midipanic
 
 - Flags: DEBUG
   Commands:
@@ -47,27 +42,30 @@
     - toggledecals
     - nodevis
     - nodevisfilter
-    - showmeleespread
-    - showgunspread
+    - showspread
     - showambient
     - showemergencyshuttle
-    - zoom
-    - showsubfloor
-    - showsubfloorforever
-    - showmarkers
-    - nodevis
-    - nodevisfilter
-    - detachent
-    - localdelete
-    - fullstatereset
 
 - Flags: MAPPING
   Commands:
+    - showmarkers
+    - showsubfloor
+    - showsubfloorforever
     - mapping
-    - toggleautosave
     - toggledecals
+    - nodevis
+    - nodevisfilter
+
+- Flags: FUN
+  Commands:
+    - tethergun
+    - griddrag
+
+- Flags: ADMIN
+  Commands:
+    - togglehealthoverlay
+    - togglelight
 
 - Flags: QUERY
   Commands:
     - uploadfile
-    - loadprototype

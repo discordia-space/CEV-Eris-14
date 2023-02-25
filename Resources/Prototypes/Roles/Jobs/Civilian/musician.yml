@@ -1,9 +1,9 @@
 - type: job
   id: Musician
   name: job-name-musician
-  description: job-description-musician
-  playTimeTracker: JobMusician
   startingGear: MusicianGear
+  departments:
+  - Civilian
   icon: "Musician"
   supervisors: job-supervisors-hire
   access:
@@ -17,10 +17,10 @@
 - type: startingGear
   id: MusicianGear
   equipment:
-    jumpsuit: ClothingUniformJumpsuitMusician
+    jumpsuit: ClothingUniformJumpsuitLawyerPurple
     back: ClothingBackpackMusicianFilled
     eyes: ClothingEyesGlassesSunglasses
-    shoes: ClothingShoesBootsLaceup
+    shoes: ClothingShoesColorBlack
     id: MusicianPDA
     ears: ClothingHeadsetService
   satchel: ClothingBackpackSatchelMusicianFilled

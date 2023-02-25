@@ -6,7 +6,7 @@
   - type: Sprite
     state: icon
   - type: Clothing
-    slots: [mask]
+    Slots: [mask]
 
 - type: entity
   abstract: true
@@ -17,6 +17,6 @@
     toggleAction:
       name: action-name-mask
       description: action-description-mask-toggle
-      icon: { sprite: Clothing/Mask/gas.rsi, state: icon }
-      iconOn: Interface/Default/blocked.png
+      icon: Clothing/Mask/gas.rsi/icon.png
+      iconOn: Interface/Inventory/blocked.png
       event: !type:ToggleMaskEvent

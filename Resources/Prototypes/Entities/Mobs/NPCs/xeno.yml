@@ -9,20 +9,15 @@
   - type: DiseaseProtection
     protection: 1
   - type: CombatMode
-    disarm: null
-  - type: InputMover
-  - type: MobMover
-  - type: HTN
-    rootTask: XenoCompound
-    blackboard:
-      NavInteract: !type:Bool
-        true
-      NavPry: !type:Bool
-        true
-      NavSmash: !type:Bool
-        true
+    canDisarm: true
+  - type: PlayerInputMover
+  - type: PlayerMobMover
+  - type: UtilityAI
+    behaviorSets:
+    - Idle
+    - UnarmedAttackHostiles
   - type: Tool
-    speed: 1.5
+    speed: 0.3
     qualities:
       - Prying
     useSound:
@@ -31,7 +26,7 @@
     groups:
       Flammable: [Touch]
       Extinguish: [Touch]
-  - type: Faction
+  - type: AiFactionTag
     factions:
     - Xeno
   - type: Hands
@@ -48,21 +43,15 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.25
-      density: 1000
+      mass: 200
       mask:
       - MobMask
       layer:
       - MobLayer
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       200: Dead
-  - type: Stamina
-    excess: 200
   - type: Bloodstream
     bloodReagent: FluorosulfuricAcid
     bloodlossDamage:
@@ -74,14 +63,14 @@
         Bloodloss:
           -0.25
   - type: MeleeWeapon
-    hidden: true
-    angle: 0
-    soundHit:
+    range: 1.5
+    arcwidth: 0
+    hitSound:
      collection: AlienClaw
-    animation: WeaponArcBite
+    arc:
     damage:
       groups:
-        Brute: 12
+        Brute: 20
   - type: Appearance
   - type: DamageStateVisuals
     rotate: true
@@ -99,8 +88,6 @@
     - id: FoodMeatXeno
       amount: 5
   - type: GhostTakeoverAvailable
-    allowMovement: true
-    allowSpeech: true
     makeSentient: true
     name: xeno
     description: You are a xeno, co-operate with your hive to kill all crewmembers!
@@ -133,15 +120,9 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       300: Dead
-  - type: Stamina
-    excess: 300
   - type: SlowOnDamage
     speedModifierThresholds:
       250: 0.7
@@ -150,7 +131,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 400
+      mass: 250
       mask:
       - MobMask
       layer:
@@ -169,15 +150,9 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       200: Dead
-  - type: Stamina
-    excess: 200
   - type: MovementSpeedModifier
     baseWalkSpeed : 3.0
     baseSprintSpeed : 5.5
@@ -189,7 +164,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 450
+      mass: 200
       mask:
       - MobMask
       layer:
@@ -208,23 +183,17 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       1500: Dead
-  - type: Stamina
-    excess: 1500
   - type: MovementSpeedModifier
     baseWalkSpeed : 2.8
     baseSprintSpeed : 3.8
   - type: MeleeWeapon
-    hidden: true
     damage:
      groups:
        Brute: 40
+    cooldownTime: 2
   - type: SlowOnDamage
     speedModifierThresholds:
       1000: 0.7
@@ -233,7 +202,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 15500
+      mass: 10000
       mask:
       - MobMask
       layer:
@@ -252,23 +221,17 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       550: Dead
-  - type: Stamina
-    excess: 550
   - type: MovementSpeedModifier
     baseWalkSpeed : 2.3
     baseSprintSpeed : 4.2
   - type: MeleeWeapon
-    hidden: true
     damage:
      groups:
-       Brute: 20
+       Brute: 35
+    cooldownTime: 1.5
   - type: SlowOnDamage
     speedModifierThresholds:
       450: 0.7
@@ -277,7 +240,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 1350
+      mass: 600
       mask:
       - MobMask
       layer:
@@ -296,23 +259,17 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       250: Dead
-  - type: Stamina
-    excess: 250
   - type: MovementSpeedModifier
     baseWalkSpeed : 2.7
     baseSprintSpeed : 6.0
   - type: MeleeWeapon
-    hidden: true
     damage:
      groups:
-       Brute: 8
+       Brute: 15
+    cooldownTime: 0.5
   - type: SlowOnDamage
     speedModifierThresholds:
       200: 0.7
@@ -321,7 +278,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 235
+      mass: 150
       mask:
       - MobMask
       layer:
@@ -350,15 +307,9 @@
     - map: ["enum.DamageStateVisualLayers.Base"]
       state: running
   - type: MobState
-    allowedStates:
-      - Alive
-      - Dead
-  - type: MobThresholds
     thresholds:
       0: Alive
       300: Dead
-  - type: Stamina
-    excess: 300
   - type: SlowOnDamage
     speedModifierThresholds:
       250: 0.4
@@ -367,7 +318,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 235
+      mass: 150
       mask:
       - MobMask
       layer:
@@ -398,34 +349,41 @@
     attributes:
       proper: true
       gender: male
-  - type: InputMover
-  - type: MobMover
-  - type: HTN
-    rootTask: SimpleHostileCompound
-  - type: Faction
+  - type: PlayerInputMover
+  - type: PlayerMobMover
+  - type: UtilityAI
+    behaviorSets:
+    - Idle
+    - UnarmedAttackHostiles
+  - type: AiFactionTag
     factions:
     - Xeno
   - type: MeleeWeapon
-    hidden: true
-    angle: 0
-    animation: WeaponArcBite
+    range: 1.5
+    arcwidth: 0
+    arc: bite
     damage:
       types:
         Piercing: 5
+  - type: MeleeChemicalInjector
   - type: SolutionContainerManager
     solutions:
       melee:
         reagents:
         - ReagentId: Toxin
           Quantity: 50
-  - type: MeleeChemicalInjector
+  - type: RefillableSolution
     solution: melee
+  - type: InjectableSolution
+    solution: melee
+  - type: SolutionTransfer
+    maxTransferAmount: 3
   - type: Fixtures
     fixtures:
     - shape:
         !type:PhysShapeCircle
         radius: 0.35
-      density: 25
+      mass: 10
       mask:
       - MobMask
       layer:

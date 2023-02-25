@@ -1,5 +1,5 @@
 using Content.Shared.MachineLinking;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Server.MachineLinking.Components

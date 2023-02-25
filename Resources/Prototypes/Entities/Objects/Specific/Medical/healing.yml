@@ -7,10 +7,7 @@
     sprite: Objects/Specific/Medical/medical.rsi
   - type: Item
     sprite: Objects/Specific/Medical/medical.rsi
-    heldPrefix: ointment
-  # Inherited
-  - type: StaticPrice
-    price: 0
+    HeldPrefix: ointment
 
 - type: entity
   name: ointment
@@ -24,21 +21,20 @@
   - type: Sprite
     state: ointment
   - type: Item
-    heldPrefix: ointment
+    HeldPrefix: ointment
   - type: Healing
     damageContainer: Biological
     damage:
       groups:
-        Burn: -15 # 5 for each type in the group
+        Burn: -10 # 5 for each type in the group
     healingBeginSound:
       path: "/Audio/Items/Medical/ointment_begin.ogg"
     healingEndSound:
       path: "/Audio/Items/Medical/ointment_end.ogg"
   - type: Stack
     stackType: Ointment
+    max: 10
     count: 10
-  - type: StackPrice
-    price: 10
 
 - type: entity
   name: bruise pack
@@ -63,9 +59,8 @@
       path: "/Audio/Items/Medical/brutepack_end.ogg"
   - type: Stack
     stackType: Brutepack
+    max: 10
     count: 10
-  - type: StackPrice
-    price: 10
 
 - type: entity
   name: roll of gauze
@@ -94,9 +89,8 @@
       path: "/Audio/Items/Medical/brutepack_end.ogg"
   - type: Stack
     stackType: Gauze
+    max: 10
     count: 10
-  - type: StackPrice
-    price: 10
 
 - type: entity
   id: Gauze1
@@ -117,6 +111,7 @@
     state: cream
   - type: Stack
     stackType: AloeCream
+    max: 10
     count: 10
 
 # Pills
@@ -128,7 +123,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Dexalin
           Quantity: 15
@@ -141,7 +136,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Dylovene
           Quantity: 15
@@ -154,7 +149,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Hyronalin
           Quantity: 15
@@ -167,7 +162,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Iron
           Quantity: 15
@@ -180,7 +175,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Kelotane
           Quantity: 15
@@ -193,7 +188,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: SpaceDrugs
           Quantity: 15
@@ -206,7 +201,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Tricordrazine
           Quantity: 15
@@ -219,7 +214,7 @@
   - type: SolutionContainerManager
     solutions:
       food:
-        maxVol: 50
+        maxVol: 25
         reagents:
         - ReagentId: Romerol
           Quantity: 10
@@ -227,7 +222,7 @@
 # Syringes
 - type: entity
   name: ephedrine syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeEphedrine
   components:
   - type: SolutionContainerManager
@@ -240,7 +235,7 @@
 
 - type: entity
   name: inaprovaline syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeInaprovaline
   components:
   - type: SolutionContainerManager
@@ -253,7 +248,7 @@
 
 - type: entity
   name: tranexamic acid syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeTranexamicAcid
   components:
   - type: SolutionContainerManager
@@ -266,7 +261,7 @@
 
 - type: entity
   name: spaceacillin syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeSpaceacillin
   components:
   - type: SolutionContainerManager
@@ -279,7 +274,7 @@
 
 - type: entity
   name: ipecac syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeIpecac
   components:
   - type: SolutionContainerManager
@@ -293,7 +288,7 @@
 #this is where all the syringes are so i didn't know where to put it
 - type: entity
   name: corpium syringe
-  parent: BaseSyringe
+  parent: Syringe
   id: SyringeCorpium
   components:
   - type: SolutionContainerManager

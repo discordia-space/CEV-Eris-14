@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Content.Shared.Construction.Components;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Interaction;
@@ -36,5 +37,6 @@ public abstract class SharedAnchorableSystem : EntitySystem
         ToolComponent? usingTool = null)
     {
         // Thanks tool system.
+        return;
     }
 }

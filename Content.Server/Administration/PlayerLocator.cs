@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,22 +43,11 @@ namespace Content.Server.Administration
         Task<LocatedPlayerData?> LookupIdAsync(NetUserId userId, CancellationToken cancel = default);
     }
 
-    internal sealed class PlayerLocator : IPlayerLocator, IDisposable
+    internal sealed class PlayerLocator : IPlayerLocator
     {
         [Dependency] private readonly IPlayerManager _playerManager = default!;
         [Dependency] private readonly IConfigurationManager _configurationManager = default!;
         [Dependency] private readonly IServerDbManager _db = default!;
-
-        private readonly HttpClient _httpClient = new();
-
-        public PlayerLocator()
-        {
-            if (typeof(PlayerLocator).Assembly.GetName().Version is { } version)
-            {
-                _httpClient.DefaultRequestHeaders.UserAgent.Add(
-                    new ProductInfoHeaderValue("SpaceStation14", version.ToString()));
-            }
-        }
 
         public async Task<LocatedPlayerData?> LookupIdByNameAsync(string playerName, CancellationToken cancel = default)
         {
@@ -78,9 +66,10 @@ namespace Content.Server.Administration
                 return new LocatedPlayerData(record.UserId, record.LastSeenAddress, record.HWId, record.LastSeenUserName);
 
             // If all else fails, ask the auth server.
+            var client = new HttpClient();
             var authServer = _configurationManager.GetCVar(CVars.AuthServer);
             var requestUri = $"{authServer}api/query/name?name={WebUtility.UrlEncode(playerName)}";
-            using var resp = await _httpClient.GetAsync(requestUri, cancel);
+            using var resp = await client.GetAsync(requestUri, cancel);
 
             if (resp.StatusCode == HttpStatusCode.NotFound)
                 return null;
@@ -118,9 +107,10 @@ namespace Content.Server.Administration
                 return new LocatedPlayerData(record.UserId, record.LastSeenAddress, record.HWId, record.LastSeenUserName);
 
             // If all else fails, ask the auth server.
+            var client = new HttpClient();
             var authServer = _configurationManager.GetCVar(CVars.AuthServer);
             var requestUri = $"{authServer}api/query/userid?userid={WebUtility.UrlEncode(userId.UserId.ToString())}";
-            using var resp = await _httpClient.GetAsync(requestUri, cancel);
+            using var resp = await client.GetAsync(requestUri, cancel);
 
             if (resp.StatusCode == HttpStatusCode.NotFound)
                 return null;
@@ -157,11 +147,6 @@ namespace Content.Server.Administration
         [UsedImplicitly]
         private sealed record UserDataResponse(string UserName, Guid UserId)
         {
-        }
-
-        void IDisposable.Dispose()
-        {
-            _httpClient.Dispose();
         }
     }
 }

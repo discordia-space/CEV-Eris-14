@@ -42,9 +42,6 @@
   - type: Sprite
     sprite: Objects/Consumable/Food/skewer.rsi
     state: skewer
-  - type: Tag
-    tags:
-    - Trash
 
 # Custom Kebab Example
 

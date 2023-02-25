@@ -9,26 +9,21 @@ using Content.Shared.Damage;
 using Content.Shared.Database;
 using Content.Shared.Interaction;
 using Content.Shared.Interaction.Events;
-using Content.Shared.Mobs;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.MobState.Components;
 using Content.Shared.Stacks;
-using Robust.Shared.Random;
+using Robust.Shared.Audio;
+using Robust.Shared.Player;
 
 namespace Content.Server.Medical;
 
 public sealed class HealingSystem : EntitySystem
 {
-    [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly IAdminLogManager _adminLogger = default!;
     [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
     [Dependency] private readonly DoAfterSystem _doAfter = default!;
-    [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly StackSystem _stacks = default!;
     [Dependency] private readonly SharedInteractionSystem _interactionSystem = default!;
-    [Dependency] private readonly MobStateSystem _mobStateSystem = default!;
-    [Dependency] private readonly MobThresholdSystem _mobThresholdSystem = default!;
 
     public override void Initialize()
     {
@@ -41,15 +36,13 @@ public sealed class HealingSystem : EntitySystem
 
     private void OnHealingComplete(EntityUid uid, DamageableComponent component, HealingCompleteEvent args)
     {
-        if (_mobStateSystem.IsDead(uid))
+        if (TryComp<MobStateComponent>(uid, out var state) && state.IsDead())
             return;
 
-        if (TryComp<StackComponent>(args.Component.Owner, out var stack) && stack.Count < 1)
-            return;
+        if (TryComp<StackComponent>(args.Component.Owner, out var stack) && stack.Count < 1) return;
 
         if (component.DamageContainerID is not null &&
-            !component.DamageContainerID.Equals(component.DamageContainerID))
-            return;
+            !component.DamageContainerID.Equals(component.DamageContainerID)) return;
 
         if (args.Component.BloodlossModifier != 0)
         {
@@ -57,7 +50,7 @@ public sealed class HealingSystem : EntitySystem
             _bloodstreamSystem.TryModifyBleedAmount(uid, args.Component.BloodlossModifier);
         }
 
-        var healed = _damageable.TryChangeDamage(uid, args.Component.Damage, true, origin: args.User);
+        var healed = _damageable.TryChangeDamage(uid, args.Component.Damage, true);
 
         // Reverify that we can heal the damage.
         if (healed == null)
@@ -72,8 +65,7 @@ public sealed class HealingSystem : EntitySystem
 
         if (args.Component.HealingEndSound != null)
         {
-            _audio.PlayPvs(args.Component.HealingEndSound, uid,
-                AudioHelpers.WithVariation(0.125f, _random).WithVolume(-5f));
+            SoundSystem.Play(args.Component.HealingEndSound.GetSound(), Filter.Pvs(uid, entityManager:EntityManager), uid, AudioHelpers.WithVariation(0.125f).WithVolume(-5f));
         }
     }
 
@@ -84,8 +76,7 @@ public sealed class HealingSystem : EntitySystem
 
     private void OnHealingUse(EntityUid uid, HealingComponent component, UseInHandEvent args)
     {
-        if (args.Handled)
-            return;
+        if (args.Handled) return;
 
         if (TryHeal(uid, args.User, args.User, component))
             args.Handled = true;
@@ -93,8 +84,7 @@ public sealed class HealingSystem : EntitySystem
 
     private void OnHealingAfterInteract(EntityUid uid, HealingComponent component, AfterInteractEvent args)
     {
-        if (args.Handled || !args.CanReach || args.Target == null)
-            return;
+        if (args.Handled || !args.CanReach || args.Target == null) return;
 
         if (TryHeal(uid, args.User, args.Target.Value, component))
             args.Handled = true;
@@ -107,13 +97,10 @@ public sealed class HealingSystem : EntitySystem
             return false;
         }
 
-        if (_mobStateSystem.IsDead(target))
+        if (TryComp<MobStateComponent>(target, out var state) && state.IsDead())
             return false;
 
         if (!TryComp<DamageableComponent>(target, out var targetDamage))
-            return false;
-
-        if (targetDamage.TotalDamage == 0)
             return false;
 
         if (component.DamageContainerID is not null && !component.DamageContainerID.Equals(targetDamage.DamageContainerID))
@@ -125,22 +112,17 @@ public sealed class HealingSystem : EntitySystem
             return false;
         }
 
-        if (TryComp<StackComponent>(component.Owner, out var stack) && stack.Count < 1)
+        if (TryComp<SharedStackComponent>(component.Owner, out var stack) && stack.Count < 1)
             return false;
 
         component.CancelToken = new CancellationTokenSource();
 
         if (component.HealingBeginSound != null)
         {
-            _audio.PlayPvs(component.HealingBeginSound, uid,
-                AudioHelpers.WithVariation(0.125f, _random).WithVolume(-5f));
+            SoundSystem.Play(component.HealingBeginSound.GetSound(), Filter.Pvs(uid, entityManager:EntityManager), uid, AudioHelpers.WithVariation(0.125f).WithVolume(-5f));
         }
 
-        var delay = user != target
-            ? component.Delay
-            : component.Delay * GetScaledHealingPenalty(user, component);
-
-        _doAfter.DoAfter(new DoAfterEventArgs(user, delay, component.CancelToken.Token, target)
+        _doAfter.DoAfter(new DoAfterEventArgs(user, component.Delay, component.CancelToken.Token, target)
         {
             BreakOnUserMove = true,
             BreakOnTargetMove = true,
@@ -166,30 +148,6 @@ public sealed class HealingSystem : EntitySystem
         });
 
         return true;
-    }
-
-    /// <summary>
-    /// Scales the self-heal penalty based on the amount of damage taken
-    /// </summary>
-    /// <param name="uid"></param>
-    /// <param name="component"></param>
-    /// <returns></returns>
-    public float GetScaledHealingPenalty(EntityUid uid, HealingComponent component)
-    {
-        var output = component.Delay;
-        if (!TryComp<MobThresholdsComponent>(uid, out var mobThreshold) || !TryComp<DamageableComponent>(uid, out var damageable))
-            return output;
-
-
-        if (!_mobThresholdSystem.TryGetThresholdForState(uid, MobState.Critical, out var amount,
-                mobThreshold))
-        {
-            return 1;
-        }
-        var percentDamage = (float) (damageable.TotalDamage / amount);
-        //basically make it scale from 1 to the multiplier.
-        var modifier = percentDamage * (component.SelfHealPenaltyMultiplier - 1) + 1;
-        return Math.Max(modifier, 1);
     }
 
     private sealed class HealingCompleteEvent : EntityEventArgs

@@ -18,10 +18,9 @@
         - tool: Welding
           doAfter: 4
         completed:
-        - !type:GivePrototype
+        - !type:SpawnPrototype
           prototype: SheetSteel1
           amount: 5
-        - !type:DeleteEntity {}
       - to: parts
         steps:
         - material: Cable
@@ -31,11 +30,10 @@
           doAfter: 2
 
     - node: parts
-      entity: BaseGeneratorWallmountFrame
       edges:
-      - to: electronics
+      - to: electronics 
         steps:
-        - tag: WallmountGeneratorElectronics
+        - prototype: WallmountGeneratorElectronics
           store: board
           name: "wallmount generator circuit board"
           icon:
@@ -44,7 +42,7 @@
           doAfter: 1
       - to: electronicsAPU
         steps:
-        - tag: WallmountGeneratorAPUElectronics
+        - prototype: WallmountGeneratorAPUElectronics
           store: board
           name: "wallmount APU circuit board"
           icon:
@@ -53,13 +51,13 @@
           doAfter: 1
       - to: frame
         completed:
-        - !type:GivePrototype
-          prototype: CableApcStack1
+        - !type:SpawnPrototype
+          prototype: CableHVStack1
           amount: 5
         steps:
         - tool: Cutting
-          doAfter: 1
-
+          doAfter: 1      
+        
 
     - node: electronics
       edges:
@@ -67,14 +65,14 @@
         steps:
         - tool: Screwing
           doAfter: 2
-
+          
     - node: electronicsAPU
       edges:
       - to: APU
         steps:
         - tool: Screwing
           doAfter: 2
-
+      
     - node: generator
       entity: GeneratorWallmountBasic
       edges:
@@ -88,7 +86,7 @@
         steps:
         - tool: Prying
           doAfter: 1
-
+          
     - node: APU
       entity: GeneratorWallmountAPU
       edges:

@@ -8,7 +8,7 @@ namespace Content.Client.ParticleAccelerator.UI
     {
         private ParticleAcceleratorControlMenu? _menu;
 
-        public ParticleAcceleratorBoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey)
+        public ParticleAcceleratorBoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey)
         {
         }
 
@@ -45,8 +45,7 @@ namespace Content.Client.ParticleAccelerator.UI
         {
             base.Dispose(disposing);
 
-            _menu?.Dispose();
-            _menu = null;
+            _menu?.Close();
         }
     }
 }

@@ -54,9 +54,9 @@ public sealed class SolutionSpikableSystem : EntitySystem
             return;
         }
 
-        if (targetSolution.Volume == 0 && !spikableSource.IgnoreEmpty)
+        if (targetSolution.CurrentVolume == 0 && !spikableSource.IgnoreEmpty)
         {
-            _popupSystem.PopupEntity(Loc.GetString(spikableSource.PopupEmpty, ("spiked-entity", target), ("spike-entity", source)), user, user);
+            _popupSystem.PopupEntity(Loc.GetString(spikableSource.PopupEmpty, ("spiked-entity", target), ("spike-entity", source)), user, Filter.Entities(user));
             return;
         }
 
@@ -66,16 +66,16 @@ public sealed class SolutionSpikableSystem : EntitySystem
                 targetSolution.MaxVolume,
                 out var overflow))
         {
-            if (overflow.Volume > 0)
+            if (overflow.TotalVolume > 0)
             {
                 RaiseLocalEvent(target, new SolutionSpikeOverflowEvent(overflow));
             }
 
-            _popupSystem.PopupEntity(Loc.GetString(spikableSource.Popup, ("spiked-entity", target), ("spike-entity", source)), user, user);
+            _popupSystem.PopupEntity(Loc.GetString(spikableSource.Popup, ("spiked-entity", target), ("spike-entity", source)), user, Filter.Entities(user));
 
             sourceSolution.RemoveAllSolution();
 
-            _triggerSystem.Trigger(source, user);
+            _triggerSystem.Trigger(source);
         }
     }
 }

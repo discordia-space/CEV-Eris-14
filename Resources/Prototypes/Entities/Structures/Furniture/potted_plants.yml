@@ -15,20 +15,16 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.1
-      density: 190
+      mass: 25
       mask:
       - Impassable
   - type: Sprite
     drawdepth: Overdoors
     offset: "0.0,0.3"
     sprite: Structures/Furniture/potted_plants.rsi
-    noRot: true
   - type: PottedPlantHide
   - type: SecretStash
-    secretPartName: secret-stash-part-plant
-  - type: ContainerContainer
-    containers:
-      stash: !type:ContainerSlot {}
+    secretPartName: the plant
   - type: Pullable
   - type: Damageable
     damageContainer: Inorganic # The pot. Not the plant. Or is it plastic?

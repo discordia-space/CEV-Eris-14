@@ -5,7 +5,6 @@ using System.Runtime.Intrinsics.X86;
 using System;
 using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
-using Robust.Shared.Analyzers;
 using Robust.Shared.Maths;
 using Robust.Shared.Random;
 using SysVector4 = System.Numerics.Vector4;
@@ -13,8 +12,7 @@ using SysVector4 = System.Numerics.Vector4;
 namespace Content.Benchmarks
 {
     [DisassemblyDiagnoser]
-    [Virtual]
-    public class ColorInterpolateBenchmark
+    public sealed class ColorInterpolateBenchmark
     {
 #if NETCOREAPP
         private const MethodImplOptions AggressiveOpt = MethodImplOptions.AggressiveOptimization;

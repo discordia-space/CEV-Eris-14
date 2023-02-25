@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using Content.Server.Power.Components;
 using Robust.Shared.Map;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
 
 namespace Content.Server.Power.EntitySystems
 {
@@ -51,7 +50,7 @@ namespace Content.Server.Power.EntitySystems
             // If grid deleting no need to update power.
             if (_mapManager.TryGetGrid(xform.GridUid, out var grid))
             {
-                if (MetaData(grid.Owner).EntityLifeStage > EntityLifeStage.MapInitialized) return;
+                if (MetaData(grid.GridEntityId).EntityLifeStage > EntityLifeStage.MapInitialized) return;
             }
 
             Disconnect(uid, provider);

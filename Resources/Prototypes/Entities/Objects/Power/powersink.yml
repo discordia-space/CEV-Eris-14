@@ -20,7 +20,7 @@
       - shape:
           !type:PhysShapeAabb
           bounds: "-0.40,-0.40,0.40,0.40"
-        density: 90
+        mass: 15
         mask:
         - MachineMask
         layer:
@@ -36,7 +36,6 @@
     - type: PowerSink
     - type: Battery
       maxCharge: 7500000
-      pricePerJoule: 0.0003
     - type: ExaminableBattery
     - type: PowerConsumer
       voltage: High

@@ -19,20 +19,18 @@
         - Screwdriver
         - Flashlight
         - Wrench
-        - GeigerCounter
+#        - GeigerCounter
         - Flare
         - CableCoil
         - CigPack
-        - Radio
-        - HolofanProjector
       components:
         - AirlockPainter
         - SignalLinker
         - RCD
         - RCDAmmo
         - Welder
+        - Radio
         - PowerCell
-        - Geiger
   - type: ItemMapper
     mapLayers:
       cutters_red:
@@ -59,8 +57,10 @@
         whitelist:
           components:
           - SignalLinker
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -82,14 +82,12 @@
         - Screwdriver
         - Flashlight
         - Wrench
-        - GeigerCounter
+#        - GeigerCounter
         - Flare
         - CableCoil
         - Powerdrill
         - JawsOfLife
         - CigPack
-        - Radio
-        - HolofanProjector
       components:
         - AirlockPainter
         - SignalLinker
@@ -97,9 +95,9 @@
         - RCDAmmo
         - Welder
         - Flash
+        - Radio
         - Handcuff
         - PowerCell
-        - Geiger
   - type: ItemMapper
     mapLayers:
       drill:
@@ -134,8 +132,10 @@
         whitelist:
           tags:
           - Wrench
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -169,8 +169,10 @@
         whitelist:
           components:
           - Stunbaton
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -192,8 +194,6 @@
         - Flashlight
         - CigPack
         - TrashBag
-        - WetFloorSign
-        - HolosignProjector
       components:
         - LightReplacer
   - type: ItemMapper
@@ -210,8 +210,10 @@
         whitelist:
           tags:
           - Wrench
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -235,10 +237,9 @@
         - CigPack
         - Pill
         - PillCanister
-        - Radio
       components:
         - Hypospray
-        - Injector
+        - Radio
   - type: ItemMapper
     mapLayers:
       bottle:
@@ -270,8 +271,10 @@
         whitelist:
           tags:
           - Wrench
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -286,6 +289,7 @@
   - type: Storage
     whitelist:
       tags:
+        - BotanyHoe
         # - PlantAnalyzer
         - PlantSampleTaker
         - BotanyShovel
@@ -324,8 +328,10 @@
         whitelist:
           tags:
           - Bottle
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -342,8 +348,6 @@
       tags:
         - CigPack
         - Taser
-        - SecBeltEquip
-        - Radio
       components:
         - Stunbaton
         - FlashOnTrigger
@@ -359,8 +363,10 @@
         whitelist:
           components:
           - Stunbaton
-    sprite: Clothing/Belt/belt_overlay.rsi
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
+      sprite: Clothing/Belt/belt_overlay.rsi
 
 - type: entity
   parent: ClothingBeltStorageBase
@@ -385,6 +391,8 @@
           tags:
           - CaptainSabre
   - type: Appearance
+    visuals:
+    - type: MappedItemVisualizer
 
 # Belts without visualizers
 
@@ -398,8 +406,6 @@
     sprite: Clothing/Belt/bandolier.rsi
   - type: Clothing
     sprite: Clothing/Belt/bandolier.rsi
-  - type: Item
-    size: 60
   - type: Storage
     capacity: 60
     whitelist:
@@ -441,14 +447,12 @@
     sprite: Clothing/Belt/syndieholster.rsi
   - type: Clothing
     sprite: Clothing/Belt/syndieholster.rsi
-  - type: Item
-    size: 60
   - type: Storage
     capacity: 60
     whitelist:
       components:
         - Gun
-        - MeleeWeapon
+        - MeeleeWeapon
         - BallisticAmmoProvider
         - CartridgeAmmo
 
@@ -484,8 +488,6 @@
     sprite: Clothing/Belt/militarywebbingmed.rsi
   - type: Clothing
     sprite: Clothing/Belt/militarywebbingmed.rsi
-  - type: Item
-    size: 60
   - type: Storage
     capacity: 60
 
@@ -501,19 +503,3 @@
   - type: Clothing
     sprite: Clothing/Belt/suspenders.rsi
     quickEquip: true
-
-- type: entity
-  parent: ClothingBeltStorageBase
-  id: ClothingBeltWand
-  name: wand belt
-  description: A belt designed to hold various rods of power. A veritable fanny pack of exotic magic.
-  components:
-  - type: Sprite
-    sprite: Clothing/Belt/wand.rsi
-  - type: Clothing
-    sprite: Clothing/Belt/wand.rsi
-  - type: Storage
-    capacity: 120
-    whitelist:
-      tags:
-      - WizardWand

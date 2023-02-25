@@ -1,13 +1,11 @@
 - type: gameMap
-  id: Bagel
+  id: bagelstation
   mapName: 'Bagel Station'
   mapPath: /Maps/bagel.yml
   minPlayers: 35
-  maxPlayers: 70
   stations:
     Bagel:
       mapNameTemplate: '{0} Bagel Station {1}'
-      emergencyShuttlePath: /Maps/Shuttles/emergency_courser.yml
       nameGenerator:
         !type:NanotrasenNameGenerator
         prefixCreator: '14'
@@ -47,4 +45,3 @@
         SecurityCadet: [ 2, 2 ]
         Reporter: [ 1, 1 ]
         Detective: [ 1, 1 ]
-        ResearchAssistant: [ 2, 2 ]

@@ -3,6 +3,6 @@
     [RegisterComponent]
     public sealed class GasMixtureHolderComponent : Component, IGasMixtureHolder
     {
-        [DataField("air")] public GasMixture Air { get; set; } = new GasMixture();
+        [ViewVariables] [DataField("air")] public GasMixture Air { get; set; } = new GasMixture();
     }
 }

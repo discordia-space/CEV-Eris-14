@@ -1,24 +1,16 @@
 ﻿using Content.Shared.DeviceNetwork;
 using JetBrains.Annotations;
 using Robust.Client.GameObjects;
-using Robust.Client.UserInterface.Controls;
 
 namespace Content.Client.NetworkConfigurator;
 
 public sealed class NetworkConfiguratorBoundUserInterface : BoundUserInterface
 {
-    [Dependency] private readonly IEntityManager _entityManager = default!;
     private NetworkConfiguratorListMenu? _listMenu;
     private NetworkConfiguratorConfigurationMenu? _configurationMenu;
 
-    private NetworkConfiguratorSystem _netConfig;
-    private DeviceListSystem _deviceList;
-
-    public NetworkConfiguratorBoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey)
+    public NetworkConfiguratorBoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey)
     {
-        IoCManager.InjectDependencies(this);
-        _netConfig = _entityManager.System<NetworkConfiguratorSystem>();
-        _deviceList = _entityManager.System<DeviceListSystem>();
     }
 
     public void OnRemoveButtonPressed(string address)
@@ -46,31 +38,18 @@ public sealed class NetworkConfiguratorBoundUserInterface : BoundUserInterface
                 //_configurationMenu.Edit.OnPressed += _ => OnConfigButtonPressed(NetworkConfiguratorButtonKey.Edit);
                 _configurationMenu.Clear.OnPressed += _ => OnConfigButtonPressed(NetworkConfiguratorButtonKey.Clear);
                 _configurationMenu.Copy.OnPressed += _ => OnConfigButtonPressed(NetworkConfiguratorButtonKey.Copy);
-                _configurationMenu.Show.OnPressed += OnShowPressed;
-                _configurationMenu.Show.Pressed = _netConfig.ConfiguredListIsTracked(Owner.Owner);
+                _configurationMenu.Show.OnPressed += _ => OnConfigButtonPressed(NetworkConfiguratorButtonKey.Show);
                 _configurationMenu.OpenCentered();
                 break;
         }
-    }
-
-    private void OnShowPressed(BaseButton.ButtonEventArgs args)
-    {
-        _netConfig.ToggleVisualization(Owner.Owner, args.Button.Pressed);
     }
 
     protected override void UpdateState(BoundUserInterfaceState state)
     {
         base.UpdateState(state);
 
-        switch (state)
-        {
-            case NetworkConfiguratorUserInterfaceState configState:
-                _listMenu?.UpdateState(configState);
-                break;
-            case DeviceListUserInterfaceState listState:
-                _configurationMenu?.UpdateState(listState);
-                break;
-        }
+        var castState = (NetworkConfiguratorUserInterfaceState) state;
+        _listMenu?.UpdateState(castState);
     }
 
     protected override void Dispose(bool disposing)

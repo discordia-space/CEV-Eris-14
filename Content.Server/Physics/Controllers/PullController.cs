@@ -2,7 +2,6 @@
 using Content.Shared.Pulling.Components;
 using Content.Shared.Rotatable;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Controllers;
 
 namespace Content.Server.Physics.Controllers
@@ -31,9 +30,6 @@ namespace Content.Server.Physics.Controllers
         private const float SettleShutdownDistance = 1.0f;
         // Velocity change of -LinearVelocity * frameTime * this
         private const float SettleShutdownMultiplier = 20.0f;
-
-        // How much you must move for the puller movement check to actually hit.
-        private const float MinimumMovementDistance = 0.005f;
 
         [Dependency] private readonly SharedPullingSystem _pullableSystem = default!;
 
@@ -68,12 +64,8 @@ namespace Content.Server.Physics.Controllers
 
             UpdatePulledRotation(uid, pullable.Owner);
 
-            if (args.NewPosition.EntityId == args.OldPosition.EntityId &&
-                (args.NewPosition.Position - args.OldPosition.Position).LengthSquared < MinimumMovementDistance * MinimumMovementDistance)
-                return;
-
             if (TryComp<PhysicsComponent>(pullable.Owner, out var physics))
-                PhysicsSystem.WakeBody(pullable.Owner, body: physics);
+                physics.WakeBody();
 
             _pullableSystem.StopMoveTo(pullable);
         }
@@ -87,17 +79,12 @@ namespace Content.Server.Physics.Controllers
             if (!rotatable.RotateWhilePulling)
                 return;
 
-            var xforms = GetEntityQuery<TransformComponent>();
-            var pulledXform = xforms.GetComponent(pulled);
-            var pullerXform = xforms.GetComponent(puller);
+            var pulledXform = Transform(pulled);
 
-            var pullerData = TransformSystem.GetWorldPositionRotation(pullerXform, xforms);
-            var pulledData = TransformSystem.GetWorldPositionRotation(pulledXform, xforms);
-
-            var dir = pullerData.WorldPosition - pulledData.WorldPosition;
+            var dir = Transform(puller).WorldPosition - pulledXform.WorldPosition;
             if (dir.LengthSquared > ThresholdRotDistance * ThresholdRotDistance)
             {
-                var oldAngle = pulledData.WorldRotation;
+                var oldAngle = pulledXform.WorldRotation;
                 var newAngle = Angle.FromWorldVec(dir);
 
                 var diff = newAngle - oldAngle;
@@ -107,10 +94,10 @@ namespace Content.Server.Physics.Controllers
                     // Otherwise PIANO DOOR STUCK! happens.
                     // But it also needs to work with station rotation / align to the local parent.
                     // So...
-                    var baseRotation = pulledData.WorldRotation - pulledXform.LocalRotation;
+                    var baseRotation = pulledXform.Parent?.WorldRotation ?? 0f;
                     var localRotation = newAngle - baseRotation;
                     var localRotationSnapped = Angle.FromDegrees(Math.Floor((localRotation.Degrees / ThresholdRotAngle) + 0.5f) * ThresholdRotAngle);
-                    TransformSystem.SetLocalRotation(pulledXform, localRotationSnapped);
+                    pulledXform.LocalRotation = localRotationSnapped;
                 }
             }
         }
@@ -164,9 +151,9 @@ namespace Content.Server.Physics.Controllers
                 var diff = movingPosition - ownerPosition;
                 var diffLength = diff.Length;
 
-                if (diffLength < MaximumSettleDistance && (physics.LinearVelocity.Length < MaximumSettleVelocity))
+                if ((diffLength < MaximumSettleDistance) && (physics.LinearVelocity.Length < MaximumSettleVelocity))
                 {
-                    PhysicsSystem.SetLinearVelocity(pullable.Owner, Vector2.Zero, body: physics);
+                    physics.LinearVelocity = Vector2.Zero;
                     _pullableSystem.StopMoveTo(pullable);
                     continue;
                 }
@@ -183,11 +170,9 @@ namespace Content.Server.Physics.Controllers
                     var scaling = (SettleShutdownDistance - diffLength) / SettleShutdownDistance;
                     accel -= physics.LinearVelocity * SettleShutdownMultiplier * scaling;
                 }
-
-                PhysicsSystem.WakeBody(pullable.Owner, body: physics);
-
+                physics.WakeBody();
                 var impulse = accel * physics.Mass * frameTime;
-                PhysicsSystem.ApplyLinearImpulse(pullable.Owner, impulse, body: physics);
+                physics.ApplyLinearImpulse(impulse);
             }
         }
     }

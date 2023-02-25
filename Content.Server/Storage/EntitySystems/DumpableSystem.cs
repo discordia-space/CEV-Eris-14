@@ -21,7 +21,7 @@ namespace Content.Server.Storage.EntitySystems
         public override void Initialize()
         {
             base.Initialize();
-            SubscribeLocalEvent<DumpableComponent, AfterInteractEvent>(OnAfterInteract, after: new[]{ typeof(StorageSystem) });
+            SubscribeLocalEvent<DumpableComponent, AfterInteractEvent>(OnAfterInteract);
             SubscribeLocalEvent<DumpableComponent, GetVerbsEvent<AlternativeVerb>>(AddDumpVerb);
             SubscribeLocalEvent<DumpableComponent, GetVerbsEvent<UtilityVerb>>(AddUtilityVerbs);
             SubscribeLocalEvent<DumpCompletedEvent>(OnDumpCompleted);
@@ -36,15 +36,15 @@ namespace Content.Server.Storage.EntitySystems
             if (!TryComp<ServerStorageComponent>(args.Used, out var storage))
                 return;
 
-            if (storage.StoredEntities == null || storage.StoredEntities.Count == 0 || storage.CancelToken != null)
+            if (storage.StoredEntities == null || storage.StoredEntities.Count == 0)
                 return;
 
             if (HasComp<DisposalUnitComponent>(args.Target) || HasComp<PlaceableSurfaceComponent>(args.Target))
             {
                 StartDoAfter(uid, args.Target.Value, args.User, component, storage);
+                    return;
             }
         }
-
         private void AddDumpVerb(EntityUid uid, DumpableComponent dumpable, GetVerbsEvent<AlternativeVerb> args)
         {
             if (!args.CanAccess || !args.CanInteract)
@@ -105,7 +105,11 @@ namespace Content.Server.Storage.EntitySystems
         public void StartDoAfter(EntityUid storageUid, EntityUid? targetUid, EntityUid userUid, DumpableComponent dumpable, ServerStorageComponent storage, float multiplier = 1)
         {
             if (dumpable.CancelToken != null)
+            {
+                dumpable.CancelToken.Cancel();
+                dumpable.CancelToken = null;
                 return;
+            }
 
             if (storage.StoredEntities == null)
                 return;
@@ -115,7 +119,7 @@ namespace Content.Server.Storage.EntitySystems
             dumpable.CancelToken = new CancellationTokenSource();
             _doAfterSystem.DoAfter(new DoAfterEventArgs(userUid, delay, dumpable.CancelToken.Token, target: targetUid)
             {
-                BroadcastFinishedEvent = new DumpCompletedEvent(dumpable, userUid, targetUid, storage.StoredEntities),
+                BroadcastFinishedEvent = new DumpCompletedEvent(userUid, targetUid, storage.StoredEntities),
                 BroadcastCancelledEvent = new DumpCancelledEvent(dumpable.Owner),
                 BreakOnTargetMove = true,
                 BreakOnUserMove = true,
@@ -127,8 +131,6 @@ namespace Content.Server.Storage.EntitySystems
 
         private void OnDumpCompleted(DumpCompletedEvent args)
         {
-            args.Component.CancelToken = null;
-
             Queue<EntityUid> dumpQueue = new();
             foreach (var entity in args.StoredEntities)
             {
@@ -139,7 +141,7 @@ namespace Content.Server.Storage.EntitySystems
             {
                 foreach (var entity in dumpQueue)
                 {
-                    _disposalUnitSystem.DoInsertDisposalUnit(args.Target.Value, entity, args.User);
+                    _disposalUnitSystem.DoInsertDisposalUnit(args.Target.Value, entity);
                 }
                 return;
             }
@@ -158,6 +160,7 @@ namespace Content.Server.Storage.EntitySystems
                 {
                     Transform(entity).LocalPosition = Transform(args.Target.Value).LocalPosition + _random.NextVector2Box() / 4;
                 }
+                return;
             }
         }
 
@@ -178,14 +181,12 @@ namespace Content.Server.Storage.EntitySystems
 
         private sealed class DumpCompletedEvent : EntityEventArgs
         {
-            public DumpableComponent Component { get; }
             public EntityUid User { get; }
             public EntityUid? Target { get; }
             public IReadOnlyList<EntityUid> StoredEntities { get; }
 
-            public DumpCompletedEvent(DumpableComponent component, EntityUid user, EntityUid? target, IReadOnlyList<EntityUid> storedEntities)
+            public DumpCompletedEvent(EntityUid user, EntityUid? target, IReadOnlyList<EntityUid> storedEntities)
             {
-                Component = component;
                 User = user;
                 Target = target;
                 StoredEntities = storedEntities;

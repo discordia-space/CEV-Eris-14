@@ -7,11 +7,11 @@ namespace Content.Shared.Construction.Steps
     {
         [DataField("component")] public string Component { get; } = string.Empty;
 
-        public override bool EntityValid(EntityUid uid, IEntityManager entityManager, IComponentFactory compFactory)
+        public override bool EntityValid(EntityUid uid, IEntityManager entityManager)
         {
             foreach (var component in entityManager.GetComponents(uid))
             {
-                if (compFactory.GetComponentName(component.GetType()) == Component)
+                if (component.Name == Component)
                     return true;
             }
 

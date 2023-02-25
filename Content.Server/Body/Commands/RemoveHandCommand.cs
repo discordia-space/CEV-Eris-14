@@ -1,6 +1,5 @@
 using System.Linq;
 using Content.Server.Administration;
-using Content.Server.Body.Systems;
 using Content.Shared.Administration;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Part;
@@ -32,8 +31,7 @@ namespace Content.Server.Body.Commands
                 return;
             }
 
-            var entityManager = IoCManager.Resolve<IEntityManager>();
-            if (!entityManager.TryGetComponent(player.AttachedEntity, out BodyComponent? body))
+            if (!IoCManager.Resolve<IEntityManager>().TryGetComponent(player.AttachedEntity, out SharedBodyComponent? body))
             {
                 var random = IoCManager.Resolve<IRobustRandom>();
                 var text = $"You have no body{(random.Prob(0.2f) ? " and you must scream." : ".")}";
@@ -42,16 +40,15 @@ namespace Content.Server.Body.Commands
                 return;
             }
 
-            var bodySystem = entityManager.System<BodySystem>();
-            var hand = bodySystem.GetBodyChildrenOfType(player.AttachedEntity, BodyPartType.Hand, body).FirstOrDefault();
+            var hand = body.GetPartsOfType(BodyPartType.Hand).FirstOrDefault();
 
-            if (hand == default)
+            if (hand == null)
             {
                 shell.WriteLine("You have no hands.");
             }
             else
             {
-                bodySystem.DropPart(hand.Id, hand.Component);
+                body.RemovePart(hand);
             }
         }
     }

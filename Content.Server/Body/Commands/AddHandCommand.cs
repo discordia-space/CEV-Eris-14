@@ -1,9 +1,6 @@
-using System.Linq;
 using Content.Server.Administration;
-using Content.Server.Body.Systems;
 using Content.Shared.Administration;
 using Content.Shared.Body.Components;
-using Content.Shared.Body.Part;
 using Robust.Server.Player;
 using Robust.Shared.Console;
 using Robust.Shared.Prototypes;
@@ -23,6 +20,11 @@ namespace Content.Server.Body.Commands
         public void Execute(IConsoleShell shell, string argStr, string[] args)
         {
             var player = shell.Player as IPlayerSession;
+            if (args.Length > 1)
+            {
+                shell.WriteLine(Help);
+                return;
+            }
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
             var prototypeManager = IoCManager.Resolve<IPrototypeManager>();
@@ -116,7 +118,7 @@ namespace Content.Server.Body.Commands
                 }
             }
 
-            if (!entityManager.TryGetComponent(entity, out BodyComponent? body) || body.Root == null)
+            if (!entityManager.TryGetComponent(entity, out SharedBodyComponent? body))
             {
                 var random = IoCManager.Resolve<IRobustRandom>();
                 var text = $"You have no body{(random.Prob(0.2f) ? " and you must scream." : ".")}";
@@ -125,25 +127,14 @@ namespace Content.Server.Body.Commands
                 return;
             }
 
-            if (!entityManager.TryGetComponent(hand, out BodyPartComponent? part))
+            if (!entityManager.TryGetComponent(hand, out SharedBodyPartComponent? part))
             {
-                shell.WriteLine($"Hand entity {hand} does not have a {nameof(BodyPartComponent)} component.");
+                shell.WriteLine($"Hand entity {hand} does not have a {nameof(SharedBodyPartComponent)} component.");
                 return;
             }
 
-            var bodySystem = entityManager.System<BodySystem>();
-
-            var attachAt = bodySystem.GetBodyChildrenOfType(entity, BodyPartType.Arm, body).FirstOrDefault();
-            if (attachAt == default)
-                attachAt = bodySystem.GetBodyChildren(entity, body).First();
-
-            var slotId = part.GetHashCode().ToString();
-
-            if (!bodySystem.TryCreatePartSlotAndAttach(attachAt.Id, slotId, hand, attachAt.Component, part))
-            {
-                shell.WriteError($"Couldn't create a slot with id {slotId} on entity {entityManager.ToPrettyString(entity)}");
-                return;
-            }
+            var slot = part.GetHashCode().ToString();
+            body.SetPart(slot, part);
 
             shell.WriteLine($"Added hand to entity {entityManager.GetComponent<MetaDataComponent>(entity).EntityName}");
         }

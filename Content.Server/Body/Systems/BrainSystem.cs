@@ -3,7 +3,6 @@ using Content.Server.Ghost.Components;
 using Content.Server.Mind.Components;
 using Content.Shared.Body.Components;
 using Content.Shared.Body.Events;
-using Content.Shared.Body.Organ;
 using Content.Shared.Movement.Components;
 
 namespace Content.Server.Body.Systems
@@ -14,22 +13,21 @@ namespace Content.Server.Body.Systems
         {
             base.Initialize();
 
-            SubscribeLocalEvent<BrainComponent, AddedToBodyEvent>((uid, _, args) => HandleMind(args.Body, uid));
-            SubscribeLocalEvent<BrainComponent, AddedToPartEvent>((uid, _, args) => HandleMind(args.Part, uid));
-            SubscribeLocalEvent<BrainComponent, AddedToPartInBodyEvent>((uid, _, args) => HandleMind(args.Body, uid));
+            SubscribeLocalEvent<BrainComponent, AddedToBodyEvent>((uid, _, args) => HandleMind((args.Body).Owner, uid));
+            SubscribeLocalEvent<BrainComponent, AddedToPartEvent>((uid, _, args) => HandleMind((args.Part).Owner, uid));
+            SubscribeLocalEvent<BrainComponent, AddedToPartInBodyEvent>((uid, _, args) => HandleMind((args.Body).Owner, uid));
             SubscribeLocalEvent<BrainComponent, RemovedFromBodyEvent>(OnRemovedFromBody);
-            SubscribeLocalEvent<BrainComponent, RemovedFromPartEvent>((uid, _, args) => HandleMind(uid, args.Old));
-            SubscribeLocalEvent<BrainComponent, RemovedFromPartInBodyEvent>((uid, _, args) => HandleMind(args.OldBody, uid));
+            SubscribeLocalEvent<BrainComponent, RemovedFromPartEvent>((uid, _, args) => HandleMind(uid, (args.Old).Owner));
+            SubscribeLocalEvent<BrainComponent, RemovedFromPartInBodyEvent>((uid, _, args) => HandleMind((args.OldBody).Owner, uid));
         }
 
         private void OnRemovedFromBody(EntityUid uid, BrainComponent component, RemovedFromBodyEvent args)
         {
             // This one needs to be special, okay?
-            if (!EntityManager.TryGetComponent(uid, out OrganComponent? organ) ||
-                organ.ParentSlot is not {Parent: var parent})
+            if (!EntityManager.TryGetComponent(uid, out MechanismComponent? mech))
                 return;
 
-            HandleMind(parent, args.Old);
+            HandleMind((mech.Part!).Owner, (args.Old).Owner);
         }
 
         private void HandleMind(EntityUid newEntity, EntityUid oldEntity)
@@ -42,7 +40,8 @@ namespace Content.Server.Body.Systems
                 Comp<GhostOnMoveComponent>(newEntity).MustBeDead = true;
 
             // TODO: This is an awful solution.
-            EnsureComp<InputMoverComponent>(newEntity);
+            if (!EntityManager.HasComponent<IMoverComponent>(newEntity))
+                EntityManager.AddComponent<SharedDummyInputMoverComponent>(newEntity);
 
             oldMind.Mind?.TransferTo(newEntity);
         }

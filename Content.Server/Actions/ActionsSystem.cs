@@ -13,9 +13,41 @@ namespace Content.Server.Actions
         [Dependency] private readonly ChatSystem _chat = default!;
         [Dependency] private readonly MetaDataSystem _metaSystem = default!;
 
-        protected override bool PerformBasicActions(EntityUid user, ActionType action, bool predicted)
+        public override void Initialize()
         {
-            var result = base.PerformBasicActions(user, action, predicted);
+            base.Initialize();
+
+            SubscribeLocalEvent<ActionsComponent, PlayerAttachedEvent>(OnPlayerAttached);
+            SubscribeLocalEvent<ActionsComponent, ComponentStartup>(OnStartup);
+            SubscribeLocalEvent<ActionsComponent, ComponentShutdown>(OnShutdown);
+            SubscribeLocalEvent<ActionsComponent, MetaFlagRemoveAttemptEvent>(OnMetaFlagRemoval);
+        }
+
+        private void OnMetaFlagRemoval(EntityUid uid, ActionsComponent component, ref MetaFlagRemoveAttemptEvent args)
+        {
+            if (component.LifeStage == ComponentLifeStage.Running)
+                args.ToRemove &= ~MetaDataFlags.EntitySpecific;
+        }
+
+        private void OnStartup(EntityUid uid, ActionsComponent component, ComponentStartup args)
+        {
+            _metaSystem.AddFlag(uid, MetaDataFlags.EntitySpecific);
+        }
+
+        private void OnShutdown(EntityUid uid, ActionsComponent component, ComponentShutdown args)
+        {
+            _metaSystem.RemoveFlag(uid, MetaDataFlags.EntitySpecific);
+        }
+
+        private void OnPlayerAttached(EntityUid uid, ActionsComponent component, PlayerAttachedEvent args)
+        {
+            // need to send state to new player.
+            Dirty(component);
+        }
+
+        protected override bool PerformBasicActions(EntityUid user, ActionType action)
+        {
+            var result = base.PerformBasicActions(user, action);
 
             if (!string.IsNullOrWhiteSpace(action.Speech))
             {

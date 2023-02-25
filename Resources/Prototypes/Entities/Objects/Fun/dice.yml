@@ -7,7 +7,6 @@
   - type: ItemCooldown
   - type: UseDelay
   - type: Sprite
-    netsync: false
     sprite: Objects/Fun/dice.rsi
     noRot: true # If their sprites rotate, the number becomes even more illegible than usual.
   - type: Tag
@@ -18,17 +17,15 @@
 
 - type: entity
   parent: BaseDice
-  id: PercentileDie
-  name: Percentile Die
+  id: d100Dice
+  name: d100
   description: A die with ten sides. Works better for d100 rolls than a golf ball.
   components:
   - type: Dice
-    sides: 10
-    multiplier: 10
-    offset: 1 # first side is a 0
-    currentValue: 0
+    sides: 100
+    step: 10
   - type: Sprite
-    state: percentile_0
+    state: d100100
 
 - type: entity
   parent: BaseDice
@@ -38,9 +35,8 @@
   components:
   - type: Dice
     sides: 20
-    currentValue: 20
   - type: Sprite
-    state: d20_20
+    state: d2020
 
 - type: entity
   parent: BaseDice
@@ -50,9 +46,8 @@
   components:
   - type: Dice
     sides: 12
-    currentValue: 12
   - type: Sprite
-    state: d12_12
+    state: d1212
 
 - type: entity
   parent: BaseDice
@@ -62,9 +57,8 @@
   components:
   - type: Dice
     sides: 10
-    currentValue: 10
   - type: Sprite
-    state: d10_10
+    state: d1010
 
 - type: entity
   parent: BaseDice
@@ -74,9 +68,8 @@
   components:
   - type: Dice
     sides: 8
-    currentValue: 8
   - type: Sprite
-    state: d8_8
+    state: d88
 
 - type: entity
   parent: BaseDice
@@ -86,9 +79,8 @@
   components:
   - type: Dice
     sides: 6
-    currentValue: 6
   - type: Sprite
-    state: d6_6
+    state: d66
 
 - type: entity
   parent: BaseDice
@@ -98,9 +90,8 @@
   components:
   - type: Dice
     sides: 4
-    currentValue: 4
   - type: Sprite
-    state: d4_4
+    state: d44
   - type: CollisionWake
     enabled: false
   - type: Fixtures
@@ -115,7 +106,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.2,-0.2,0.2,0.2"
-      density: 30
+      mass: 5
       mask:
       - ItemMask
   - type: StepTrigger
@@ -131,4 +122,3 @@
     damage:
       types:
         Piercing: 5
-    # I love this

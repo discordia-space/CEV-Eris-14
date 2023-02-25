@@ -8,7 +8,6 @@
             <Label Text="{Loc 'apc-menu-breaker-label'}"/>
             <Button Name="BreakerButton" Text="{Loc 'apc-menu-breaker-button'}"></Button>
         </BoxContainer>
-        <Label Name="PowerLabel"/>
         <BoxContainer Orientation="Horizontal">
             <Label Text="{Loc 'apc-menu-external-label'}"/>
             <Label Name="ExternalPowerStateLabel" Text="{Loc 'apc-menu-power-state-good'}"/>

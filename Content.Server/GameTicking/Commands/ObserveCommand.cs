@@ -1,5 +1,4 @@
 using Content.Shared.Administration;
-using Content.Shared.GameTicking;
 using Robust.Server.Player;
 using Robust.Shared.Console;
 
@@ -27,15 +26,10 @@ namespace Content.Server.GameTicking.Commands
                 return;
             }
 
-            if (ticker.PlayerGameStatuses.TryGetValue(player.UserId, out var status) &&
-                status != PlayerGameStatus.JoinedGame)
-            {
+            if (ticker.PlayersInLobby.ContainsKey(player))
                 ticker.MakeObserve(player);
-            }
             else
-            {
                 shell.WriteError($"{player.Name} is not in the lobby.   This incident will be reported.");
-            }
         }
     }
 }

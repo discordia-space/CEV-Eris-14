@@ -1,5 +1,7 @@
 - type: vendingMachineInventory
   id: SciDrobeInventory
+  name: SciDrobe
+  spriteName: scidrobe
   startingInventory:
     ClothingBackpackScience: 3
     ClothingBackpackSatchelScience: 3

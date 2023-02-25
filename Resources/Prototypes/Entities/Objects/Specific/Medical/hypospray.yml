@@ -67,10 +67,11 @@
     solutionName: pen
     transferAmount: 15
   - type: Appearance
-  - type: SolutionContainerVisuals
-    maxFillLevels: 1
-    changeColor: false
-    emptySpriteName: medipen_empty
+    visuals:
+    - type: SolutionContainerVisualizer
+      maxFillLevels: 1
+      changeColor: false
+      emptySpriteName: medipen_empty
   - type: Tag
     tags:
     - Trash
@@ -78,8 +79,6 @@
   - type: SpaceGarbage
   - type: StaticPrice
     price: 75 # These are limited supply items.
-  - type: TrashOnEmpty
-    solution: pen
 
 - type: entity
   name: emergency medipen
@@ -96,8 +95,6 @@
           Quantity: 12
         - ReagentId: TranexamicAcid
           Quantity: 3
-  - type: Tag
-    tags: []
 
 
 - type: entity
@@ -115,8 +112,6 @@
           Quantity: 10
         - ReagentId: Epinephrine
           Quantity: 5
-  - type: Tag
-    tags: []
 
 - type: entity
   name: space medipen
@@ -131,32 +126,38 @@
     - state: hypovolemic
       map: [ "enum.SolutionContainerLayers.Fill" ]
   - type: Appearance
-  - type: SolutionContainerVisuals
-    maxFillLevels: 1
-    changeColor: false
-    emptySpriteName: hypovolemic_empty
+    visuals:
+      - type: SolutionContainerVisualizer
+        maxFillLevels: 1
+        changeColor: false
+        emptySpriteName: hypovolemic_empty
   - type: Hypospray
     solutionName: pen
-    transferAmount: 30
+    transferAmount: 20
   - type: SolutionContainerManager
     solutions:
       pen:
-        maxVol: 30
+        maxVol: 20
         reagents:
           - ReagentId: Leporazine
             Quantity: 10
           - ReagentId: Barozine
-            Quantity: 20
-  - type: Tag
-    tags: []
+            Quantity: 10
 
 - type: entity
   name: pen
   suffix: Hypopen
-  parent: Pen # It is just like normal pen, isn't it?
+  parent: BaseItem
   description: A dark ink pen.
   id: Hypopen
   components:
+  - type: Sprite
+    sprite: Objects/Misc/bureaucracy.rsi
+    state: pen
+    netsync: false
+  - type: Item
+    sprite: Objects/Misc/bureaucracy.rsi
+    HeldPrefix: pen
   - type: SolutionContainerManager
     solutions:
       hypospray:
@@ -166,5 +167,8 @@
   - type: ExaminableSolution
     solution: hypospray
   - type: Hypospray
-  - type: StaticPrice # A new shitcurity meta
+  - type: Tag
+    tags:
+    - Write
+  - type: StaticPrice
     price: 75

@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using Content.Shared.Construction;
 using JetBrains.Annotations;
-using Robust.Server.Containers;
 using Robust.Shared.Containers;
 
 namespace Content.Server.Construction.Completions
@@ -17,9 +16,15 @@ namespace Content.Server.Construction.Completions
             if (!entityManager.TryGetComponent(uid, out ContainerManagerComponent? containerManager) ||
                 !containerManager.TryGetContainer(Container, out var container)) return;
 
-            var containerSys = entityManager.EntitySysManager.GetEntitySystem<ContainerSystem>();
+            // TODO: Use container system methods.
             var transform = entityManager.GetComponent<TransformComponent>(uid);
-            containerSys.EmptyContainer(container, true, transform.Coordinates, true);
+            foreach (var contained in container.ContainedEntities.ToArray())
+            {
+                container.ForceRemove(contained);
+                var cTransform = entityManager.GetComponent<TransformComponent>(contained);
+                cTransform.Coordinates = transform.Coordinates;
+                cTransform.AttachToGridOrMap();
+            }
         }
     }
 }

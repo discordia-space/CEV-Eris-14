@@ -1,4 +1,4 @@
-using Content.Shared.CCVar;
+﻿using Content.Shared.CCVar;
 using Content.Shared.Chat.TypingIndicator;
 using Robust.Client.Player;
 using Robust.Shared.Configuration;
@@ -67,11 +67,12 @@ public sealed class TypingIndicatorSystem : SharedTypingIndicatorSystem
         _isClientTyping = isClientTyping;
 
         // check if player controls any pawn
-        if (_playerManager.LocalPlayer?.ControlledEntity == null)
+        var playerPawn = _playerManager.LocalPlayer?.ControlledEntity;
+        if (playerPawn == null)
             return;
 
         // send a networked event to server
-        RaiseNetworkEvent(new TypingChangedEvent(isClientTyping));
+        RaiseNetworkEvent(new TypingChangedEvent(playerPawn.Value, isClientTyping));
     }
 
     private void OnShowTypingChanged(bool showTyping)

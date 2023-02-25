@@ -1,17 +1,17 @@
-using System.Linq;
+﻿using System.Linq;
 using Content.Server.Chemistry.Components;
 using Content.Server.Chemistry.Components.SolutionManager;
 using Content.Server.Chemistry.EntitySystems;
 using Content.Server.Tools.Components;
-using Content.Shared.Database;
+using Content.Server.Weapon.Melee;
+using Content.Shared.Audio;
 using Content.Shared.Examine;
 using Content.Shared.FixedPoint;
 using Content.Shared.Interaction;
 using Content.Shared.Item;
+using Content.Shared.Popups;
 using Content.Shared.Temperature;
-using Content.Shared.Toggleable;
 using Content.Shared.Tools.Components;
-using Content.Shared.Weapons.Melee.Events;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
@@ -21,11 +21,6 @@ namespace Content.Server.Tools
 {
     public sealed partial class ToolSystem
     {
-        [Dependency] private readonly IEntityManager _entityManager = default!;
-
-        [Dependency] private readonly AppearanceSystem _appearanceSystem = default!;
-        [Dependency] private readonly SharedAudioSystem _audioSystem = default!;
-
         private readonly HashSet<EntityUid> _activeWelders = new();
 
         private const float WelderUpdateTimer = 1f;
@@ -64,7 +59,7 @@ namespace Content.Server.Tools
         public bool TryToggleWelder(EntityUid uid, EntityUid? user,
             WelderComponent? welder = null,
             SolutionContainerManagerComponent? solutionContainer = null,
-            ItemComponent? item = null,
+            SharedItemComponent? item = null,
             PointLightComponent? light = null,
             AppearanceComponent? appearance = null)
         {
@@ -81,7 +76,7 @@ namespace Content.Server.Tools
         public bool TryTurnWelderOn(EntityUid uid, EntityUid? user,
             WelderComponent? welder = null,
             SolutionContainerManagerComponent? solutionContainer = null,
-            ItemComponent? item = null,
+            SharedItemComponent? item = null,
             PointLightComponent? light = null,
             AppearanceComponent? appearance = null,
             TransformComponent? transform = null)
@@ -101,7 +96,7 @@ namespace Content.Server.Tools
             if (fuel == FixedPoint2.Zero || fuel < welder.FuelLitCost)
             {
                 if(user != null)
-                    _popupSystem.PopupEntity(Loc.GetString("welder-component-no-fuel-message"), uid, user.Value);
+                    _popupSystem.PopupEntity(Loc.GetString("welder-component-no-fuel-message"), uid, Filter.Entities(user.Value));
                 return false;
             }
 
@@ -109,25 +104,15 @@ namespace Content.Server.Tools
 
             welder.Lit = true;
 
-            // Logging
-            if (user != null)
-                _adminLogger.Add(LogType.InteractActivate, LogImpact.Low, $"{ToPrettyString(user.Value):user} toggled {ToPrettyString(uid):welder} on");
-            else
-                _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(uid):welder} toggled on");
+            if(item != null)
+                item.EquippedPrefix = "on";
 
-            var ev = new WelderToggledEvent(true);
-            RaiseLocalEvent(welder.Owner, ev, false);
-
-            var hotEvent = new IsHotEvent() {IsHot = true};
-            RaiseLocalEvent(uid, hotEvent);
-
-            _appearanceSystem.SetData(uid, WelderVisuals.Lit, true);
-            _appearanceSystem.SetData(uid, ToggleableLightVisuals.Enabled, true);
+            appearance?.SetData(WelderVisuals.Lit, true);
 
             if (light != null)
                 light.Enabled = true;
 
-            _audioSystem.PlayPvs(welder.WelderOnSounds, uid, AudioParams.Default.WithVariation(0.125f).WithVolume(-5f));
+            SoundSystem.Play(welder.WelderOnSounds.GetSound(), Filter.Pvs(uid), uid, AudioHelpers.WithVariation(0.125f).WithVolume(-5f));
 
             if (transform.GridUid is {} gridUid)
             {
@@ -135,7 +120,7 @@ namespace Content.Server.Tools
                 _atmosphereSystem.HotspotExpose(gridUid, position, 700, 50, true);
             }
 
-            _entityManager.Dirty(welder);
+            welder.Dirty();
 
             _activeWelders.Add(uid);
             return true;
@@ -143,7 +128,7 @@ namespace Content.Server.Tools
 
         public bool TryTurnWelderOff(EntityUid uid, EntityUid? user,
             WelderComponent? welder = null,
-            ItemComponent? item = null,
+            SharedItemComponent? item = null,
             PointLightComponent? light = null,
             AppearanceComponent? appearance = null)
         {
@@ -155,36 +140,27 @@ namespace Content.Server.Tools
 
             welder.Lit = false;
 
-            // Logging
-            if (user != null)
-                _adminLogger.Add(LogType.InteractActivate, LogImpact.Low, $"{ToPrettyString(user.Value):user} toggled {ToPrettyString(uid):welder} off");
-            else
-                _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(uid):welder} toggled off");
-
-            var ev = new WelderToggledEvent(false);
-            RaiseLocalEvent(welder.Owner, ev, false);
-
-            var hotEvent = new IsHotEvent() {IsHot = false};
-            RaiseLocalEvent(uid, hotEvent);
+            // TODO: Make all this use visualizers.
+            if (item != null)
+                item.EquippedPrefix = "off";
 
             // Layer 1 is the flame.
-            _appearanceSystem.SetData(uid, WelderVisuals.Lit, false);
-            _appearanceSystem.SetData(uid, ToggleableLightVisuals.Enabled, false);
+            appearance?.SetData(WelderVisuals.Lit, false);
 
             if (light != null)
                 light.Enabled = false;
 
-            _audioSystem.PlayPvs(welder.WelderOffSounds, uid, AudioParams.Default.WithVariation(0.125f).WithVolume(-5f));
+            SoundSystem.Play(welder.WelderOffSounds.GetSound(), Filter.Pvs(uid), uid, AudioHelpers.WithVariation(0.125f).WithVolume(-5f));
 
-            _entityManager.Dirty(welder);
+            welder.Dirty();
 
             _activeWelders.Remove(uid);
             return true;
         }
 
-        private void OnWelderStartup(EntityUid uid, WelderComponent welder, ComponentStartup args)
+        private void OnWelderStartup(EntityUid uid, WelderComponent component, ComponentStartup args)
         {
-            _entityManager.Dirty(welder);
+            component.Dirty();
         }
 
         private void OnWelderIsHotEvent(EntityUid uid, WelderComponent welder, IsHotEvent args)
@@ -217,14 +193,12 @@ namespace Content.Server.Tools
 
         private void OnWelderSolutionChange(EntityUid uid, WelderComponent welder, SolutionChangedEvent args)
         {
-            _entityManager.Dirty(welder);
+            welder.Dirty();
         }
 
         private void OnWelderActivate(EntityUid uid, WelderComponent welder, ActivateInWorldEvent args)
         {
             args.Handled = TryToggleWelder(uid, args.User, welder);
-            if (args.Handled)
-                args.WasLogged = true;
         }
 
         private void OnWelderAfterInteract(EntityUid uid, WelderComponent welder, AfterInteractEvent args)
@@ -242,21 +216,17 @@ namespace Content.Server.Tools
                 && _solutionContainerSystem.TryGetDrainableSolution(target, out var targetSolution)
                 && _solutionContainerSystem.TryGetSolution(uid, welder.FuelSolution, out var welderSolution))
             {
-                var trans = FixedPoint2.Min(welderSolution.AvailableVolume, targetSolution.Volume);
+                var trans = FixedPoint2.Min(welderSolution.AvailableVolume, targetSolution.DrainAvailable);
                 if (trans > 0)
                 {
                     var drained = _solutionContainerSystem.Drain(target, targetSolution,  trans);
                     _solutionContainerSystem.TryAddSolution(uid, welderSolution, drained);
-                    _audioSystem.PlayPvs(welder.WelderRefill, uid);
-                    _popupSystem.PopupEntity(Loc.GetString("welder-component-after-interact-refueled-message"), uid, args.User);
-                }
-                else if (welderSolution.AvailableVolume <= 0)
-                {
-                    _popupSystem.PopupEntity(Loc.GetString("welder-component-already-full"), uid, args.User);
+                    SoundSystem.Play(welder.WelderRefill.GetSound(), Filter.Pvs(uid), uid);
+                    target.PopupMessage(args.User, Loc.GetString("welder-component-after-interact-refueled-message"));
                 }
                 else
                 {
-                    _popupSystem.PopupEntity(Loc.GetString("welder-component-no-fuel-in-tank", ("owner", args.Target)), uid, args.User);
+                    target.PopupMessage(args.User, Loc.GetString("welder-component-no-fuel-in-tank", ("owner", args.Target)));
                 }
             }
 
@@ -270,7 +240,7 @@ namespace Content.Server.Tools
 
             if (!welder.Lit)
             {
-                _popupSystem.PopupEntity(Loc.GetString("welder-component-welder-not-lit-message"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("welder-component-welder-not-lit-message"), uid, Filter.Entities(args.User));
                 args.Cancel();
                 return;
             }
@@ -279,8 +249,9 @@ namespace Content.Server.Tools
 
             if (FixedPoint2.New(args.Fuel) > fuel)
             {
-                _popupSystem.PopupEntity(Loc.GetString("welder-component-cannot-weld-message"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("welder-component-cannot-weld-message"), uid, Filter.Entities(args.User));
                 args.Cancel();
+                return;
             }
         }
 
@@ -291,7 +262,7 @@ namespace Content.Server.Tools
 
             if (!welder.Lit)
             {
-                _popupSystem.PopupEntity(Loc.GetString("welder-component-welder-not-lit-message"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("welder-component-welder-not-lit-message"), uid, Filter.Entities(args.User));
                 args.Cancel();
                 return;
             }
@@ -312,7 +283,7 @@ namespace Content.Server.Tools
             }
 
             solution.RemoveReagent(welder.FuelReagent, neededFuel);
-            _entityManager.Dirty(welder);
+            welder.Dirty();
         }
 
         private void OnWelderShutdown(EntityUid uid, WelderComponent welder, ComponentShutdown args)
@@ -333,7 +304,6 @@ namespace Content.Server.Tools
             if (_welderTimer < WelderUpdateTimer)
                 return;
 
-
             // TODO Use an "active welder" component instead, EntityQuery over that.
             foreach (var tool in _activeWelders.ToArray())
             {
@@ -345,25 +315,21 @@ namespace Content.Server.Tools
                 if (!_solutionContainerSystem.TryGetSolution(tool, welder.FuelSolution, out var solution, solutionContainer))
                     continue;
 
+                if (transform.GridUid is { } gridUid)
+                {
+                    var position = _transformSystem.GetGridOrMapTilePosition(tool, transform);
+                    _atmosphereSystem.HotspotExpose(gridUid, position, 700, 50, true);
+                }
+
                 solution.RemoveReagent(welder.FuelReagent, welder.FuelConsumption * _welderTimer);
 
                 if (solution.GetReagentQuantity(welder.FuelReagent) <= FixedPoint2.Zero)
                     TryTurnWelderOff(tool, null, welder);
 
-                _entityManager.Dirty(welder);
+                welder.Dirty();
             }
 
             _welderTimer -= WelderUpdateTimer;
-        }
-    }
-
-    public sealed class WelderToggledEvent : EntityEventArgs
-    {
-        public bool WelderOn;
-
-        public WelderToggledEvent(bool welderOn)
-        {
-            WelderOn = welderOn;
         }
     }
 }

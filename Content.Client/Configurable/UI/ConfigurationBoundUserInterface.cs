@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using Robust.Client.GameObjects;
 using Robust.Shared.GameObjects;
-using static Content.Shared.Configurable.ConfigurationComponent;
+using static Content.Shared.Configurable.SharedConfigurationComponent;
 
 namespace Content.Client.Configurable.UI
 {
@@ -10,7 +10,7 @@ namespace Content.Client.Configurable.UI
     {
         public Regex? Validation { get; internal set; }
 
-        public ConfigurationBoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey)
+        public ConfigurationBoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey)
         {
         }
 

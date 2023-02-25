@@ -14,16 +14,14 @@
         prob: 0.5
       - id: ClothingShoesColorBrown
         prob: 0.7
-      - id: ClothingHeadHatQMsoft
+      - id: ClothingHeadHatCargosoft
         prob: 0.8
-      - id: CargoRequestComputerCircuitboard
-      - id: CargoShuttleComputerCircuitboard
-      - id: CargoShuttleConsoleCircuitboard
+      - id: SupplyRequestComputerCircuitboard
+      - id: SupplyComputerCircuitboard
       - id: CigPackGreen
         prob: 0.50
       - id: DoorRemoteCargo
       - id: RubberStampQm
-      - id: ClothingHeadsetAltCargo
 
 - type: entity
   id: LockerCaptainFilled
@@ -41,7 +39,7 @@
       - id: ClothingHandsGlovesCaptain
       - id: ClothingOuterHardsuitCap
       - id: ClothingMaskGasCaptain
-      - id: WeaponDisabler
+      - id: WeaponTaser
       - id: CommsComputerCircuitboard
       - id: ClothingHeadsetAltCommand
       - id: SpaceCash1000
@@ -74,9 +72,8 @@
       - id: ClothingHeadsetCommand
       - id: BoxPDA
       - id: BoxID
-      - id: BoxHeadset
       - id: IDComputerCircuitboard
-      - id: WeaponDisabler
+      - id: WeaponTaser
       - id: ClothingShoesColorBlack
         prob: 0.7
       - id: PlushieLizard
@@ -110,7 +107,6 @@
       - id: DoorRemoteEngineering
       - id: RubberStampCE
       - id: JetpackVoidFilled
-      - id: ClothingHeadsetAltEngineering
 
 - type: entity
   id: LockerChiefMedicalOfficerFilled
@@ -127,7 +123,6 @@
       - id: ClothingBackpackDuffelSurgeryFilled
       - id: ClothingOuterCoatLabCmo
       - id: ClothingMaskSterile
-      - id: ClothingHeadHatBeretCmo
       - id: ClothingOuterHardsuitMedical
       - id: DiagnoserMachineCircuitboard
       - id: VaccinatorMachineCircuitboard
@@ -137,8 +132,6 @@
       - id: DoorRemoteMedical
       - id: RubberStampCMO
       - id: MedicalTechFabCircuitboard
-      - id: MaterialBiomass
-        amount: 3
 
 - type: entity
   id: LockerResearchDirectorFilled
@@ -153,12 +146,10 @@
       - id: ClothingNeckCloakRd
       - id: ClothingHeadsetMedicalScience
       - id: ClothingOuterHardsuitRd
-      - id: HandTeleporter
       - id: PlushieSlime
         prob: 0.1
       - id: DoorRemoteResearch
       - id: RubberStampRd
-      - id: ClothingHeadsetAltScience
 
 - type: entity
   id: LockerHeadOfSecurityFilled
@@ -167,7 +158,7 @@
   components:
   - type: StorageFill
     contents:
-      - id: WeaponDisabler
+      - id: WeaponTaser
       - id: ClothingHeadHatBeretHoS
       - id: ClothingHeadHatHoshat
       - id: ClothingNeckCloakHos
@@ -194,8 +185,6 @@
       - id: ClothingShoesBootsJack
       - id: CigarGoldCase
         prob: 0.50
-      - id: PlushieSharkPink
-        prob: 0.1
       - id: DoorRemoteSecurity
       - id: ClothingUniformJumpskirtHosFormal
       - id: ClothingUniformJumpsuitHosFormal

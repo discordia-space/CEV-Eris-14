@@ -7,7 +7,6 @@ using Content.Shared.Physics.Pull;
 using Content.Shared.Pulling;
 using Content.Shared.Pulling.Components;
 using Content.Shared.Pulling.Events;
-using Content.Shared.Stunnable;
 using Content.Shared.Throwing;
 
 namespace Content.Shared.Administration;
@@ -21,21 +20,14 @@ public sealed class AdminFrozenSystem : EntitySystem
     {
         base.Initialize();
 
-        SubscribeLocalEvent<AdminFrozenComponent, UseAttemptEvent>(OnAttempt);
-        SubscribeLocalEvent<AdminFrozenComponent, PickupAttemptEvent>(OnAttempt);
-        SubscribeLocalEvent<AdminFrozenComponent, ThrowAttemptEvent>(OnAttempt);
-        SubscribeLocalEvent<AdminFrozenComponent, InteractionAttemptEvent>(OnAttempt);
+        SubscribeLocalEvent<AdminFrozenComponent, UseAttemptEvent>((_, _, args) => args.Cancel());
+        SubscribeLocalEvent<AdminFrozenComponent, PickupAttemptEvent>((_, _, args) => args.Cancel());
+        SubscribeLocalEvent<AdminFrozenComponent, ThrowAttemptEvent>((_, _, args) => args.Cancel());
+        SubscribeLocalEvent<AdminFrozenComponent, InteractionAttemptEvent>((_, _, args) => args.Cancel());
         SubscribeLocalEvent<AdminFrozenComponent, ComponentStartup>(OnStartup);
         SubscribeLocalEvent<AdminFrozenComponent, ComponentShutdown>(UpdateCanMove);
         SubscribeLocalEvent<AdminFrozenComponent, UpdateCanMoveEvent>(OnUpdateCanMove);
         SubscribeLocalEvent<AdminFrozenComponent, PullAttemptEvent>(OnPullAttempt);
-        SubscribeLocalEvent<AdminFrozenComponent, AttackAttemptEvent>(OnAttempt);
-        SubscribeLocalEvent<AdminFrozenComponent, ChangeDirectionAttemptEvent>(OnAttempt);
-    }
-
-    private void OnAttempt(EntityUid uid, AdminFrozenComponent component, CancellableEntityEventArgs args)
-    {
-        args.Cancel();
     }
 
     private void OnPullAttempt(EntityUid uid, AdminFrozenComponent component, PullAttemptEvent args)

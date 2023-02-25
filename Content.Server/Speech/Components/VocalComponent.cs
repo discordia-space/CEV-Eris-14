@@ -1,53 +1,39 @@
-using Content.Server.Humanoid;
-using Content.Server.Speech.EntitySystems;
 using Content.Shared.Actions;
 using Content.Shared.Actions.ActionTypes;
-using Content.Shared.Chat.Prototypes;
-using Content.Shared.Humanoid;
+using Content.Shared.Sound;
 using Robust.Shared.Audio;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
-using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Dictionary;
 
 namespace Content.Server.Speech.Components;
 
 /// <summary>
-///     Component required for entities to be able to do vocal emotions.
+///     Component required for entities to be able to scream.
 /// </summary>
 [RegisterComponent]
-[Access(typeof(VocalSystem))]
 public sealed class VocalComponent : Component
 {
-    /// <summary>
-    ///     Emote sounds prototype id for each sex (not gender).
-    ///     Entities without <see cref="HumanoidComponent"/> considered to be <see cref="Sex.Unsexed"/>.
-    /// </summary>
-    [DataField("sounds", customTypeSerializer: typeof(PrototypeIdValueDictionarySerializer<Sex, EmoteSoundsPrototype>))]
-    public Dictionary<Sex, string>? Sounds;
+    [DataField("maleScream")]
+    public SoundSpecifier MaleScream = new SoundCollectionSpecifier("MaleScreams");
 
-    [DataField("screamId", customTypeSerializer: typeof(PrototypeIdSerializer<EmotePrototype>))]
-    public string ScreamId = "Scream";
+    [DataField("femaleScream")]
+    public SoundSpecifier FemaleScream = new SoundCollectionSpecifier("FemaleScreams");
 
     [DataField("wilhelm")]
     public SoundSpecifier Wilhelm = new SoundPathSpecifier("/Audio/Voice/Human/wilhelm_scream.ogg");
 
+    [DataField("audioParams")]
+    public AudioParams AudioParams = AudioParams.Default.WithVolume(4f);
+
     [DataField("wilhelmProbability")]
-    public float WilhelmProbability = 0.0002f;
+    public float WilhelmProbability = 0.01f;
 
-    [DataField("screamActionId", customTypeSerializer: typeof(PrototypeIdSerializer<InstantActionPrototype>))]
-    public string ScreamActionId = "Scream";
+    public const float Variation = 0.125f;
 
-    [DataField("screamAction")]
-    public InstantAction? ScreamAction;
+    [DataField("actionId", customTypeSerializer:typeof(PrototypeIdSerializer<InstantActionPrototype>))]
+    public string ActionId = "Scream";
 
-    /// <summary>
-    ///     Currently loaded emote sounds prototype, based on entity sex.
-    ///     Null if no valid prototype for entity sex was found.
-    /// </summary>
-    [ViewVariables]
-    public EmoteSoundsPrototype? EmoteSounds = null;
+    [DataField("action")] // must be a data-field to properly save cooldown when saving game state.
+    public InstantAction? ScreamAction = null;
 }
 
-public sealed class ScreamActionEvent : InstantActionEvent
-{
-
-}
+public sealed class ScreamActionEvent : InstantActionEvent { };

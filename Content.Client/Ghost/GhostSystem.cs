@@ -1,26 +1,25 @@
-using Content.Shared.Actions;
+using Content.Client.Ghost.UI;
+using Content.Client.HUD;
 using Content.Shared.Ghost;
 using JetBrains.Annotations;
-using Robust.Client.Console;
 using Robust.Client.GameObjects;
-using Robust.Client.Graphics;
 using Robust.Client.Player;
-using Robust.Shared.GameStates;
+using Robust.Shared.GameObjects;
+using Robust.Shared.IoC;
 
 namespace Content.Client.Ghost
 {
     [UsedImplicitly]
     public sealed class GhostSystem : SharedGhostSystem
     {
-        [Dependency] private readonly IClientConsoleHost _console = default!;
         [Dependency] private readonly IPlayerManager _playerManager = default!;
-        [Dependency] private readonly SharedActionsSystem _actions = default!;
-        [Dependency] private readonly ILightManager _lightManager = default!;
-        [Dependency] private readonly IEyeManager _eye = default!;
+        [Dependency] private readonly IGameHud _gameHud = default!;
 
-        public int AvailableGhostRoleCount { get; private set; }
+        // Changes to this value are manually propagated.
+        // No good way to get an event into the UI.
+        public int AvailableGhostRoleCount { get; private set; } = 0;
 
-        private bool _ghostVisibility = true;
+        private bool _ghostVisibility;
 
         private bool GhostVisibility
         {
@@ -34,22 +33,15 @@ namespace Content.Client.Ghost
 
                 _ghostVisibility = value;
 
-                foreach (var ghost in EntityQuery<GhostComponent, SpriteComponent>(true))
+                foreach (var ghost in EntityManager.GetAllComponents(typeof(GhostComponent), true))
                 {
-                    ghost.Item2.Visible = true;
+                    if (EntityManager.TryGetComponent(ghost.Owner, out SpriteComponent? sprite))
+                    {
+                        sprite.Visible = value;
+                    }
                 }
             }
         }
-
-        public GhostComponent? Player => CompOrNull<GhostComponent>(_playerManager.LocalPlayer?.ControlledEntity);
-        public bool IsGhost => Player != null;
-
-        public event Action<GhostComponent>? PlayerRemoved;
-        public event Action<GhostComponent>? PlayerUpdated;
-        public event Action<GhostComponent>? PlayerAttached;
-        public event Action? PlayerDetached;
-        public event Action<GhostWarpsResponseEvent>? GhostWarpsResponse;
-        public event Action<GhostUpdateGhostRoleCountEvent>? GhostRoleCountUpdated;
 
         public override void Initialize()
         {
@@ -57,153 +49,80 @@ namespace Content.Client.Ghost
 
             SubscribeLocalEvent<GhostComponent, ComponentInit>(OnGhostInit);
             SubscribeLocalEvent<GhostComponent, ComponentRemove>(OnGhostRemove);
-            SubscribeLocalEvent<GhostComponent, ComponentHandleState>(OnGhostState);
 
             SubscribeLocalEvent<GhostComponent, PlayerAttachedEvent>(OnGhostPlayerAttach);
             SubscribeLocalEvent<GhostComponent, PlayerDetachedEvent>(OnGhostPlayerDetach);
 
-            SubscribeLocalEvent<PlayerAttachedEvent>(OnPlayerAttach);
-
             SubscribeNetworkEvent<GhostWarpsResponseEvent>(OnGhostWarpsResponse);
             SubscribeNetworkEvent<GhostUpdateGhostRoleCountEvent>(OnUpdateGhostRoleCount);
-
-            SubscribeLocalEvent<GhostComponent, ToggleLightingActionEvent>(OnToggleLighting);
-            SubscribeLocalEvent<GhostComponent, ToggleFoVActionEvent>(OnToggleFoV);
-            SubscribeLocalEvent<GhostComponent, ToggleGhostsActionEvent>(OnToggleGhosts);
         }
 
         private void OnGhostInit(EntityUid uid, GhostComponent component, ComponentInit args)
         {
-            if (TryComp(component.Owner, out SpriteComponent? sprite))
+            if (EntityManager.TryGetComponent(component.Owner, out SpriteComponent? sprite))
             {
                 sprite.Visible = GhostVisibility;
             }
-
-            _actions.AddAction(uid, component.ToggleLightingAction, null);
-            _actions.AddAction(uid, component.ToggleFoVAction, null);
-            _actions.AddAction(uid, component.ToggleGhostsAction, null);
-        }
-
-        private void OnToggleLighting(EntityUid uid, GhostComponent component, ToggleLightingActionEvent args)
-        {
-            if (args.Handled)
-                return;
-
-            _lightManager.Enabled = !_lightManager.Enabled;
-            args.Handled = true;
-        }
-
-        private void OnToggleFoV(EntityUid uid, GhostComponent component, ToggleFoVActionEvent args)
-        {
-            if (args.Handled)
-                return;
-
-            _eye.CurrentEye.DrawFov = !_eye.CurrentEye.DrawFov;
-            args.Handled = true;
-        }
-
-        private void OnToggleGhosts(EntityUid uid, GhostComponent component, ToggleGhostsActionEvent args)
-        {
-            if (args.Handled)
-                return;
-
-            ToggleGhostVisibility();
-            args.Handled = true;
         }
 
         private void OnGhostRemove(EntityUid uid, GhostComponent component, ComponentRemove args)
         {
-            _actions.RemoveAction(uid, component.ToggleLightingAction);
-            _actions.RemoveAction(uid, component.ToggleFoVAction);
-            _actions.RemoveAction(uid, component.ToggleGhostsAction);
-            _lightManager.Enabled = true;
+            component.Gui?.Dispose();
+            component.Gui = null;
 
-            if (uid != _playerManager.LocalPlayer?.ControlledEntity)
-                return;
-
+            // PlayerDetachedMsg might not fire due to deletion order so...
             if (component.IsAttached)
             {
                 GhostVisibility = false;
             }
-
-            PlayerRemoved?.Invoke(component);
         }
 
         private void OnGhostPlayerAttach(EntityUid uid, GhostComponent component, PlayerAttachedEvent playerAttachedEvent)
         {
-            if (uid != _playerManager.LocalPlayer?.ControlledEntity)
-                return;
+            // I hate UI I hate UI I Hate UI
+            if (component.Gui == null)
+            {
+                component.Gui = new GhostGui(component, this, EntityManager.EntityNetManager!);
+                component.Gui.Update();
+            }
 
+            _gameHud.HandsContainer.AddChild(component.Gui);
             GhostVisibility = true;
             component.IsAttached = true;
-            PlayerAttached?.Invoke(component);
-        }
-
-        private void OnGhostState(EntityUid uid, GhostComponent component, ref ComponentHandleState args)
-        {
-            if (uid != _playerManager.LocalPlayer?.ControlledEntity)
-                return;
-
-            PlayerUpdated?.Invoke(component);
-        }
-
-        private bool PlayerDetach(EntityUid uid)
-        {
-            if (uid != _playerManager.LocalPlayer?.ControlledEntity)
-                return false;
-
-            GhostVisibility = false;
-            PlayerDetached?.Invoke();
-            return true;
         }
 
         private void OnGhostPlayerDetach(EntityUid uid, GhostComponent component, PlayerDetachedEvent args)
         {
-            if (PlayerDetach(uid))
-                component.IsAttached = false;
-        }
-
-        private void OnPlayerAttach(PlayerAttachedEvent ev)
-        {
-            if (!HasComp<GhostComponent>(ev.Entity))
-                PlayerDetach(ev.Entity);
+            component.Gui?.Parent?.RemoveChild(component.Gui);
+            GhostVisibility = false;
+            component.IsAttached = false;
         }
 
         private void OnGhostWarpsResponse(GhostWarpsResponseEvent msg)
         {
-            if (!IsGhost)
+            var entity = _playerManager.LocalPlayer?.ControlledEntity;
+
+            if (entity == null ||
+                !EntityManager.TryGetComponent(entity.Value, out GhostComponent? ghost))
             {
                 return;
             }
 
-            GhostWarpsResponse?.Invoke(msg);
+            var window = ghost.Gui?.TargetWindow;
+
+            if (window != null)
+            {
+                window.Locations = msg.Locations;
+                window.Players = msg.Players;
+                window.Populate();
+            }
         }
 
         private void OnUpdateGhostRoleCount(GhostUpdateGhostRoleCountEvent msg)
         {
             AvailableGhostRoleCount = msg.AvailableGhostRoles;
-            GhostRoleCountUpdated?.Invoke(msg);
-        }
-
-        public void RequestWarps()
-        {
-            RaiseNetworkEvent(new GhostWarpsRequestEvent());
-        }
-
-        public void ReturnToBody()
-        {
-            var msg = new GhostReturnToBodyRequest();
-            RaiseNetworkEvent(msg);
-        }
-
-        public void OpenGhostRoles()
-        {
-            _console.RemoteExecuteCommand(null, "ghostroles");
-        }
-
-        public void ToggleGhostVisibility()
-        {
-            _console.RemoteExecuteCommand(null, "toggleghosts");
+            foreach (var ghost in EntityManager.EntityQuery<GhostComponent>(true))
+                ghost.Gui?.Update();
         }
     }
 }

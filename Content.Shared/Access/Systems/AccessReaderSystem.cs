@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Content.Shared.Inventory;
-using Content.Shared.Emag.Components;
 using Content.Shared.Emag.Systems;
 using Content.Shared.PDA;
 using Content.Shared.Access.Components;
@@ -27,9 +26,7 @@ namespace Content.Shared.Access.Systems
 
         private void OnLinkAttempt(EntityUid uid, AccessReaderComponent component, LinkAttemptEvent args)
         {
-            if (args.User == null) // AutoLink (and presumably future external linkers) have no user.
-                return;
-            if (!HasComp<EmaggedComponent>(uid) && !IsAllowed(args.User.Value, component))
+            if (component.Enabled && !IsAllowed(args.User, component))
                 args.Cancel();
         }
 
@@ -45,12 +42,14 @@ namespace Content.Shared.Access.Systems
             }
         }
 
-        private void OnEmagged(EntityUid uid, AccessReaderComponent reader, ref GotEmaggedEvent args)
+        private void OnEmagged(EntityUid uid, AccessReaderComponent reader, GotEmaggedEvent args)
         {
-            // no fancy conditions
-            args.Handled = true;
+            if (reader.Enabled == true)
+            {
+                reader.Enabled = false;
+                args.Handled = true;
+            }
         }
-
         /// <summary>
         /// Searches the source for access tags
         /// then compares it with the targets readers access list to see if it is allowed.
@@ -85,7 +84,7 @@ namespace Content.Shared.Access.Systems
         /// <param name="reader">An access reader to check against</param>
         public bool IsAllowed(ICollection<string> accessTags, AccessReaderComponent reader)
         {
-            if (HasComp<EmaggedComponent>(reader.Owner))
+            if (!reader.Enabled)
             {
                 // Access reader is totally disabled, so access is always allowed.
                 return true;
@@ -107,7 +106,7 @@ namespace Content.Shared.Access.Systems
         /// <summary>
         /// Finds the access tags on the given entity
         /// </summary>
-        /// <param name="uid">The entity that is being searched.</param>
+        /// <param name="entity">The entity that to search.</param>
         public ICollection<string> FindAccessTags(EntityUid uid)
         {
             HashSet<string>? tags = null;
@@ -116,19 +115,18 @@ namespace Content.Shared.Access.Systems
             // check entity itself
             FindAccessTagsItem(uid, ref tags, ref owned);
 
-            FindAccessItemsInventory(uid, out var items);
-
-            var ev = new GetAdditionalAccessEvent
+            foreach (var item in _handsSystem.EnumerateHeld(uid))
             {
-                Entities = items
-            };
-            RaiseLocalEvent(uid, ref ev);
-            foreach (var ent in ev.Entities)
-            {
-                FindAccessTagsItem(ent, ref tags, ref owned);
+                FindAccessTagsItem(item, ref tags, ref owned);
             }
 
-            return (ICollection<string>?) tags ?? Array.Empty<string>();
+            // maybe its inside an inventory slot?
+            if (_inventorySystem.TryGetSlotEntity(uid, "id", out var idUid))
+            {
+                FindAccessTagsItem(idUid.Value, ref tags, ref owned);
+            }
+
+            return ((ICollection<string>?) tags) ?? Array.Empty<string>();
         }
 
         /// <summary>
@@ -161,24 +159,6 @@ namespace Content.Shared.Access.Systems
                 tags = targetTags;
                 owned = false;
             }
-        }
-
-        public bool FindAccessItemsInventory(EntityUid uid, out HashSet<EntityUid> items)
-        {
-            items = new();
-
-            foreach (var item in _handsSystem.EnumerateHeld(uid))
-            {
-                items.Add(item);
-            }
-
-            // maybe its inside an inventory slot?
-            if (_inventorySystem.TryGetSlotEntity(uid, "id", out var idUid))
-            {
-                items.Add(idUid.Value);
-            }
-
-            return items.Any();
         }
 
         /// <summary>

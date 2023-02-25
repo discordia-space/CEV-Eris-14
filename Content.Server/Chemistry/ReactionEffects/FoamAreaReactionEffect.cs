@@ -2,8 +2,8 @@
 using Content.Server.Coordinates.Helpers;
 using Content.Shared.Audio;
 using Content.Shared.Chemistry.Components;
+using Content.Shared.Sound;
 using JetBrains.Annotations;
-using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Map;
 using Robust.Shared.Player;
@@ -20,7 +20,7 @@ namespace Content.Server.Chemistry.ReactionEffects
         }
 
         public static void SpawnFoam(string entityPrototype, EntityCoordinates coords, Solution? contents, int amount, float duration, float spreadDelay,
-            float removeDelay, SoundSpecifier? sound = null, IEntityManager? entityManager = null)
+            float removeDelay, SoundSpecifier sound, IEntityManager? entityManager = null)
         {
             entityManager ??= IoCManager.Resolve<IEntityManager>();
             var ent = entityManager.SpawnEntity(entityPrototype, coords.SnapToGrid());
@@ -38,8 +38,7 @@ namespace Content.Server.Chemistry.ReactionEffects
                 areaEffectComponent.TryAddSolution(contents);
             areaEffectComponent.Start(amount, duration, spreadDelay, removeDelay);
 
-            entityManager.EntitySysManager.GetEntitySystem<AudioSystem>()
-                .PlayPvs(sound, ent, AudioParams.Default.WithVariation(0.125f));
+            SoundSystem.Play(sound.GetSound(), Filter.Pvs(ent), ent, AudioHelpers.WithVariation(0.125f));
         }
     }
 }

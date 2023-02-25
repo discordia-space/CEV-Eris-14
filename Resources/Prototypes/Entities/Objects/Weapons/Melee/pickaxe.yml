@@ -13,16 +13,18 @@
   - type: GatheringTool
     damage:
       types:
-        Structural: 50
+        Piercing: 25
   - type: ItemCooldown
   - type: MeleeWeapon
     damage:
       types:
         Piercing: 10
         Blunt: 4
+    arcCooldownTime: 3
   - type: Item
     size: 24
     sprite: Objects/Weapons/Melee/pickaxe.rsi
+    prefix: inhand
 
 - type: entity
   name: mining drill
@@ -39,12 +41,12 @@
   - type: GatheringTool
     damage:
       types:
-        Structural: 75
-    gatheringTime: 0.50
-    MaxGatheringEntities: 2
+        Piercing: 25
+    gatheringTime: 0.75
   - type: ItemCooldown
   - type: MeleeWeapon
     damage:
       types:
         Piercing: 10
         Blunt: 4
+    arcCooldownTime: 3

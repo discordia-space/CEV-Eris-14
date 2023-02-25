@@ -56,16 +56,16 @@ namespace Content.Server.Construction.Commands
                 return;
             }
 
-            if (!entityManager.EntityExists(grid.Owner))
+            if (!entityManager.EntityExists(grid.GridEntityId))
             {
                 shell.WriteError($"Grid {gridId} doesn't have an associated grid entity.");
                 return;
             }
 
             var changed = 0;
-            var tagSystem = entityManager.EntitySysManager.GetEntitySystem<TagSystem>();
+            var tagSystem = EntitySystem.Get<TagSystem>();
 
-            foreach (var child in xformQuery.GetComponent(grid.Owner).ChildEntities)
+            foreach (var child in xformQuery.GetComponent(grid.GridEntityId).ChildEntities)
             {
                 if (!entityManager.EntityExists(child))
                 {

@@ -23,12 +23,6 @@
       "name": "can-connector"
     },
     {
-      "name": "can-locked"
-    },
-    {
-      "name": "can-unlocked"
-    },
-    {
       "name": "can-o0",
       "delays": [
         [
@@ -89,34 +83,22 @@
       "name": "green-1"
     },
     {
-      "name": "greenys"
-    },
-    {
-      "name": "greenys-1"
-    },
-    {
       "name": "darkblue"
     },
     {
       "name": "darkblue-1"
     },
     {
-      "name": "frezon"
+      "name": "freon"
     },
     {
-      "name": "frezon-1"
+      "name": "freon-1"
     },
     {
       "name": "water_vapor"
     },
     {
       "name": "water_vapor-1"
-    },
-    {
-      "name": "scrubber-connector"
-    },
-    {
-      "name": "scrubber-open"
     }
   ]
 }

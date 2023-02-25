@@ -1,8 +1,9 @@
 - type: gameMap
-  id: CentComm
+  id: centcomm
   mapName: 'Central Command'
   mapPath: /Maps/centcomm.yml
   minPlayers: 10
+  votable: false
   stations:
     centcomm:
       mapNameTemplate: '{0} Central Command {1}'

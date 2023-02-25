@@ -4,7 +4,6 @@
   id: BaseMagazineBoxRifle
   components:
   - type: BallisticAmmoProvider
-    mayTransfer: true
     whitelist:
       tags:
         - CartridgeRifle

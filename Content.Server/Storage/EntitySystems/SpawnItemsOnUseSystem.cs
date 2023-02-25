@@ -1,6 +1,4 @@
-using Content.Server.Administration.Logs;
 using Content.Server.Storage.Components;
-using Content.Shared.Database;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Storage;
@@ -13,7 +11,6 @@ namespace Content.Server.Storage.EntitySystems
     public sealed class SpawnItemsOnUseSystem : EntitySystem
     {
         [Dependency] private readonly IRobustRandom _random = default!;
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
         [Dependency] private readonly SharedHandsSystem _handsSystem = default!;
 
         public override void Initialize()
@@ -35,7 +32,6 @@ namespace Content.Server.Storage.EntitySystems
             foreach (var proto in spawnEntities)
             {
                 entityToPlaceInHands = Spawn(proto, coords);
-                _adminLogger.Add(LogType.EntitySpawn, LogImpact.Low, $"{ToPrettyString(args.User)} used {ToPrettyString(component.Owner)} which spawned {ToPrettyString(entityToPlaceInHands.Value)}");
             }
 
             if (component.Sound != null)

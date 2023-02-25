@@ -1,3 +1,4 @@
+using System;
 using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
 using Robust.Client.Utility;
@@ -9,8 +10,10 @@ namespace Content.Client.Clickable
     public sealed class ClickableComponent : Component
     {
         [Dependency] private readonly IClickMapManager _clickMapManager = default!;
+        [Dependency] private readonly IEyeManager _eyeManager = default!;
+        [Dependency] private readonly IEntityManager _entMan = default!;
 
-        [DataField("bounds")] public DirBoundData? Bounds;
+        [ViewVariables] [DataField("bounds")] public DirBoundData? Bounds;
 
         /// <summary>
         /// Used to check whether a click worked. Will first check if the click falls inside of some explicit bounding
@@ -21,31 +24,38 @@ namespace Content.Client.Clickable
         /// The draw depth for the sprite that captured the click.
         /// </param>
         /// <returns>True if the click worked, false otherwise.</returns>
-        public bool CheckClick(SpriteComponent sprite, TransformComponent transform, EntityQuery<TransformComponent> xformQuery, Vector2 worldPos, IEye eye, out int drawDepth, out uint renderOrder, out float bottom)
+        public bool CheckClick(Vector2 worldPos, out int drawDepth, out uint renderOrder)
         {
-            if (!sprite.Visible)
+            if (!_entMan.TryGetComponent(Owner, out ISpriteComponent? sprite) || !sprite.Visible)
             {
                 drawDepth = default;
                 renderOrder = default;
-                bottom = default;
                 return false;
             }
 
             drawDepth = sprite.DrawDepth;
             renderOrder = sprite.RenderOrder;
-            var (spritePos, spriteRot) = transform.GetWorldPositionRotation(xformQuery);
-            var spriteBB = sprite.CalculateRotatedBoundingBox(spritePos, spriteRot, eye.Rotation);
-            bottom = spriteBB.CalcBoundingBox().Bottom;
+
+            var transform = _entMan.GetComponent<TransformComponent>(Owner);
+            var worldRot = transform.WorldRotation;
+
+            // We need to convert world angle to a positive value. between 0 and 2pi. This is important for
+            // CalcRectWorldAngle to get the right angle. Otherwise can get incorrect results for sprites at angles like
+            // -135 degrees (seems highly specific, but AI actors & other entities can snap to those angles while
+            // moving). As to why we treat world-angle like this, but not eye angle or world+eye, it is just because
+            // thats what sprite-rendering does.
+            worldRot = worldRot.Reduced();
+
+            if (worldRot.Theta < 0)
+                worldRot = new Angle(worldRot.Theta + Math.Tau);
 
             var invSpriteMatrix = Matrix3.Invert(sprite.GetLocalMatrix());
 
             // This should have been the rotation of the sprite relative to the screen, but this is not the case with no-rot or directional sprites.
-            var relativeRotation = (spriteRot + eye.Rotation).Reduced().FlipPositive();
-
-            Angle cardinalSnapping = sprite.SnapCardinals ? relativeRotation.GetCardinalDir().ToAngle() : Angle.Zero;
+            var relativeRotation = worldRot + _eyeManager.CurrentEye.Rotation;
 
             // First we get `localPos`, the clicked location in the sprite-coordinate frame.
-            var entityXform = Matrix3.CreateInverseTransform(transform.WorldPosition, sprite.NoRotation ? -eye.Rotation : spriteRot - cardinalSnapping);
+            var entityXform = Matrix3.CreateInverseTransform(transform.WorldPosition, sprite.NoRotation ? -_eyeManager.CurrentEye.Rotation : worldRot);
             var localPos = invSpriteMatrix.Transform(entityXform.Transform(worldPos));
 
             // Check explicitly defined click-able bounds
@@ -69,10 +79,12 @@ namespace Content.Client.Clickable
                 }
 
                 // Either we weren't clicking on the texture, or there wasn't one. In which case: check the RSI next
-                if (layer.ActualRsi is not { } rsi || !rsi.TryGetState(layer.State, out var rsiState))
+                if (layer.State == null || layer.ActualRsi is not RSI rsi || !rsi.TryGetState(layer.State, out var rsiState))
                     continue;
 
-                var dir = Layer.GetDirection(rsiState.Directions, relativeRotation);
+                var dir = (rsiState.Directions == RSI.State.DirectionType.Dir1)
+                    ? RSI.State.Direction.South
+                    : relativeRotation.ToRsiDirection(rsiState.Directions);
 
                 // convert to layer-local coordinates
                 layer.GetLayerDrawMatrix(dir, out var matrix);
@@ -85,7 +97,7 @@ namespace Content.Client.Clickable
                 // Next, to get the right click map we need the "direction" of this layer that is actually being used to draw the sprite on the screen.
                 // This **can** differ from the dir defined before, but can also just be the same.
                 if (sprite.EnableDirectionOverride)
-                    dir = sprite.DirectionOverride.Convert(rsiState.Directions);
+                    dir = sprite.DirectionOverride.Convert(rsiState.Directions);;
                 dir = dir.OffsetRsiDir(layer.DirOffset);
 
                 if (_clickMapManager.IsOccluding(layer.ActualRsi!, layer.State, dir, layer.AnimationFrame, layerImagePos))
@@ -94,11 +106,10 @@ namespace Content.Client.Clickable
 
             drawDepth = default;
             renderOrder = default;
-            bottom = default;
             return false;
         }
 
-        public bool CheckDirBound(SpriteComponent sprite, Angle relativeRotation, Vector2 localPos)
+        public bool CheckDirBound(ISpriteComponent sprite, Angle relativeRotation, Vector2 localPos)
         {
             if (Bounds == null)
                 return false;
@@ -132,11 +143,11 @@ namespace Content.Client.Clickable
         [DataDefinition]
         public sealed class DirBoundData
         {
-            [DataField("all")] public Box2 All;
-            [DataField("north")] public Box2 North;
-            [DataField("south")] public Box2 South;
-            [DataField("east")] public Box2 East;
-            [DataField("west")] public Box2 West;
+            [ViewVariables] [DataField("all")] public Box2 All;
+            [ViewVariables] [DataField("north")] public Box2 North;
+            [ViewVariables] [DataField("south")] public Box2 South;
+            [ViewVariables] [DataField("east")] public Box2 East;
+            [ViewVariables] [DataField("west")] public Box2 West;
         }
     }
 }

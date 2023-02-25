@@ -1,13 +1,7 @@
 # Alphabetical order is now apparently required.
 
 - type: Tag
-  id: AirAlarm
-
-- type: Tag
   id: AirAlarmElectronics
-
-- type: Tag
-  id: AirSensor
 
 - type: Tag
   id: ATVKeys
@@ -19,16 +13,13 @@
   id: Bee
 
 - type: Tag
-  id: BikeHorn
+  id: BrassInstrument
+
+- type: Tag
+  id: Brutepack
 
 - type: Tag
   id: BodyBag
-
-- type: Tag
-  id: Book
-
-- type: Tag
-  id: BorgArm
 
 - type: Tag
   id: BotanyHatchet
@@ -41,21 +32,6 @@
 
 - type: Tag
   id: Bottle
-
-- type: Tag
-  id: BoxHug
-
-- type: Tag
-  id: BrassInstrument
-
-- type: Tag
-  id: Brutepack
-
-- type: Tag
-  id: Bucket
-
-- type: Tag
-  id: BulletFoam
 
 - type: Tag
   id: CableCoil
@@ -74,9 +50,6 @@
 
 - type: Tag
   id: CaptainSabre
-
-- type: Tag
-  id: Carp
 
 - type: Tag
   id: Cartridge
@@ -109,16 +82,10 @@
   id: CartridgeRocket
 
 - type: Tag
-  id: Cigarette
-
-- type: Tag
   id: CigFilter
 
 - type: Tag
   id: CigPack
-
-- type: Tag
-  id: ClownRubberStamp
 
 - type: Tag
   id: Crayon
@@ -166,16 +133,10 @@
   id: CombatKnife
 
 - type: Tag
-  id: ComputerTelevisionCircuitboard
-
-- type: Tag
   id: Debug
 
 - type: Tag
   id: Dice
-
-- type: Tag
-  id: DiscreteHealthAnalyzer #So construction recipes don't eat medical PDAs
 
 - type: Tag
   id: Document
@@ -193,6 +154,9 @@
   id: Donut
 
 - type: Tag
+  id: Drone
+
+- type: Tag
   id: DroneUsable
 
 - type: Tag
@@ -208,19 +172,10 @@
   id: ExplosivePassable
 
 - type: Tag
-  id: FireAlarm
-
-- type: Tag
   id: FireAlarmElectronics
 
 - type: Tag
   id: FireAxe
-
-- type: Tag
-  id: Flesh
-
-- type: Tag
-  id: WhitelistChameleon
 
 - type: Tag
   id: FirelockElectronics
@@ -230,9 +185,6 @@
 
 - type: Tag
   id: Flashlight
-
-- type: Tag
-  id: Flower
 
 - type: Tag
   id: Folder
@@ -247,37 +199,19 @@
   id: ForceNoFixRotations # fixrotations command WON'T target this
 
 - type: Tag
-  id: GasScrubber
-
-- type: Tag
-  id: GasVent
-
-- type: Tag
   id: Gauze
-
-- type: Tag
-  id: GeigerCounter
 
 - type: Tag
   id: GlassBeaker
 
 - type: Tag
-  id: GlassShard
-
-- type: Tag
   id: Grenade
-
-- type: Tag
-  id: GuideEmbeded
 
 - type: Tag
   id: GunsDisabled # Allow certain entities to not use guns without complicating the system with an event
 
 - type: Tag
   id: Handcuffs
-
-- type: Tag
-  id: Head
 
 - type: Tag
   id: HideContextMenu
@@ -289,19 +223,7 @@
   id: Hoe
 
 - type: Tag
-  id: HolofanProjector
-
-- type: Tag
-  id: HolosignProjector
-
-- type: Tag #Drop this innate tool instead of deleting it.
-  id: InnateDontDelete
-
-- type: Tag
   id: Ingot
-
-- type: Tag
-  id: IntercomElectronics
 
 - type: Tag
   id: JawsOfLife
@@ -369,13 +291,7 @@
   id: MagazinePistolSubMachineGun
 
 - type: Tag
-  id: MailingUnitElectronics
-
-- type: Tag
   id: Matchstick
-
-- type: Tag
-  id: Medkit
 
 - type: Tag
   id: Metal
@@ -387,9 +303,6 @@
   id: MicrowaveSelfUnsafe
 
 - type: Tag
-  id: MindTransferTarget
-
-- type: Tag
   id: MonkeyCube
 
 - type: Tag
@@ -397,12 +310,6 @@
 
 - type: Tag
   id: NoSpinOnThrow
-
-- type: Tag
-  id: NoBlockAnchoring
-
-- type: Tag
-  id: NukeOpsUplink
 
 - type: Tag
   id: Ointment
@@ -414,19 +321,10 @@
   id: Payload # for grenade/bomb crafting
 
 - type: Tag
-  id: MacroBomb
-
-- type: Tag
-  id: MicroBomb
-
-- type: Tag
   id: PaintableAirlock
 
 - type: Tag
   id: PercussionInstrument
-
-- type: Tag
-  id: PetWearable
 
 - type: Tag
   id: Pickaxe
@@ -459,41 +357,17 @@
   id: Powerdrill
 
 - type: Tag
-  id: ProximitySensor
-
-- type: Tag
-  id: JanicartKeys
-
-- type: Tag
-  id: Radio
+  id: PussyWagonKeys
 
 - type: Tag
   id: RawMaterial
-
-- type: Tag
-  id: RCDDeconstructWhitelist
 
 # Give this to something that doesn't need any special recycler behavior and just needs deleting.
 - type: Tag
   id: Recyclable
 
 - type: Tag
-  id: RipleyCentralControlModule
-
-- type: Tag
-  id: RipleyPeripheralsControlModule
-
-- type: Tag
-  id: RipleyLArm
-
-- type: Tag
-  id: RipleyLLeg
-
-- type: Tag
-  id: RipleyRLeg
-
-- type: Tag
-  id: RipleyRArm
+  id: RCDDeconstructWhitelist
 
 - type: Tag
   id: RodMetal1
@@ -505,13 +379,7 @@
   id: Screwdriver
 
 - type: Tag
-  id: SecBeltEquip
-
-- type: Tag
   id: SecwayKeys
-
-- type: Tag
-  id: ShoesRequiredStepTriggerImmune
 
 - type: Tag
   id: Sheet
@@ -523,19 +391,7 @@
   id: Shovel
 
 - type: Tag
-  id: SkeletonMotorcycleKeys
-
-- type: Tag
-  id: Smokable
-
-- type: Tag
   id: Soap
-
-- type: Tag
-  id: SolarAssemblyPart
-
-- type: Tag
-  id: SolarTrackerElectronics
 
 - type: Tag
   id: Spray
@@ -544,31 +400,10 @@
   id: Spear
 
 - type: Tag
-  id: SpeedLoaderCap
-
-- type: Tag
-  id: SpeedLoaderMagnum
-
-- type: Tag
-  id: SpeedLoaderPistol
-
-- type: Tag
-  id: SpeedLoaderRifle
-
-- type: Tag
   id: StringInstrument
 
 - type: Tag
-  id: SurveillanceCameraMonitorCircuitboard
-
-- type: Tag
-  id: Syndicate
-
-- type: Tag
   id: SyndicateSegwayKeys
-
-- type: Tag
-  id: Syringe
 
 - type: Tag
   id: Taser
@@ -589,22 +424,7 @@
   id: Wall
 
 - type: Tag
-  id: WallmountGeneratorAPUElectronics
-
-- type: Tag
-  id: WallmountGeneratorElectronics
-
-- type: Tag
-  id: WallmountSubstationElectronics
-
-- type: Tag
   id: Window
-
-- type: Tag
-  id: WizardWand # that evil vvizard vvand
-
-- type: Tag
-  id: WizardStaff
 
 - type: Tag
   id: Wirecutter
@@ -624,5 +444,3 @@
 - type: Tag
   id: Write
 
-- type: Tag
-  id: SubdermalImplant

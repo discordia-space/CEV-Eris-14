@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Content.Server.Gravity;
+using Content.Server.Gravity.EntitySystems;
 using Content.Shared.Alert;
 using Content.Shared.Coordinates;
 using NUnit.Framework;
@@ -10,7 +11,7 @@ using Robust.Shared.Map;
 namespace Content.IntegrationTests.Tests.Gravity
 {
     [TestFixture]
-    [TestOf(typeof(GravitySystem))]
+    [TestOf(typeof(WeightlessSystem))]
     [TestOf(typeof(GravityGeneratorComponent))]
     public sealed class WeightlessStatusTests
     {
@@ -20,9 +21,6 @@ namespace Content.IntegrationTests.Tests.Gravity
   id: HumanDummy
   components:
   - type: Alerts
-  - type: Physics
-    bodyType: Dynamic
-
 - type: entity
   name: GravityGeneratorDummy
   id: GravityGeneratorDummy
@@ -40,6 +38,7 @@ namespace Content.IntegrationTests.Tests.Gravity
             await using var pairTracker = await PoolManager.GetServerClient(new PoolSettings{NoClient = true, ExtraPrototypes = Prototypes});
             var server = pairTracker.Pair.Server;
 
+            var mapManager = server.ResolveDependency<IMapManager>();
             var entityManager = server.ResolveDependency<IEntityManager>();
             var alertsSystem = server.ResolveDependency<IEntitySystemManager>().GetEntitySystem<AlertsSystem>();
 

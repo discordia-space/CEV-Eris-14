@@ -17,12 +17,13 @@
   - type: SolutionContainerManager
     solutions:
       puddle:
-        maxVol: 1000
         reagents:
         - ReagentId: Flour
           Quantity: 10
+  - type: Evaporation
   - type: Appearance
-  - type: PuddleVisualizer
+    visuals:
+    - type: PuddleVisualizer
 
 # Reagent Containers
 
@@ -52,8 +53,6 @@
     useSound:
       path: /Audio/Items/eating_1.ogg
   - type: Spillable
-    solution: food
-  - type: TrashOnEmpty
     solution: food
 
 - type: entity
@@ -97,8 +96,6 @@
             max: 1
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
-  - type: TrashOnEmpty
-    solution: food
 
 - type: entity
   parent: ReagentContainerBase
@@ -272,21 +269,20 @@
         - ReagentId: OilOlive
           Quantity: 20
 
-- type: entity
-  parent: ReagentContainerBase
-  id: ReagentContainerMayo
-  name: mayonnaise
-  description: Bottle of mayonnaise.
-  components:
-  - type: Sprite
-    state: mayo
-  - type: SolutionContainerManager
-    solutions:
-      food:
-        maxVol: 20
-        reagents:
-        - ReagentId: Mayo
-          Quantity: 20
+# - type: entity
+#   parent: ReagentContainerBase
+#   id: ReagentContainerMayo
+#   name: mayonnaise
+#   description:
+#   components:
+#   - type: Sprite
+#     state: mayo
+#   - type: SolutionContainerManager
+#     maxVol: 10
+#     contents:
+#       reagents:
+#       - ReagentId: Mayo
+#         Quantity: 10
 
 # - type: entity
 #   parent: ReagentContainerBase
@@ -329,9 +325,6 @@
   id: FoodDough
   description: A piece of dough.
   components:
-  - type: FlavorProfile
-    flavors:
-      - dough
   - type: Sprite
     state: dough
   - type: SliceableFood
@@ -344,9 +337,6 @@
   id: FoodDoughSlice
   description: A slice of dough. Can be cooked into a bun.
   components:
-  - type: FlavorProfile
-    flavors:
-      - dough
   - type: Sprite
     state: dough-slice
 
@@ -356,9 +346,6 @@
   id: FoodDoughBun
   description: A base for any self-respecting burger.
   components:
-  - type: FlavorProfile
-    flavors:
-      - bun
   - type: Sprite
     sprite: Objects/Consumable/Food/burger.rsi
     state: bun
@@ -414,9 +401,6 @@
   id: FoodCakeBatter
   description: Cook it to get a cake.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweetdough
   - type: Sprite
     state: cakebatter
 
@@ -433,11 +417,8 @@
   name: cheese wheel
   parent: FoodBakingBase
   id: FoodCheese
-  description: A big wheel of delicious Cheddar.
+  description: A big wheel of delcious Cheddar.
   components:
-  - type: FlavorProfile
-    flavors:
-      - cheesy
   - type: Sprite
     state: cheesewheel
   - type: SliceableFood
@@ -450,9 +431,6 @@
   id: FoodCheeseSlice
   description: A wedge of delicious Cheddar. The cheese wheel it was cut from can't have gone far.
   components:
-  - type: FlavorProfile
-    flavors:
-      - cheesy
   - type: Sprite
     state: cheesewedge
   - type: SolutionContainerManager
@@ -469,9 +447,6 @@
   id: FoodBadRecipe
   description: Someone should be demoted from cook for this.
   components:
-  - type: FlavorProfile
-    flavors:
-      - terrible
   - type: Sprite
     state: badrecipe
   - type: SolutionContainerManager

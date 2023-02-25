@@ -1,13 +1,18 @@
 - type: latheRecipe
   id: SheetSteel
+  icon:
+    sprite: Objects/Materials/Sheets/metal.rsi
+    state: steel
   result: SheetSteel1
-  applyMaterialDiscount: false
   completetime: 2
   materials:
     Steel: 100
     
 - type: latheRecipe
   id: SheetSteel30
+  icon:
+    sprite: Objects/Materials/Sheets/metal.rsi
+    state: steel_3
   result: SheetSteel
   completetime: 2
   materials:
@@ -15,14 +20,19 @@
 
 - type: latheRecipe
   id: SheetGlass1
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: glass
   result: SheetGlass1
-  applyMaterialDiscount: false
   completetime: 2
   materials:
     Glass: 100
     
 - type: latheRecipe
   id: SheetGlass30
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: glass_3
   result: SheetGlass
   completetime: 2
   materials:
@@ -30,8 +40,10 @@
 
 - type: latheRecipe
   id: SheetRGlass
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: rglass
   result: SheetRGlass1
-  applyMaterialDiscount: false
   completetime: 2
   materials:
     Glass: 100
@@ -39,6 +51,9 @@
     
 - type: latheRecipe
   id: SheetRGlass30
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: rglass_3
   result: SheetRGlass
   completetime: 2
   materials:
@@ -47,6 +62,9 @@
 
 - type: latheRecipe
   id: SheetPGlass30
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: pglass_3
   result: SheetPGlass
   completetime: 2
   materials:
@@ -55,6 +73,9 @@
     
 - type: latheRecipe
   id: SheetRPGlass30
+  icon:
+    sprite: Objects/Materials/Sheets/glass.rsi
+    state: rpglass_3
   result: SheetRPGlass
   completetime: 2
   materials:
@@ -64,6 +85,9 @@
     
 - type: latheRecipe
   id: SheetPlasma30
+  icon:
+    sprite: Objects/Materials/Sheets/other.rsi
+    state: plasma_3
   result: SheetPlasma
   completetime: 2
   materials:
@@ -71,6 +95,9 @@
 
 - type: latheRecipe
   id: SheetUranium1
+  icon:
+    sprite: Objects/Materials/Sheets/other.rsi
+    state: uranium
   result: SheetUranium1
   completetime: 2
   materials:
@@ -78,6 +105,9 @@
     
 - type: latheRecipe
   id: IngotGold1
+  icon:
+    sprite: Objects/Materials/ingots.rsi
+    state: gold
   result: IngotGold1
   completetime: 2
   materials:
@@ -85,6 +115,9 @@
 
 - type: latheRecipe
   id: IngotSilver1
+  icon:
+    sprite: Objects/Materials/ingots.rsi
+    state: silver
   result: IngotSilver1
   completetime: 2
   materials:
@@ -92,8 +125,10 @@
 
 - type: latheRecipe
   id: SheetPlastic
+  icon:
+    sprite: Objects/Materials/Sheets/other.rsi
+    state: plastic
   result: SheetPlastic1
-  applyMaterialDiscount: false
   completetime: 2
   materials:
     Plastic: 100

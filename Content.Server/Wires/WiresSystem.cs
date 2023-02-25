@@ -1,12 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
-using Content.Server.Administration.Logs;
 using Content.Server.DoAfter;
 using Content.Server.Hands.Components;
 using Content.Server.Power.Components;
 using Content.Server.Tools;
-using Content.Shared.Database;
 using Content.Shared.Examine;
 using Content.Shared.GameTicking;
 using Content.Shared.Interaction;
@@ -15,6 +13,8 @@ using Content.Shared.Tools.Components;
 using Content.Shared.Wires;
 using Robust.Server.GameObjects;
 using Robust.Server.Player;
+using Robust.Shared.Audio;
+using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 
@@ -23,14 +23,11 @@ namespace Content.Server.Wires;
 public sealed class WiresSystem : EntitySystem
 {
     [Dependency] private readonly IPrototypeManager _protoMan = default!;
-    [Dependency] private readonly IAdminLogManager _adminLogger = default!;
-    [Dependency] private readonly AppearanceSystem _appearance = default!;
-    [Dependency] private readonly DoAfterSystem _doAfter = default!;
+    [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
     [Dependency] private readonly ToolSystem _toolSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
     [Dependency] private readonly SharedInteractionSystem _interactionSystem = default!;
-    [Dependency] private readonly SharedAudioSystem _audio = default!;
-    [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
+    [Dependency] private readonly DoAfterSystem _doAfter = default!;
 
     private IRobustRandom _random = new RobustRandom();
 
@@ -40,14 +37,17 @@ public sealed class WiresSystem : EntitySystem
     private const float ScrewTime = 1f;
     private float _toolTime = 0f;
 
+    private static DummyWireAction _dummyWire = new DummyWireAction();
+
     #region Initialization
     public override void Initialize()
     {
+        _dummyWire.Initialize();
+
         SubscribeLocalEvent<RoundRestartCleanupEvent>(Reset);
 
         // this is a broadcast event
         SubscribeLocalEvent<WireToolFinishedEvent>(OnToolFinished);
-        SubscribeLocalEvent<WireToolCanceledEvent>(OnToolCanceled);
         SubscribeLocalEvent<WiresComponent, ComponentStartup>(OnWiresStartup);
         SubscribeLocalEvent<WiresComponent, WiresActionMessage>(OnWiresActionMessage);
         SubscribeLocalEvent<WiresComponent, InteractUsingEvent>(OnInteractUsing);
@@ -66,46 +66,39 @@ public sealed class WiresSystem : EntitySystem
 
         WireLayout? layout = null;
         List<Wire>? wireSet = null;
-        if (!wires.AlwaysRandomize)
+        if (wires.LayoutId != null)
         {
-            TryGetLayout(wires.LayoutId, out layout);
-        }
-
-        List<IWireAction> wireActions = new();
-        var dummyWires = 0;
-
-        if (!_protoMan.TryIndex(wires.LayoutId, out WireLayoutPrototype? layoutPrototype))
-        {
-            return;
-        }
-
-        dummyWires += layoutPrototype.DummyWires;
-
-        if (layoutPrototype.Wires != null)
-        {
-            wireActions.AddRange(layoutPrototype.Wires);
-        }
-
-        // does the prototype have a parent (and are the wires empty?) if so, we just create
-        // a new layout based on that
-        foreach (var parentLayout in _protoMan.EnumerateParents<WireLayoutPrototype>(wires.LayoutId))
-        {
-            if (parentLayout.Wires != null)
+            if (!wires.AlwaysRandomize)
             {
-                wireActions.AddRange(parentLayout.Wires);
+                TryGetLayout(wires.LayoutId, out layout);
             }
 
-            dummyWires += parentLayout.DummyWires;
-        }
+            if (!_protoMan.TryIndex(wires.LayoutId, out WireLayoutPrototype? layoutPrototype))
+                return;
 
-        if (wireActions.Count > 0)
-        {
-            foreach (var wire in wireActions)
+            // does the prototype have a parent (and are the wires empty?) if so, we just create
+            // a new layout based on that
+            //
+            // TODO: Merge wire layouts...
+            if (!string.IsNullOrEmpty(layoutPrototype.Parent) && layoutPrototype.Wires == null)
             {
-                wire.Initialize();
+                var parent = layoutPrototype.Parent;
+
+                if (!_protoMan.TryIndex(parent, out WireLayoutPrototype? parentPrototype))
+                    return;
+
+                layoutPrototype = parentPrototype;
             }
 
-            wireSet = CreateWireSet(uid, layout, wireActions, dummyWires);
+            if (layoutPrototype.Wires != null)
+            {
+                foreach (var wire in layoutPrototype.Wires)
+                {
+                    wire.Initialize();
+                }
+
+                wireSet = CreateWireSet(uid, layout, layoutPrototype.Wires, layoutPrototype.DummyWires);
+            }
         }
 
         if (wireSet == null || wireSet.Count == 0)
@@ -115,7 +108,7 @@ public sealed class WiresSystem : EntitySystem
 
         wires.WiresList.AddRange(wireSet);
 
-        var types = new Dictionary<object, int>();
+        Dictionary<object, int> types = new Dictionary<object, int>();
 
         if (layout != null)
         {
@@ -127,10 +120,6 @@ public sealed class WiresSystem : EntitySystem
             var id = 0;
             foreach (var wire in wires.WiresList)
             {
-                wire.Id = id++;
-                if (wire.Action == null)
-                    continue;
-
                 var wireType = wire.Action.GetType();
                 if (types.ContainsKey(wireType))
                 {
@@ -140,6 +129,9 @@ public sealed class WiresSystem : EntitySystem
                 {
                     types.Add(wireType, 1);
                 }
+
+                wire.Id = id;
+                id++;
 
                 // don't care about the result, this should've
                 // been handled in layout creation
@@ -160,20 +152,25 @@ public sealed class WiresSystem : EntitySystem
             {
                 (int id, Wire d) = enumeratedList[i];
 
-                if (d.Action != null)
+                var wireType = d.Action.GetType();
+                if (types.ContainsKey(wireType))
                 {
-                    var actionType = d.Action.GetType();
-                    if (types.ContainsKey(actionType))
-                        types[actionType] += 1;
-                    else
-                        types.Add(actionType, 1);
+                    types[wireType] += 1;
+                }
+                else
+                {
+                    types.Add(wireType, 1);
+                }
 
-                    d.Id = i;
-                    if (!d.Action.AddWire(d, types[actionType]))
-                        d.Action = null;
+                d.Id = i;
+
+                if (!d.Action.AddWire(d, types[wireType]))
+                {
+                    d.Action = _dummyWire;
                 }
 
                 data.Add(id, new WireLayout.WireData(d.Letter, d.Color, i));
+
                 wires.WiresList[i] = wireSet[id];
             }
 
@@ -204,13 +201,13 @@ public sealed class WiresSystem : EntitySystem
 
         for (var i = 1; i <= dummyWires; i++)
         {
-            wireSet.Add(CreateWire(uid, null, wires.Count + i, layout, colors, letters));
+            wireSet.Add(CreateWire(uid, _dummyWire, wires.Count + i, layout, colors, letters));
         }
 
         return wireSet;
     }
 
-    private Wire CreateWire(EntityUid uid, IWireAction? action, int position, WireLayout? layout, List<WireColor> colors, List<WireLetter> letters)
+    private Wire CreateWire(EntityUid uid, IWireAction action, int position, WireLayout? layout, List<WireColor> colors, List<WireLetter> letters)
     {
         WireLetter letter;
         WireColor color;
@@ -234,7 +231,6 @@ public sealed class WiresSystem : EntitySystem
             false,
             color,
             letter,
-            position,
             action);
     }
 
@@ -258,10 +254,10 @@ public sealed class WiresSystem : EntitySystem
     /// <summary>
     ///     Tries to cancel an active wire action via the given key that it's stored in.
     /// </summary>
-    /// <param name="key">The key used to cancel the action.</param>
+    /// <param id="key">The key used to cancel the action.</param>
     public bool TryCancelWireAction(EntityUid owner, object key)
     {
-        if (TryGetData<CancellationTokenSource?>(owner, key, out var token))
+        if (TryGetData(owner, key, out CancellationTokenSource? token))
         {
             token.Cancel();
             return true;
@@ -273,9 +269,9 @@ public sealed class WiresSystem : EntitySystem
     /// <summary>
     ///     Starts a timed action for this entity.
     /// </summary>
-    /// <param name="delay">How long this takes to finish</param>
-    /// <param name="key">The key used to cancel the action</param>
-    /// <param name="onFinish">The event that is sent out when the wire is finished <see cref="TimedWireEvent" /></param>
+    /// <param id="delay">How long this takes to finish</param>
+    /// <param id="key">The key used to cancel the action</param>
+    /// <param id="onFinish">The event that is sent out when the wire is finished <see cref="TimedWireEvent" /></param>
     public void StartWireAction(EntityUid owner, float delay, object key, TimedWireEvent onFinish)
     {
         if (!HasComp<WiresComponent>(owner))
@@ -314,9 +310,6 @@ public sealed class WiresSystem : EntitySystem
     {
         foreach (var (owner, activeWires) in _activeWires)
         {
-            if (!HasComp<WiresComponent>(owner))
-                _activeWires.Remove(owner);
-
             foreach (var wire in activeWires)
             {
                 if (wire.CancelToken.IsCancellationRequested)
@@ -390,12 +383,12 @@ public sealed class WiresSystem : EntitySystem
     #endregion
 
     #region Event Handling
-    private void OnWiresPowered(EntityUid uid, WiresComponent component, ref PowerChangedEvent args)
+    private void OnWiresPowered(EntityUid uid, WiresComponent component, PowerChangedEvent args)
     {
         UpdateUserInterface(uid);
         foreach (var wire in component.WiresList)
         {
-            wire.Action?.Update(wire);
+            wire.Action.Update(wire);
         }
     }
 
@@ -409,13 +402,13 @@ public sealed class WiresSystem : EntitySystem
 
         if (!EntityManager.TryGetComponent(player, out HandsComponent? handsComponent))
         {
-            _popupSystem.PopupEntity(Loc.GetString("wires-component-ui-on-receive-message-no-hands"), uid, player);
+            _popupSystem.PopupEntity(Loc.GetString("wires-component-ui-on-receive-message-no-hands"), uid, Filter.Entities(player));
             return;
         }
 
         if (!_interactionSystem.InRangeUnobstructed(player, uid))
         {
-            _popupSystem.PopupEntity(Loc.GetString("wires-component-ui-on-receive-message-cannot-reach"), uid, player);
+            _popupSystem.PopupEntity(Loc.GetString("wires-component-ui-on-receive-message-cannot-reach"), uid, Filter.Entities(player));
             return;
         }
 
@@ -459,17 +452,9 @@ public sealed class WiresSystem : EntitySystem
                 args.Handled = true;
             }
         }
-        else if (!component.IsScrewing && _toolSystem.HasQuality(args.Used, "Screwing", tool))
+        else if (_toolSystem.UseTool(args.Used, args.User, uid, 0f, ScrewTime, new string[]{ "Screwing" }, doAfterCompleteEvent:new WireToolFinishedEvent(uid), toolComponent:tool))
         {
-            component.IsScrewing = _toolSystem.UseTool(args.Used, args.User, uid,
-                0f, ScrewTime, new[] { "Screwing" },
-                new WireToolFinishedEvent(uid, args.User),
-                new WireToolCanceledEvent(uid),
-                toolComponent: tool);
-            args.Handled = component.IsScrewing;
-
-            // Log attempt
-            _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(args.User):user} is screwing {ToPrettyString(uid):target}'s {(component.IsPanelOpen ? "open" : "closed")} maintenance panel at {Transform(uid).Coordinates:targetlocation}");
+            args.Handled = true;
         }
     }
 
@@ -478,34 +463,18 @@ public sealed class WiresSystem : EntitySystem
         if (!EntityManager.TryGetComponent(args.Target, out WiresComponent? component))
             return;
 
-        component.IsScrewing = false;
         component.IsPanelOpen = !component.IsPanelOpen;
         UpdateAppearance(args.Target);
 
-        // Log success
-        _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(args.User):user} screwed {ToPrettyString(args.Target):target}'s maintenance panel {(component.IsPanelOpen ? "open" : "closed")}");
-
         if (component.IsPanelOpen)
         {
-            _audio.PlayPvs(component.ScrewdriverOpenSound, args.Target);
+            SoundSystem.Play(component.ScrewdriverOpenSound.GetSound(), Filter.Pvs(args.Target), args.Target);
         }
         else
         {
-            _audio.PlayPvs(component.ScrewdriverCloseSound, args.Target);
-            var ui = _uiSystem.GetUiOrNull(args.Target, WiresUiKey.Key);
-            if (ui != null)
-            {
-                _uiSystem.CloseAll(ui);
-            }
+            SoundSystem.Play(component.ScrewdriverCloseSound.GetSound(), Filter.Pvs(args.Target), args.Target);
+            _uiSystem.GetUiOrNull(args.Target, WiresUiKey.Key)?.CloseAll();
         }
-    }
-
-    private void OnToolCanceled(WireToolCanceledEvent ev)
-    {
-        if (!TryComp(ev.Target, out WiresComponent? component))
-            return;
-
-        component.IsScrewing = false;
     }
 
     private void OnExamine(EntityUid uid, WiresComponent component, ExaminedEvent args)
@@ -571,7 +540,7 @@ public sealed class WiresSystem : EntitySystem
         if (!Resolve(uid, ref appearance, ref wires, false))
             return;
 
-        _appearance.SetData(uid, WiresVisuals.MaintenancePanelState, wires.IsPanelOpen && wires.IsPanelVisible, appearance);
+        appearance.SetData(WiresVisuals.MaintenancePanelState, wires.IsPanelOpen && wires.IsPanelVisible);
     }
 
     private void UpdateUserInterface(EntityUid uid, WiresComponent? wires = null, ServerUserInterfaceComponent? ui = null)
@@ -585,34 +554,25 @@ public sealed class WiresSystem : EntitySystem
             clientList.Add(new ClientWire(entry.Id, entry.IsCut, entry.Color,
                 entry.Letter));
 
-            var statusData = entry.Action?.GetStatusLightData(entry);
-            if (statusData != null && entry.Action?.StatusKey != null)
+            var statusData = entry.Action.GetStatusLightData(entry);
+            if (statusData != null && entry.Action.StatusKey != null)
             {
-                wires.Statuses[entry.Action.StatusKey] = (entry.OriginalPosition, statusData);
+                wires.Statuses[entry.Action.StatusKey] = statusData;
             }
         }
 
-        var statuses = new List<(int position, object key, object value)>();
-        foreach (var (key, value) in wires.Statuses)
-        {
-            var valueCast = ((int position, StatusLightData? value)) value;
-            statuses.Add((valueCast.position, key, valueCast.value!));
-        }
-
-        statuses.Sort((a, b) => a.position.CompareTo(b.position));
-
-        _uiSystem.TrySetUiState(uid, WiresUiKey.Key, new WiresBoundUserInterfaceState(
-            clientList.ToArray(),
-            statuses.Select(p => new StatusEntry(p.key, p.value)).ToArray(),
-            wires.BoardName,
-            wires.SerialNumber,
-            wires.WireSeed), ui: ui);
+        _uiSystem.GetUiOrNull(uid, WiresUiKey.Key)?.SetState(
+            new WiresBoundUserInterfaceState(
+                clientList.ToArray(),
+                wires.Statuses.Select(p => new StatusEntry(p.Key, p.Value)).ToArray(),
+                wires.BoardName,
+                wires.SerialNumber,
+                wires.WireSeed));
     }
 
     public void OpenUserInterface(EntityUid uid, IPlayerSession player)
     {
-        if (_uiSystem.TryGetUi(uid, WiresUiKey.Key, out var ui))
-            _uiSystem.OpenUi(ui, player);
+        _uiSystem.GetUiOrNull(uid, WiresUiKey.Key)?.Open(player);
     }
 
     /// <summary>
@@ -666,13 +626,7 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Cut:
                 if (!_toolSystem.HasQuality(toolEntity, "Cutting", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), user);
-                    return;
-                }
-
-                if (wire.IsCut)
-                {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-cut-cut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), Filter.Entities(user));
                     return;
                 }
 
@@ -680,13 +634,7 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Mend:
                 if (!_toolSystem.HasQuality(toolEntity, "Cutting", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), user);
-                    return;
-                }
-
-                if (!wire.IsCut)
-                {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-mend-uncut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), Filter.Entities(user));
                     return;
                 }
 
@@ -694,20 +642,12 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Pulse:
                 if (!_toolSystem.HasQuality(toolEntity, "Pulsing", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-multitool"), user);
-                    return;
-                }
-
-                if (wire.IsCut)
-                {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-pulse-cut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-multitool"), Filter.Entities(user));
                     return;
                 }
 
                 break;
         }
-
-        wires.WiresQueue.Add(id);
 
         if (_toolTime > 0f)
         {
@@ -732,6 +672,8 @@ public sealed class WiresSystem : EntitySystem
             };
 
             _doAfter.DoAfter(args);
+
+            wires.WiresQueue.Add(id);
         }
         else
         {
@@ -744,9 +686,6 @@ public sealed class WiresSystem : EntitySystem
     private void UpdateWires(EntityUid used, EntityUid user, EntityUid toolEntity, int id, WiresAction action, WiresComponent? wires = null, ToolComponent? tool = null)
     {
         if (!Resolve(used, ref wires))
-            return;
-
-        if (!wires.WiresQueue.Contains(id))
             return;
 
         if (!Resolve(toolEntity, ref tool))
@@ -768,18 +707,12 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Cut:
                 if (!_toolSystem.HasQuality(toolEntity, "Cutting", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), user);
-                    break;
-                }
-
-                if (wire.IsCut)
-                {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-cut-cut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), Filter.Entities(user));
                     break;
                 }
 
                 _toolSystem.PlayToolSound(toolEntity, tool);
-                if (wire.Action == null || wire.Action.Cut(user, wire))
+                if (wire.Action.Cut(user, wire))
                 {
                     wire.IsCut = true;
                 }
@@ -789,18 +722,12 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Mend:
                 if (!_toolSystem.HasQuality(toolEntity, "Cutting", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), user);
-                    break;
-                }
-
-                if (!wire.IsCut)
-                {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-mend-uncut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-wirecutters"), Filter.Entities(user));
                     break;
                 }
 
                 _toolSystem.PlayToolSound(toolEntity, tool);
-                if (wire.Action == null || wire.Action.Mend(user, wire))
+                if (wire.Action.Mend(user, wire))
                 {
                     wire.IsCut = false;
                 }
@@ -810,31 +737,30 @@ public sealed class WiresSystem : EntitySystem
             case WiresAction.Pulse:
                 if (!_toolSystem.HasQuality(toolEntity, "Pulsing", tool))
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-multitool"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-need-multitool"), Filter.Entities(user));
                     break;
                 }
 
                 if (wire.IsCut)
                 {
-                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-pulse-cut-wire"), user);
+                    _popupSystem.PopupCursor(Loc.GetString("wires-component-ui-on-receive-message-cannot-pulse-cut-wire"), Filter.Entities(user));
                     break;
                 }
 
-                wire.Action?.Pulse(user, wire);
+                wire.Action.Pulse(user, wire);
 
                 UpdateUserInterface(used);
-                _audio.PlayPvs(wires.PulseSound, used);
+                SoundSystem.Play(wires.PulseSound.GetSound(), Filter.Pvs(used), used);
                 break;
         }
 
-        wire.Action?.Update(wire);
         wires.WiresQueue.Remove(id);
     }
 
     /// <summary>
     ///     Tries to get the stateful data stored in this entity's WiresComponent.
     /// </summary>
-    /// <param name="identifier">The key that stores the data in the WiresComponent.</param>
+    /// <param id="identifier">The key that stores the data in the WiresComponent.</param>
     public bool TryGetData<T>(EntityUid uid, object identifier, [NotNullWhen(true)] out T? data, WiresComponent? wires = null)
     {
         data = default(T);
@@ -856,8 +782,8 @@ public sealed class WiresSystem : EntitySystem
     /// <summary>
     ///     Sets data in the entity's WiresComponent state dictionary by key.
     /// </summary>
-    /// <param name="identifier">The key that stores the data in the WiresComponent.</param>
-    /// <param name="data">The data to store using the given identifier.</param>
+    /// <param id="identifier">The key that stores the data in the WiresComponent.</param>
+    /// <param id="data">The data to store using the given identifier.</param>
     public void SetData(EntityUid uid, object identifier, object data, WiresComponent? wires = null)
     {
         if (!Resolve(uid, ref wires))
@@ -889,7 +815,7 @@ public sealed class WiresSystem : EntitySystem
     /// <summary>
     ///     Removes data from this entity stored in the given key from the entity's WiresComponent.
     /// </summary>
-    /// <param name="identifier">The key that stores the data in the WiresComponent.</param>
+    /// <param id="identifier">The key that stores the data in the WiresComponent.</param>
     public void RemoveData(EntityUid uid, object identifier, WiresComponent? wires = null)
     {
         if (!Resolve(uid, ref wires))
@@ -920,17 +846,13 @@ public sealed class WiresSystem : EntitySystem
     #region Events
     private sealed class WireToolFinishedEvent : EntityEventArgs
     {
-        public EntityUid User { get; }
         public EntityUid Target { get; }
 
-        public WireToolFinishedEvent(EntityUid target, EntityUid user)
+        public WireToolFinishedEvent(EntityUid target)
         {
             Target = target;
-            User = user;
         }
     }
-
-    public record struct WireToolCanceledEvent(EntityUid Target);
 
     private sealed class OnWireDoAfterEvent : EntityEventArgs
     {
@@ -967,12 +889,6 @@ public sealed class Wire
     public int Id { get; set; }
 
     /// <summary>
-    /// The original position of this wire in the prototype.
-    /// </summary>
-    [ViewVariables]
-    public int OriginalPosition { get; set; }
-
-    /// <summary>
     /// The color of the wire.
     /// </summary>
     [ViewVariables]
@@ -984,17 +900,14 @@ public sealed class Wire
     [ViewVariables]
     public WireLetter Letter { get; }
 
-    /// <summary>
-    ///     The action that this wire performs when mended, cut or puled. This also determines the status lights that this wire adds.
-    /// </summary>
-    public IWireAction? Action { get; set; }
+    // The action that this wire performs upon activation.
+    public IWireAction Action { get; set; }
 
-    public Wire(EntityUid owner, bool isCut, WireColor color, WireLetter letter, int position, IWireAction? action)
+    public Wire(EntityUid owner, bool isCut, WireColor color, WireLetter letter, IWireAction action)
     {
         Owner = owner;
         IsCut = isCut;
         Color = color;
-        OriginalPosition = position;
         Letter = letter;
         Action = action;
     }

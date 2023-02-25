@@ -5,7 +5,6 @@ using Content.Server.Chemistry.Components.SolutionManager;
 using Content.Shared.Inventory;
 using JetBrains.Annotations;
 using Robust.Shared.Physics.Dynamics;
-using Robust.Shared.Physics.Events;
 using Robust.Shared.Prototypes;
 
 
@@ -32,7 +31,7 @@ namespace Content.Server.Chemistry.EntitySystems
                 .EnsureComponentWarn<SolutionContainerManagerComponent>($"{nameof(SolutionInjectOnCollideComponent)} requires a SolutionContainerManager on {component.Owner}!");
         }
 
-        private void HandleInjection(EntityUid uid, SolutionInjectOnCollideComponent component, ref StartCollideEvent args)
+        private void HandleInjection(EntityUid uid, SolutionInjectOnCollideComponent component, StartCollideEvent args)
         {
             var target = args.OtherFixture.Body.Owner;
 
@@ -52,7 +51,7 @@ namespace Content.Server.Chemistry.EntitySystems
             }
 
             var solRemoved = solution.SplitSolution(component.TransferAmount);
-            var solRemovedVol = solRemoved.Volume;
+            var solRemovedVol = solRemoved.TotalVolume;
 
             var solToInject = solRemoved.SplitSolution(solRemovedVol * component.TransferEfficiency);
 

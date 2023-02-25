@@ -8,7 +8,7 @@ using Content.Shared.Atmos;
 using Content.Shared.Body.Components;
 using Content.Shared.Damage;
 using Content.Shared.Database;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.MobState.Components;
 using JetBrains.Annotations;
 using Robust.Shared.Player;
 using Robust.Shared.Timing;
@@ -18,15 +18,14 @@ namespace Content.Server.Body.Systems
     [UsedImplicitly]
     public sealed class RespiratorSystem : EntitySystem
     {
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
-        [Dependency] private readonly IGameTiming _gameTiming = default!;
-        [Dependency] private readonly AlertsSystem _alertsSystem = default!;
-        [Dependency] private readonly AtmosphereSystem _atmosSys = default!;
-        [Dependency] private readonly BodySystem _bodySystem = default!;
         [Dependency] private readonly DamageableSystem _damageableSys = default!;
+        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
+        [Dependency] private readonly BodySystem _bodySystem = default!;
         [Dependency] private readonly LungSystem _lungSystem = default!;
+        [Dependency] private readonly AtmosphereSystem _atmosSys = default!;
         [Dependency] private readonly PopupSystem _popupSystem = default!;
-        [Dependency] private readonly MobStateSystem _mobState = default!;
+        [Dependency] private readonly AlertsSystem _alertsSystem = default!;
+        [Dependency] private readonly IGameTiming _gameTiming = default!;
 
         public override void Initialize()
         {
@@ -41,11 +40,12 @@ namespace Content.Server.Body.Systems
         {
             base.Update(frameTime);
 
-            foreach (var (respirator, body) in EntityManager.EntityQuery<RespiratorComponent, BodyComponent>())
+            foreach (var (respirator, body) in
+                     EntityManager.EntityQuery<RespiratorComponent, SharedBodyComponent>())
             {
                 var uid = respirator.Owner;
-
-                if (_mobState.IsDead(uid))
+                if (!EntityManager.TryGetComponent<MobStateComponent>(uid, out var state) ||
+                    state.IsDead())
                 {
                     continue;
                 }
@@ -57,7 +57,7 @@ namespace Content.Server.Body.Systems
                 respirator.AccumulatedFrametime -= respirator.CycleDelay;
                 UpdateSaturation(respirator.Owner, -respirator.CycleDelay, respirator);
 
-                if (!_mobState.IsIncapacitated(uid)) // cannot breathe in crit.
+                if (!state.IsIncapacitated()) // cannot breathe in crit.
                 {
                     switch (respirator.Status)
                     {
@@ -77,7 +77,7 @@ namespace Content.Server.Body.Systems
                     if (_gameTiming.CurTime >= respirator.LastGaspPopupTime + respirator.GaspPopupCooldown)
                     {
                         respirator.LastGaspPopupTime = _gameTiming.CurTime;
-                        _popupSystem.PopupEntity(Loc.GetString("lung-behavior-gasp"), uid);
+                        _popupSystem.PopupEntity(Loc.GetString("lung-behavior-gasp"), uid, Filter.Pvs(uid));
                     }
 
                     TakeSuffocationDamage(uid, respirator);
@@ -89,26 +89,25 @@ namespace Content.Server.Body.Systems
                 respirator.SuffocationCycles = 0;
             }
         }
-
-        public void Inhale(EntityUid uid, BodyComponent? body = null)
+        public void Inhale(EntityUid uid, SharedBodyComponent? body=null)
         {
             if (!Resolve(uid, ref body, false))
                 return;
 
-            var organs = _bodySystem.GetBodyOrganComponents<LungComponent>(uid, body);
+            var organs = _bodySystem.GetComponentsOnMechanisms<LungComponent>(uid, body);
 
             // Inhale gas
             var ev = new InhaleLocationEvent();
             RaiseLocalEvent(uid, ev, false);
 
-            ev.Gas ??= _atmosSys.GetContainingMixture(uid, false, true);
-
             if (ev.Gas == null)
             {
-                return;
+                ev.Gas = _atmosSys.GetContainingMixture(uid, false, true);
+                if (ev.Gas == null) return;
             }
 
-            var actualGas = ev.Gas.RemoveVolume(Atmospherics.BreathVolume);
+            var ratio = (Atmospherics.BreathVolume / ev.Gas.Volume);
+            var actualGas = ev.Gas.RemoveRatio(ratio);
 
             var lungRatio = 1.0f / organs.Count;
             var gas = organs.Count == 1 ? actualGas : actualGas.RemoveRatio(lungRatio);
@@ -120,12 +119,12 @@ namespace Content.Server.Body.Systems
             }
         }
 
-        public void Exhale(EntityUid uid, BodyComponent? body = null)
+        public void Exhale(EntityUid uid, SharedBodyComponent? body=null)
         {
             if (!Resolve(uid, ref body, false))
                 return;
 
-            var organs = _bodySystem.GetBodyOrganComponents<LungComponent>(uid, body);
+            var organs = _bodySystem.GetComponentsOnMechanisms<LungComponent>(uid, body).ToArray();
 
             // exhale gas
 
@@ -186,8 +185,7 @@ namespace Content.Server.Body.Systems
                 Math.Clamp(respirator.Saturation, respirator.MinSaturation, respirator.MaxSaturation);
         }
 
-        private void OnApplyMetabolicMultiplier(EntityUid uid, RespiratorComponent component,
-            ApplyMetabolicMultiplierEvent args)
+        private void OnApplyMetabolicMultiplier(EntityUid uid, RespiratorComponent component, ApplyMetabolicMultiplierEvent args)
         {
             if (args.Apply)
             {
@@ -197,7 +195,6 @@ namespace Content.Server.Body.Systems
                 component.MinSaturation *= args.Multiplier;
                 return;
             }
-
             // This way we don't have to worry about it breaking if the stasis bed component is destroyed
             component.CycleDelay /= args.Multiplier;
             component.Saturation /= args.Multiplier;

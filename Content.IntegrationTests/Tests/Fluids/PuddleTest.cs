@@ -8,7 +8,6 @@ using Content.Shared.FixedPoint;
 using NUnit.Framework;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 using Robust.Shared.Timing;
 
 namespace Content.IntegrationTests.Tests.Fluids
@@ -55,7 +54,7 @@ namespace Content.IntegrationTests.Tests.Fluids
             var entitySystemManager = server.ResolveDependency<IEntitySystemManager>();
             var spillSystem = entitySystemManager.GetEntitySystem<SpillableSystem>();
 
-            MapGridComponent grid = null;
+            IMapGrid grid = null;
 
             // Remove all tiles
             await server.WaitPost(() =>
@@ -91,10 +90,9 @@ namespace Content.IntegrationTests.Tests.Fluids
             var sTileDefinitionManager = server.ResolveDependency<ITileDefinitionManager>();
             var sGameTiming = server.ResolveDependency<IGameTiming>();
             var entityManager = server.ResolveDependency<IEntityManager>();
-            var metaSystem = entityManager.EntitySysManager.GetEntitySystem<MetaDataSystem>();
 
             MapId sMapId = default;
-            MapGridComponent sGrid;
+            IMapGrid sGrid;
             EntityUid sGridId = default;
             EntityCoordinates sCoordinates = default;
 
@@ -104,10 +102,10 @@ namespace Content.IntegrationTests.Tests.Fluids
                 sMapId = sMapManager.CreateMap();
                 sMapManager.SetMapPaused(sMapId, true);
                 sGrid = sMapManager.CreateGrid(sMapId);
-                sGridId = sGrid.Owner;
-                metaSystem.SetEntityPaused(sGridId, true); // See https://github.com/space-wizards/RobustToolbox/issues/1444
+                sGridId = sGrid.GridEntityId;
+                entityManager.GetComponent<MetaDataComponent>(sGridId).EntityPaused = true; // See https://github.com/space-wizards/RobustToolbox/issues/1444
 
-                var tileDefinition = sTileDefinitionManager["UnderPlating"];
+                var tileDefinition = sTileDefinitionManager["underplating"];
                 var tile = new Tile(tileDefinition.TileId);
                 sCoordinates = sGrid.ToCoordinates();
 
@@ -117,7 +115,7 @@ namespace Content.IntegrationTests.Tests.Fluids
             // Check that the map and grid are paused
             await server.WaitAssertion(() =>
             {
-                Assert.True(metaSystem.EntityPaused(sGridId));
+                Assert.True(sMapManager.IsGridPaused(sGridId));
                 Assert.True(sMapManager.IsMapPaused(sMapId));
             });
 
@@ -142,9 +140,10 @@ namespace Content.IntegrationTests.Tests.Fluids
                 Assert.NotNull(puddle);
 
                 evaporation = entityManager.GetComponent<EvaporationComponent>(puddle.Owner);
-                metaSystem.SetEntityPaused(puddle.Owner, true, meta); // See https://github.com/space-wizards/RobustToolbox/issues/1445
 
-                Assert.True(metaSystem.EntityPaused(puddle.Owner, meta));
+                meta.EntityPaused = true; // See https://github.com/space-wizards/RobustToolbox/issues/1445
+
+                Assert.True(meta.EntityPaused);
 
                 // Check that the puddle is going to evaporate
                 Assert.Positive(evaporation.EvaporateTime);
@@ -175,7 +174,7 @@ namespace Content.IntegrationTests.Tests.Fluids
             await server.WaitAssertion(() =>
             {
                 Assert.False(sMapManager.IsMapPaused(sMapId));
-                Assert.False(metaSystem.EntityPaused(sGridId));
+                Assert.False(sMapManager.IsGridPaused(sGridId));
                 Assert.False(meta.EntityPaused);
 
                 // Check that the puddle still exists

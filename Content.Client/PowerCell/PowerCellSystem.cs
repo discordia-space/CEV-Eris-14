@@ -7,8 +7,6 @@ namespace Content.Client.PowerCell;
 [UsedImplicitly]
 public sealed class PowerCellSystem : SharedPowerCellSystem
 {
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-
     public override void Initialize()
     {
         base.Initialize();
@@ -17,21 +15,17 @@ public sealed class PowerCellSystem : SharedPowerCellSystem
 
     private void OnPowerCellVisualsChange(EntityUid uid, PowerCellVisualsComponent component, ref AppearanceChangeEvent args)
     {
-        if (args.Sprite == null)
-            return;
+        if (args.Sprite == null) return;
 
-        if (!args.Sprite.TryGetLayer((int) PowerCellVisualLayers.Unshaded, out var unshadedLayer))
-            return;
-
-        if (_appearance.TryGetData<byte>(uid, PowerCellVisuals.ChargeLevel, out var level, args.Component))
+        if (args.Component.TryGetData(PowerCellVisuals.ChargeLevel, out byte level))
         {
             if (level == 0)
             {
-                unshadedLayer.Visible = false;
+                args.Sprite.LayerSetVisible(PowerCellVisualLayers.Unshaded, false);
                 return;
             }
 
-            unshadedLayer.Visible = true;
+            args.Sprite.LayerSetVisible(PowerCellVisualLayers.Unshaded, true);
             args.Sprite.LayerSetState(PowerCellVisualLayers.Unshaded, $"o{level}");
         }
     }

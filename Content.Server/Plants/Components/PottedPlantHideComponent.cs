@@ -1,6 +1,6 @@
 using Content.Server.Plants.Systems;
 using Content.Server.Storage.Components;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.Plants.Components
 {

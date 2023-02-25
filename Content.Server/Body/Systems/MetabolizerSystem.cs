@@ -3,13 +3,12 @@ using Content.Server.Body.Components;
 using Content.Server.Chemistry.Components.SolutionManager;
 using Content.Server.Chemistry.EntitySystems;
 using Content.Shared.Administration.Logs;
-using Content.Shared.Body.Organ;
+using Content.Shared.Body.Components;
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Database;
 using Content.Shared.FixedPoint;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.MobState.Components;
 using JetBrains.Annotations;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
@@ -19,11 +18,9 @@ namespace Content.Server.Body.Systems
     [UsedImplicitly]
     public sealed class MetabolizerSystem : EntitySystem
     {
-        [Dependency] private readonly BodySystem _bodySystem = default!;
         [Dependency] private readonly SolutionContainerSystem _solutionContainerSystem = default!;
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
         [Dependency] private readonly IRobustRandom _random = default!;
-        [Dependency] private readonly MobStateSystem _mobStateSystem = default!;
         [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
 
         public override void Initialize()
@@ -40,27 +37,30 @@ namespace Content.Server.Body.Systems
             {
                 _solutionContainerSystem.EnsureSolution(uid, component.SolutionName);
             }
-            else if (CompOrNull<OrganComponent>(uid)?.Body is { } body)
+            else
             {
-                _solutionContainerSystem.EnsureSolution(body, component.SolutionName);
+                if (EntityManager.TryGetComponent<MechanismComponent>(uid, out var mech))
+                {
+                    if (mech.Body != null)
+                    {
+                        _solutionContainerSystem.EnsureSolution((mech.Body).Owner, component.SolutionName);
+                    }
+                }
             }
         }
 
-        private void OnApplyMetabolicMultiplier(EntityUid uid, MetabolizerComponent component,
-            ApplyMetabolicMultiplierEvent args)
+        private void OnApplyMetabolicMultiplier(EntityUid uid, MetabolizerComponent component, ApplyMetabolicMultiplierEvent args)
         {
             if (args.Apply)
             {
                 component.UpdateFrequency *= args.Multiplier;
                 return;
             }
-
             component.UpdateFrequency /= args.Multiplier;
             // Reset the accumulator properly
             if (component.AccumulatedFrametime >= component.UpdateFrequency)
                 component.AccumulatedFrametime = component.UpdateFrequency;
         }
-
         public override void Update(float frameTime)
         {
             base.Update(frameTime);
@@ -78,27 +78,33 @@ namespace Content.Server.Body.Systems
             }
         }
 
-        private void TryMetabolize(EntityUid uid, MetabolizerComponent? meta = null, OrganComponent? organ = null)
+        private void TryMetabolize(EntityUid uid, MetabolizerComponent? meta=null, MechanismComponent? mech=null)
         {
             if (!Resolve(uid, ref meta))
                 return;
 
-            Resolve(uid, ref organ, false);
+            Resolve(uid, ref mech, false);
 
             // First step is get the solution we actually care about
             Solution? solution = null;
             EntityUid? solutionEntityUid = null;
+            EntityUid? bodyEntityUid = mech?.Body?.Owner;
 
             SolutionContainerManagerComponent? manager = null;
 
             if (meta.SolutionOnBody)
             {
-                if (organ?.Body is { } body)
+                if (mech != null)
                 {
-                    if (!Resolve(body, ref manager, false))
-                        return;
-                    _solutionContainerSystem.TryGetSolution(body, meta.SolutionName, out solution, manager);
-                    solutionEntityUid = body;
+                    var body = mech.Body;
+
+                    if (body != null)
+                    {
+                        if (!Resolve((body).Owner, ref manager, false))
+                            return;
+                        _solutionContainerSystem.TryGetSolution((body).Owner, meta.SolutionName, out solution, manager);
+                        solutionEntityUid = body.Owner;
+                    }
                 }
             }
             else
@@ -109,7 +115,7 @@ namespace Content.Server.Body.Systems
                 solutionEntityUid = uid;
             }
 
-            if (solutionEntityUid == null || solution == null || solution.Contents.Count == 0)
+            if (solutionEntityUid == null || solution == null)
                 return;
 
             // randomize the reagent list so we don't have any weird quirks
@@ -127,8 +133,7 @@ namespace Content.Server.Body.Systems
                 if (proto.Metabolisms == null)
                 {
                     if (meta.RemoveEmpty)
-                        _solutionContainerSystem.TryRemoveReagent(solutionEntityUid.Value, solution, reagent.ReagentId,
-                            FixedPoint2.New(1));
+                        _solutionContainerSystem.TryRemoveReagent(solutionEntityUid.Value, solution, reagent.ReagentId, FixedPoint2.New(1));
                     continue;
                 }
 
@@ -143,7 +148,7 @@ namespace Content.Server.Body.Systems
 
                 foreach (var group in meta.MetabolismGroups)
                 {
-                    if (!proto.Metabolisms.ContainsKey(group.Id))
+                    if (!proto.Metabolisms.Keys.Contains(group.Id))
                         continue;
 
                     var entry = proto.Metabolisms[group.Id];
@@ -152,25 +157,22 @@ namespace Content.Server.Body.Systems
                     if (entry.MetabolismRate > mostToRemove)
                         mostToRemove = entry.MetabolismRate;
 
-
                     mostToRemove *= group.MetabolismRateModifier;
 
                     mostToRemove = FixedPoint2.Clamp(mostToRemove, 0, reagent.Quantity);
-
-                    float scale = (float) mostToRemove / (float) entry.MetabolismRate;
 
                     // if it's possible for them to be dead, and they are,
                     // then we shouldn't process any effects, but should probably
                     // still remove reagents
                     if (EntityManager.TryGetComponent<MobStateComponent>(solutionEntityUid.Value, out var state))
                     {
-                        if (_mobStateSystem.IsDead(solutionEntityUid.Value, state))
+                        if (state.IsDead())
                             continue;
                     }
 
-                    var actualEntity = organ?.Body ?? solutionEntityUid.Value;
+                    var actualEntity = bodyEntityUid != null ? bodyEntityUid.Value : solutionEntityUid.Value;
                     var args = new ReagentEffectArgs(actualEntity, (meta).Owner, solution, proto, mostToRemove,
-                        EntityManager, null, scale);
+                        EntityManager, null);
 
                     // do all effects, if conditions apply
                     foreach (var effect in entry.Effects)
@@ -190,20 +192,16 @@ namespace Content.Server.Body.Systems
 
                 // remove a certain amount of reagent
                 if (mostToRemove > FixedPoint2.Zero)
-                    _solutionContainerSystem.TryRemoveReagent(solutionEntityUid.Value, solution, reagent.ReagentId,
-                        mostToRemove);
+                    _solutionContainerSystem.TryRemoveReagent(solutionEntityUid.Value, solution, reagent.ReagentId, mostToRemove);
             }
         }
     }
-
     public sealed class ApplyMetabolicMultiplierEvent : EntityEventArgs
     {
         // The entity whose metabolism is being modified
-        public EntityUid Uid;
-
+        public  EntityUid Uid;
         // What the metabolism's update rate will be multiplied by
-        public float Multiplier;
-
+        public  float Multiplier;
         // Apply this multiplier or ignore / reset it?
         public bool Apply;
     }

@@ -5,9 +5,6 @@
   id: FoodPieBase
   abstract: true
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Food
     trash: FoodPlateTin
   - type: Sprite
@@ -21,7 +18,7 @@
         - ReagentId: Nutriment
           Quantity: 11
         - ReagentId: Vitamin
-          Quantity: 5
+          Quanity: 5
   - type: SliceableFood
     count: 4
   - type: Tag
@@ -34,9 +31,6 @@
   abstract: true
   description: A slice of pie. Tasty!
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Food
     trash: FoodPlateSmall
   - type: Sprite
@@ -63,10 +57,6 @@
   id: FoodPieApple
   description: A pie containing sweet, sweet love... or apple.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - apple
   - type: Sprite
     layers:
     - state: tin
@@ -79,10 +69,6 @@
   parent: FoodPieSliceBase
   id: FoodPieAppleSlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - apple
   - type: Sprite
     layers:
     - state: plate-small
@@ -98,10 +84,6 @@
   id: FoodPieBaklava
   description: A delightful healthy snack made of nut layers with thin bread.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - nutty
   - type: Sprite
     layers:
     - state: tin
@@ -115,10 +97,6 @@
   id: FoodPieBaklavaSlice
   description: A portion of a delightful healthy snack made of nut layers with thin bread.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - nutty
   - type: Sprite
     layers:
     - state: plate-small
@@ -131,29 +109,14 @@
   id: FoodPieBananaCream
   description: Just like back home, on clown planet! HONK!
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - banana
-      - creamy
   - type: Sprite
     layers:
     - state: tin
     - state: plain
   - type: CreamPie
-  - type: ContainerContainer
-    containers:
-      payloadSlot: !type:ContainerSlot
-  - type: ItemSlots
-    slots:
-      payloadSlot:
-        whitelist:
-          components:
-          - OnUseTimerTrigger
-        insertSound: 
-          path: /Audio/Weapons/Guns/Empty/empty.ogg
-        ejectSound: 
-          path: /Audio/Weapons/Guns/Empty/empty.ogg
+  - type: SolutionInjectOnCollide
+    transferAmount: 20
+    transferEfficiency: 0.2
 # Tastes like pie, cream, banana.
 
 - type: entity
@@ -162,11 +125,6 @@
   id: FoodPieClafoutis
   description: No black birds, this is a good sign.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
-      - banana
-      - creamy
   - type: Sprite
     layers:
     - state: tin
@@ -180,9 +138,6 @@
   parent: FoodPieSliceBase
   id: FoodPieClafoutisSlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Sprite
     layers:
     - state: plate-small
@@ -198,9 +153,6 @@
   id: FoodPieCherry
   description: Tastes good enough to make a grown man cry.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Sprite
     layers:
     - state: tin
@@ -213,9 +165,6 @@
   parent: FoodPieSliceBase
   id: FoodPieCherrySlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Sprite
     layers:
     - state: plate-small
@@ -231,9 +180,6 @@
   id: FoodPieMeat
   description: An old barber recipe, very delicious!
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
   - type: Sprite
     layers:
     - state: tin
@@ -246,9 +192,6 @@
   parent: FoodPieSliceBase
   id: FoodPieMeatSlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
   - type: Sprite
     layers:
     - state: plate-small
@@ -263,10 +206,6 @@
   parent: FoodPieBase
   id: FoodPieXeno
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - acidic
   - type: Sprite
     layers:
     - state: tin
@@ -279,10 +218,6 @@
   parent: FoodPieSliceBase
   id: FoodPieXenoSlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - acidic
   - type: Sprite
     layers:
     - state: plate-small
@@ -298,9 +233,6 @@
   id: FoodPieFrosty
   description: Tastes like blue and cold.
   components:
-  - type: FlavorProfile
-    flavors:
-      - cold
   - type: Sprite
     layers:
     - state: tin
@@ -313,9 +245,6 @@
   parent: FoodPieSliceBase
   id: FoodPieFrostySlice
   components:
-  - type: FlavorProfile
-    flavors:
-      - cold
   - type: Sprite
     layers:
     - state: plate-small
@@ -333,9 +262,6 @@
   id: FoodPieAmanita
   description: Sweet and tasty poison pie.
   components:
-  - type: FlavorProfile
-    flavors:
-      - mushroom
   - type: Sprite
     layers:
     - state: plate
@@ -359,9 +285,6 @@
   id: FoodPiePlump
   description: I bet you love stuff made out of plump helmets!
   components:
-  - type: FlavorProfile
-    flavors:
-      - mushroom
   - type: Sprite
     layers:
     - state: plate
@@ -376,9 +299,6 @@
   id: FoodTartGrape
   description: A tasty dessert that reminds you of the wine you didn't make.
   components:
-  - type: FlavorProfile
-    flavors:
-      - sweet
   - type: Food
     trash: FoodPlateSmall
   - type: Sprite
@@ -393,9 +313,6 @@
   id: FoodTartMime
   description: "\"      \""
   components:
-  - type: FlavorProfile
-    flavors:
-      - nothing
   - type: Food
     trash: FoodPlateSmall
   - type: Sprite
@@ -405,14 +322,11 @@
 # Tastes like nothing.
 
 - type: entity
-  name: golden apple streusel tart
+  name: golden apple streusal tart
   parent: FoodPieBase
   id: FoodTartGapple
   description: A tasty dessert that won't make it through a metal detector.
   components:
-  - type: FlavorProfile
-    flavors:
-      - apple
   - type: Food
     trash: FoodPlateSmall
   - type: Sprite
@@ -427,9 +341,6 @@
   id: FoodTartCoco
   description: A tasty dessert made of chocolate, with a liquid core.
   components:
-  - type: FlavorProfile
-    flavors:
-      - chocolate
   - type: Food
     trash: FoodPlateSmall
   - type: Sprite

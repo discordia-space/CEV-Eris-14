@@ -1,19 +1,11 @@
 - type: job
   id: ChiefEngineer
   name: job-name-ce
-  description: job-description-ce
-  playTimeTracker: JobChiefEngineer
-  requirements:
-    - !type:RoleTimeRequirement
-      role: JobAtmosphericTechnician
-      time: 3600
-    - !type:DepartmentTimeRequirement
-      department: Engineering
-      time: 18000
-    - !type:OverallPlaytimeRequirement
-      time: 108000
   weight: 10
   startingGear: ChiefEngineerGear
+  departments:
+  - Command
+  - Engineering
   icon: "ChiefEngineer"
   requireAdminNotify: true
   supervisors: job-supervisors-captain
@@ -34,7 +26,6 @@
     back: ClothingBackpackEngineeringFilled
     shoes: ClothingShoesColorBrown
     id: CEPDA
-    eyes: ClothingEyesGlassesMeson
     ears: ClothingHeadsetCE
     belt: ClothingBeltChiefEngineerFilled
   innerclothingskirt: ClothingUniformJumpskirtChiefEngineer

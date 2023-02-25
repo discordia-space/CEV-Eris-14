@@ -8,7 +8,7 @@ namespace Content.Shared.Crayon
     {
         public string SelectedState { get; set; } = string.Empty;
 
-        [DataField("color")] public Color Color;
+        [ViewVariables] [DataField("color")] public Color Color;
 
         [Serializable, NetSerializable]
         public enum CrayonUiKey : byte

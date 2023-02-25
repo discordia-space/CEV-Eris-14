@@ -129,14 +129,6 @@
     },
     {
       "name": "vegetable-slice"
-    },
-    {
-      "name": "box-inhand-right",
-      "directions": 4
-    },
-    {
-      "name": "box-inhand-left",
-      "directions": 4
     }
   ]
 }

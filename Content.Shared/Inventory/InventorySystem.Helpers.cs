@@ -1,5 +1,4 @@
-﻿using Content.Shared.Clothing.Components;
-using Content.Shared.Item;
+﻿using Content.Shared.Item;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared.Inventory;
@@ -32,6 +31,10 @@ public partial class InventorySystem
             EntityManager.DeleteEntity(item);
             return false;
         }
+
+        // If this doesn't have an item component, then we can't do anything with it.
+        if (!HasComp<SharedItemComponent>(item))
+            return DeleteItem();
 
         // We finally try to equip the item, otherwise we delete it.
         return TryEquip(uid, item, slot, silent, force) || DeleteItem();

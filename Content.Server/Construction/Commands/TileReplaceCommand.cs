@@ -1,8 +1,11 @@
 using Content.Server.Administration;
 using Content.Shared.Administration;
+using Content.Shared.Maps;
+using Content.Shared.Tag;
 using Robust.Server.Player;
 using Robust.Shared.Console;
 using Robust.Shared.Map;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.Construction.Commands;
 
@@ -19,8 +22,8 @@ sealed class TileReplaceCommand : IConsoleCommand
         var player = shell.Player as IPlayerSession;
         var entityManager = IoCManager.Resolve<IEntityManager>();
         EntityUid? gridId;
-        string tileIdA;
-        string tileIdB;
+        string tileIdA = "";
+        string tileIdB = "";
 
         switch (args.Length)
         {
@@ -62,7 +65,7 @@ sealed class TileReplaceCommand : IConsoleCommand
             return;
         }
 
-        if (!entityManager.EntityExists(grid.Owner))
+        if (!entityManager.EntityExists(grid.GridEntityId))
         {
             shell.WriteLine($"Grid {gridId} doesn't have an associated grid entity.");
             return;

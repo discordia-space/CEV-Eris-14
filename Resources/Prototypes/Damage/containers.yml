@@ -23,11 +23,4 @@
   supportedTypes:
     - Heat
 
-- type: damageContainer
-  id: Box
-  supportedGroups:
-    - Brute
-    - Burn
-    - Toxin
-  supportedTypes:
-    - Shock
+

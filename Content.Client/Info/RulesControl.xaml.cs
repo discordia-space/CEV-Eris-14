@@ -11,12 +11,14 @@ namespace Content.Client.Info;
 [GenerateTypedNameReferences]
 public sealed partial class RulesControl : BoxContainer
 {
-    [Dependency] private readonly RulesManager _rules = default!;
+    [Dependency] private readonly IResourceCache _resourceManager = default!;
+    [Dependency] private readonly IConfigurationManager _cfgManager = default!;
 
     public RulesControl()
     {
         RobustXamlLoader.Load(this);
         IoCManager.InjectDependencies(this);
-        AddChild(_rules.RulesSection());
+
+        AddChild(RulesAndInfoWindow.MakeRules(_cfgManager, _resourceManager));
     }
 }

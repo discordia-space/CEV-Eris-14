@@ -1,69 +1,41 @@
 using System.Linq;
 using System.Text; // todo: remove this stinky LINQy
 using System.Threading;
-using Robust.Server.GameObjects;
-using Robust.Shared.Audio;
-using Robust.Shared.Player;
-using Robust.Shared.Timing;
 using Content.Server.DoAfter;
 using Content.Server.Paper;
 using Content.Server.Popups;
-using Content.Server.UserInterface;
 using Content.Shared.Forensics;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
-using Content.Shared.Verbs;
+using Robust.Server.GameObjects;
+using Robust.Shared.Audio;
+using Robust.Shared.Player;
 
 namespace Content.Server.Forensics
 {
     public sealed class ForensicScannerSystem : EntitySystem
     {
-        [Dependency] private readonly IGameTiming _gameTiming = default!;
         [Dependency] private readonly DoAfterSystem _doAfterSystem = default!;
         [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
         [Dependency] private readonly PopupSystem _popupSystem = default!;
         [Dependency] private readonly PaperSystem _paperSystem = default!;
         [Dependency] private readonly SharedHandsSystem _handsSystem = default!;
-        [Dependency] private readonly SharedAudioSystem _audioSystem = default!;
-
-        private ISawmill _sawmill = default!;
 
         public override void Initialize()
         {
             base.Initialize();
 
-            _sawmill = Logger.GetSawmill("forensics.scanner");
-
             SubscribeLocalEvent<ForensicScannerComponent, AfterInteractEvent>(OnAfterInteract);
             SubscribeLocalEvent<ForensicScannerComponent, AfterInteractUsingEvent>(OnAfterInteractUsing);
-            SubscribeLocalEvent<ForensicScannerComponent, BeforeActivatableUIOpenEvent>(OnBeforeActivatableUIOpen);
-            SubscribeLocalEvent<ForensicScannerComponent, GetVerbsEvent<UtilityVerb>>(OnUtilityVerb);
             SubscribeLocalEvent<ForensicScannerComponent, ForensicScannerPrintMessage>(OnPrint);
-            SubscribeLocalEvent<ForensicScannerComponent, ForensicScannerClearMessage>(OnClear);
             SubscribeLocalEvent<TargetScanSuccessfulEvent>(OnTargetScanSuccessful);
             SubscribeLocalEvent<ScanCancelledEvent>(OnScanCancelled);
-        }
-
-        private void UpdateUserInterface(EntityUid uid, ForensicScannerComponent component)
-        {
-            var state = new ForensicScannerBoundUserInterfaceState(
-                component.Fingerprints,
-                component.Fibers,
-                component.LastScannedName,
-                component.PrintCooldown,
-                component.PrintReadyAt);
-
-            if (!_uiSystem.TrySetUiState(uid, ForensicScannerUiKey.Key, state))
-            {
-                _sawmill.Warning($"{ToPrettyString(uid)} was unable to set UI state.");
-            }
         }
 
         private void OnScanCancelled(ScanCancelledEvent ev)
         {
             if (!EntityManager.TryGetComponent(ev.Scanner, out ForensicScannerComponent? scanner))
                 return;
-
             scanner.CancelToken = null;
         }
 
@@ -75,52 +47,11 @@ namespace Content.Server.Forensics
             scanner.CancelToken = null;
 
             if (!TryComp<ForensicsComponent>(ev.Target, out var forensics))
-            {
-                scanner.Fingerprints = new();
-                scanner.Fibers = new();
-            }
-            else
-            {
-                scanner.Fingerprints = forensics.Fingerprints.ToList();
-                scanner.Fibers = forensics.Fibers.ToList();
-            }
+              return;
 
-            scanner.LastScannedName = MetaData(ev.Target).EntityName;
-
+            scanner.Fingerprints = forensics.Fingerprints.ToList();
+            scanner.Fibers = forensics.Fibers.ToList();
             OpenUserInterface(ev.User, scanner);
-        }
-
-        /// <remarks>
-        /// Hosts logic common between OnUtilityVerb and OnAfterInteract.
-        /// </remarks>
-        private void StartScan(EntityUid uid, ForensicScannerComponent component, EntityUid user, EntityUid target)
-        {
-            component.CancelToken = new CancellationTokenSource();
-            _doAfterSystem.DoAfter(new DoAfterEventArgs(user, component.ScanDelay, component.CancelToken.Token, target: target)
-            {
-                BroadcastFinishedEvent = new TargetScanSuccessfulEvent(user, target, component.Owner),
-                BroadcastCancelledEvent = new ScanCancelledEvent(component.Owner),
-                BreakOnTargetMove = true,
-                BreakOnUserMove = true,
-                BreakOnStun = true,
-                NeedHand = true
-            });
-        }
-
-        private void OnUtilityVerb(EntityUid uid, ForensicScannerComponent component, GetVerbsEvent<UtilityVerb> args)
-        {
-            if (!args.CanInteract || !args.CanAccess || component.CancelToken != null)
-                return;
-
-            var verb = new UtilityVerb()
-            {
-                Act = () => StartScan(uid, component, args.User, args.Target),
-                IconEntity = uid,
-                Text = Loc.GetString("forensic-scanner-verb-text"),
-                Message = Loc.GetString("forensic-scanner-verb-message")
-            };
-
-            args.Verbs.Add(verb);
         }
 
         private void OnAfterInteract(EntityUid uid, ForensicScannerComponent component, AfterInteractEvent args)
@@ -128,7 +59,16 @@ namespace Content.Server.Forensics
             if (component.CancelToken != null || args.Target == null || !args.CanReach)
                 return;
 
-            StartScan(uid, component, args.User, args.Target.Value);
+            component.CancelToken = new CancellationTokenSource();
+            _doAfterSystem.DoAfter(new DoAfterEventArgs(args.User, component.ScanDelay, component.CancelToken.Token, target: args.Target)
+            {
+                BroadcastFinishedEvent = new TargetScanSuccessfulEvent(args.User, args.Target, component.Owner),
+                BroadcastCancelledEvent = new ScanCancelledEvent(component.Owner),
+                BreakOnTargetMove = true,
+                BreakOnUserMove = true,
+                BreakOnStun = true,
+                NeedHand = true
+            });
         }
 
         private void OnAfterInteractUsing(EntityUid uid, ForensicScannerComponent component, AfterInteractUsingEvent args)
@@ -143,8 +83,8 @@ namespace Content.Server.Forensics
             {
                 if (fiber == pad.Sample)
                 {
-                    _audioSystem.PlayPvs(component.SoundMatch, uid);
-                    _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-fiber"), uid, args.User);
+                    SoundSystem.Play("/Audio/Machines/Nuke/angry_beep.ogg", Filter.Pvs(uid), uid);
+                    _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-fiber"), uid, Filter.Entities(args.User));
                     return;
                 }
             }
@@ -153,19 +93,13 @@ namespace Content.Server.Forensics
             {
                 if (fingerprint == pad.Sample)
                 {
-                    _audioSystem.PlayPvs(component.SoundMatch, uid);
-                    _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-fingerprint"), uid, args.User);
+                    SoundSystem.Play("/Audio/Machines/Nuke/angry_beep.ogg", Filter.Pvs(uid), uid);
+                    _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-fingerprint"), uid, Filter.Entities(args.User));
                     return;
                 }
             }
-
-            _audioSystem.PlayPvs(component.SoundNoMatch, uid);
-            _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-none"), uid, args.User);
-        }
-
-        private void OnBeforeActivatableUIOpen(EntityUid uid, ForensicScannerComponent component, BeforeActivatableUIOpenEvent args)
-        {
-            UpdateUserInterface(uid, component);
+            SoundSystem.Play("/Audio/Machines/airlock_deny.ogg", Filter.Pvs(uid), uid);
+            _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-match-none"), uid, Filter.Entities(args.User));
         }
 
         private void OpenUserInterface(EntityUid user, ForensicScannerComponent component)
@@ -173,40 +107,24 @@ namespace Content.Server.Forensics
             if (!TryComp<ActorComponent>(user, out var actor))
                 return;
 
-            UpdateUserInterface(component.Owner, component);
+            var ui = _uiSystem.GetUi(component.Owner, ForensicScannerUiKey.Key);
 
-            _uiSystem.TryOpen(component.Owner, ForensicScannerUiKey.Key, actor.PlayerSession);
+            ui.Open(actor.PlayerSession);
+            ui.SendMessage(new ForensicScannerUserMessage(component.Fingerprints, component.Fibers));
         }
 
         private void OnPrint(EntityUid uid, ForensicScannerComponent component, ForensicScannerPrintMessage args)
         {
-            if (!args.Session.AttachedEntity.HasValue)
-            {
-                _sawmill.Warning($"{ToPrettyString(uid)} got OnPrint without Session.AttachedEntity");
-                return;
-            }
+            if (!args.Session.AttachedEntity.HasValue || (component.Fibers.Count == 0 && component.Fingerprints.Count == 0)) return;
 
-            var user = args.Session.AttachedEntity.Value;
-
-            if (_gameTiming.CurTime < component.PrintReadyAt)
-            {
-                // This shouldn't occur due to the UI guarding against it, but
-                // if it does, tell the user why nothing happened.
-                _popupSystem.PopupEntity(Loc.GetString("forensic-scanner-printer-not-ready"), uid, user);
-                return;
-            }
-
-            // Spawn a piece of paper.
-            var printed = EntityManager.SpawnEntity("Paper", Transform(uid).Coordinates);
+            // spawn a piece of paper.
+            var printed = EntityManager.SpawnEntity("Paper", Transform(args.Session.AttachedEntity.Value).Coordinates);
             _handsSystem.PickupOrDrop(args.Session.AttachedEntity, printed, checkActionBlocker: false);
 
             if (!TryComp<PaperComponent>(printed, out var paper))
-            {
-                _sawmill.Error("Printed paper did not have PaperComponent.");
                 return;
-            }
 
-            MetaData(printed).EntityName = Loc.GetString("forensic-scanner-report-title", ("entity", component.LastScannedName));
+            MetaData(printed).EntityName = Loc.GetString("forensic-scanner-report-title");
 
             var text = new StringBuilder();
 
@@ -223,26 +141,6 @@ namespace Content.Server.Forensics
             }
 
             _paperSystem.SetContent(printed, text.ToString());
-            _audioSystem.PlayPvs(component.SoundPrint, uid,
-                AudioParams.Default
-                .WithVariation(0.25f)
-                .WithVolume(3f)
-                .WithRolloffFactor(2.8f)
-                .WithMaxDistance(4.5f));
-
-            component.PrintReadyAt = _gameTiming.CurTime + component.PrintCooldown;
-        }
-
-        private void OnClear(EntityUid uid, ForensicScannerComponent component, ForensicScannerClearMessage args)
-        {
-            if (!args.Session.AttachedEntity.HasValue)
-                return;
-
-            component.Fingerprints = new();
-            component.Fibers = new();
-            component.LastScannedName = string.Empty;
-
-            UpdateUserInterface(uid, component);
         }
 
         private sealed class ScanCancelledEvent : EntityEventArgs
@@ -258,9 +156,9 @@ namespace Content.Server.Forensics
         private sealed class TargetScanSuccessfulEvent : EntityEventArgs
         {
             public EntityUid User;
-            public EntityUid Target;
+            public EntityUid? Target;
             public EntityUid Scanner;
-            public TargetScanSuccessfulEvent(EntityUid user, EntityUid target, EntityUid scanner)
+            public TargetScanSuccessfulEvent(EntityUid user, EntityUid? target, EntityUid scanner)
             {
                 User = user;
                 Target = target;

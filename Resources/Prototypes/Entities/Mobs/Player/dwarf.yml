@@ -1,12 +1,12 @@
 - type: entity
   save: false
   name: Urist McHands The Dwarf
-  parent: BaseMobDwarf
+  parent: MobDwarfBase
   id: MobDwarf
   description: A miserable pile of secrets.
   components:
     - type: CombatMode
-      disarm: null
+      canDisarm: true
     - type: InteractionPopup
       successChance: 1
       interactSuccessString: hugging-success-generic
@@ -16,14 +16,14 @@
       showExamineInfo: true
     - type: Input
       context: "human"
-    - type: MobMover
-    - type: InputMover
+    - type: PlayerMobMover
+    - type: PlayerInputMover
     - type: Alerts
     - type: Actions
     - type: Eye
     - type: CameraRecoil
     - type: Examiner
     - type: CanHostGuardian
-    - type: Faction
+    - type: AiFactionTag
       factions:
         - NanoTrasen

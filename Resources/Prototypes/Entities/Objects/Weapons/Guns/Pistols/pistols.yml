@@ -14,12 +14,6 @@
         map: ["enum.GunVisualLayers.Mag"]
   - type: Item
     size: 10
-  - type: Clothing
-    sprite: Objects/Weapons/Guns/Pistols/viper.rsi
-    quickEquip: false
-    slots:
-    - suitStorage
-    - Belt
   - type: Gun
     fireRate: 6
     selectedMode: SemiAuto
@@ -55,16 +49,16 @@
     steps: 1
     zeroVisible: true
   - type: Appearance
-  - type: StaticPrice
-    price: 500
 
 - type: entity
   name: viper
   parent: BaseWeaponPistol
   id: WeaponPistolViper
-  description: A small, easily concealable, but somewhat underpowered gun. Uses .35 auto ammo.
+  description: A small, easily concealable, but somewhat underpowered gun.
   components:
   - type: Sprite
+    sprite: Objects/Weapons/Guns/Pistols/viper.rsi
+  - type: Item
     sprite: Objects/Weapons/Guns/Pistols/viper.rsi
   - type: ItemSlots
     slots:
@@ -94,14 +88,14 @@
   name: handmade pistol
   parent: BaseWeaponPistol
   id: WeaponPistolHandmade
-  description: Looks unreliable. Uses .35 auto ammo.
+  description: Looks unreliable.
   components:
   - type: Sprite
     sprite: Objects/Weapons/Guns/Pistols/hm_pistol.rsi
     layers:
       - state: base
         map: ["enum.GunVisualLayers.Base"]
-  - type: Clothing
+  - type: Item
     sprite: Objects/Weapons/Guns/Pistols/hm_pistol.rsi
   - type: Gun
     selectedMode: SemiAuto
@@ -112,7 +106,7 @@
   name: cobra
   parent: BaseWeaponPistol
   id: WeaponPistolCobra
-  description: A rugged, robust operator handgun with inbuilt silencer. Uses .25 caseless ammo.
+  description: A rugged, robust operator handgun with inbuilt silencer.
   components:
   - type: Sprite
     sprite: Objects/Weapons/Guns/Pistols/cobra.rsi
@@ -121,7 +115,7 @@
       map: ["enum.GunVisualLayers.Base"]
     - state: mag-0
       map: ["enum.GunVisualLayers.Mag"]
-  - type: Clothing
+  - type: Item
     sprite: Objects/Weapons/Guns/Pistols/cobra.rsi
   - type: Gun
     fireRate: 4
@@ -154,7 +148,7 @@
   name: mk 58
   parent: BaseWeaponPistol
   id: WeaponPistolMk58
-  description: A cheap, ubiquitous sidearm, produced by a NanoTrasen subsidiary. Uses .35 auto ammo.
+  description: A cheap, ubiquitous sidearm, produced by a NanoTrasen subsidiary.
   components:
   - type: Sprite
     sprite: Objects/Weapons/Guns/Pistols/mk58.rsi
@@ -163,7 +157,7 @@
       map: ["enum.GunVisualLayers.Base"]
     - state: mag-0
       map: ["enum.GunVisualLayers.Mag"]
-  - type: Clothing
+  - type: Item
     sprite: Objects/Weapons/Guns/Pistols/mk58.rsi
   - type: Gun
     fireRate: 5

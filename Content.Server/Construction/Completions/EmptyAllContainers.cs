@@ -1,6 +1,5 @@
 ﻿using Content.Shared.Construction;
 using JetBrains.Annotations;
-using Robust.Server.Containers;
 using Robust.Shared.Containers;
 
 namespace Content.Server.Construction.Completions
@@ -15,10 +14,9 @@ namespace Content.Server.Construction.Completions
                 return;
 
             var transform = entityManager.GetComponent<TransformComponent>(uid);
-            var containerSys = entityManager.EntitySysManager.GetEntitySystem<ContainerSystem>();
             foreach (var container in containerManager.GetAllContainers())
             {
-                containerSys.EmptyContainer(container, true, transform.Coordinates);
+                container.EmptyContainer(true, transform.Coordinates);
             }
         }
     }

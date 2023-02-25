@@ -9,13 +9,19 @@ namespace Content.Shared.Access
     public sealed class AccessLevelPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         /// <summary>
         ///     The player-visible name of the access level, in the ID card console and such.
         /// </summary>
         [DataField("name")]
-        public string? Name { get; set; }
+        public string Name
+        {
+            get => _name ?? ID;
+            private set => _name = Loc.GetString(value);
+        }
+
+        private string? _name;
     }
 }

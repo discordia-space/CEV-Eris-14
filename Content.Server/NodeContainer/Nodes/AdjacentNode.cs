@@ -1,5 +1,4 @@
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 
 namespace Content.Server.NodeContainer.Nodes
 {
@@ -12,7 +11,7 @@ namespace Content.Server.NodeContainer.Nodes
         public override IEnumerable<Node> GetReachableNodes(TransformComponent xform,
             EntityQuery<NodeContainerComponent> nodeQuery,
             EntityQuery<TransformComponent> xformQuery,
-            MapGridComponent? grid,
+            IMapGrid? grid,
             IEntityManager entMan)
         {
             if (!xform.Anchored || grid == null)

@@ -1,6 +1,6 @@
 using Content.Server.NodeContainer;
 using Content.Server.NodeContainer.Nodes;
-using Robust.Shared.Map.Components;
+using Robust.Shared.Map;
 
 namespace Content.Server.Electrocution
 {
@@ -10,12 +10,12 @@ namespace Content.Server.Electrocution
         [DataField("cable")]
         public EntityUid CableEntity;
         [DataField("node")]
-        public string? NodeName;
+        public string NodeName = default!;
 
         public override IEnumerable<Node> GetReachableNodes(TransformComponent xform,
             EntityQuery<NodeContainerComponent> nodeQuery,
             EntityQuery<TransformComponent> xformQuery,
-            MapGridComponent? grid,
+            IMapGrid? grid,
             IEntityManager entMan)
         {
             if (!nodeQuery.TryGetComponent(CableEntity, out var nodeContainer))

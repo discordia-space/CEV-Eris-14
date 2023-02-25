@@ -1,4 +1,5 @@
 ﻿using Robust.Shared.Prototypes;
+using Robust.Shared.Serialization;
 
 namespace Content.Shared.Alert
 {
@@ -7,54 +8,58 @@ namespace Content.Shared.Alert
     /// </summary>
     [Prototype("alertOrder")]
     [DataDefinition]
-    public sealed class AlertOrderPrototype : IPrototype, IComparer<AlertPrototype>
+    public sealed class AlertOrderPrototype : IPrototype, IComparer<AlertPrototype>, ISerializationHooks
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
-        [DataField("order")]
-        private List<(string type, string alert)> Order
-        {
-            get
-            {
-                var res = new List<(string, string)>(_typeToIdx.Count + _categoryToIdx.Count);
-
-                foreach (var (type, id) in _typeToIdx)
-                {
-                    res.Insert(id, ("alertType", type.ToString()));
-                }
-
-                foreach (var (category, id) in _categoryToIdx)
-                {
-                    res.Insert(id, ("category", category.ToString()));
-                }
-
-                return res;
-            }
-            set
-            {
-                var i = 0;
-
-                foreach (var (type, alert) in value)
-                {
-                    switch (type)
-                    {
-                        case "alertType":
-                            _typeToIdx[Enum.Parse<AlertType>(alert)] = i++;
-                            break;
-                        case "category":
-                            _categoryToIdx[Enum.Parse<AlertCategory>(alert)] = i++;
-                            break;
-                        default:
-                            throw new ArgumentException();
-                    }
-                }
-            }
-        }
+        [DataField("order")] private readonly List<(string type, string alert)> _order = new();
 
         private readonly Dictionary<AlertType, int> _typeToIdx = new();
         private readonly Dictionary<AlertCategory, int> _categoryToIdx = new();
+
+        void ISerializationHooks.BeforeSerialization()
+        {
+            _order.Clear();
+
+            var orderArray = new KeyValuePair<string, string>[_typeToIdx.Count + _categoryToIdx.Count];
+
+            foreach (var (type, id) in _typeToIdx)
+            {
+                orderArray[id] = new KeyValuePair<string, string>("alertType", type.ToString());
+            }
+
+            foreach (var (category, id) in _categoryToIdx)
+            {
+                orderArray[id] = new KeyValuePair<string, string>("category", category.ToString());
+            }
+
+            foreach (var (type, alert) in orderArray)
+            {
+                _order.Add((type, alert));
+            }
+        }
+
+        void ISerializationHooks.AfterDeserialization()
+        {
+            var i = 0;
+
+            foreach (var (type, alert) in _order)
+            {
+                switch (type)
+                {
+                    case "alertType":
+                        _typeToIdx[Enum.Parse<AlertType>(alert)] = i++;
+                        break;
+                    case "category":
+                        _categoryToIdx[Enum.Parse<AlertCategory>(alert)] = i++;
+                        break;
+                    default:
+                        throw new ArgumentException();
+                }
+            }
+        }
 
         private int GetOrderIndex(AlertPrototype alert)
         {
@@ -81,8 +86,7 @@ namespace Content.Shared.Alert
             if (idx == -1 && idy == -1)
             {
                 // break ties by type value
-                // Must cast to int to avoid integer overflow when subtracting (enum's unsigned)
-                return (int)x.AlertType - (int)y.AlertType;
+                return x.AlertType - y.AlertType;
             }
 
             if (idx == -1) return 1;
@@ -93,8 +97,7 @@ namespace Content.Shared.Alert
             if (result == 0)
             {
                 // break ties by type value
-                // Must cast to int to avoid integer overflow when subtracting (enum's unsigned)
-                return (int)x.AlertType - (int)y.AlertType;
+                return x.AlertType - y.AlertType;
             }
 
             return result;

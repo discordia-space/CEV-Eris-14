@@ -59,7 +59,7 @@
   name: cornuto
   parent: FoodFrozenBase
   id: FoodFrozenCornuto
-  description: A Neapolitan vanilla and chocolate ice-cream cone. It menaces with a sprinkling of caramelized nuts.
+  description: A neapolitan vanilla and chocolate ice-cream cone. It menaces with a sprinkling of caramelized nuts.
   components:
   - type: Sprite
     state: cornuto
@@ -133,49 +133,24 @@
 # layer depending on soda/syrup/waterever. Name and description will also have
 # to be modified.
 - type: entity
-  name: sweet snowcone
-  #  name: [Flavor] snowcone
-  parent: FoodFrozenBase
-  id: FoodFrozenSnowconeBase
-  description: It's just shaved ice and simple syrup, minimum effort.
-  #  description: [Liquid] drizzled over a snowball in a paper cup.
-  components:
-    - type: Sprite
-      layers:
-        - state: cone
-        - state: alpha-filling
-    #      color: foo
-    - type: Food
-      trash: FoodFrozenSnowconeTrash
-    - type: SolutionContainerManager
-      solutions:
-        food:
-          maxVol: 20 # For sprinkles or something? Idk.
-          reagents:
-            - ReagentId: Ice
-              Quantity: 8
-            - ReagentId: Water
-              Quantity: 2
-            - ReagentId: Sugar
-              Quantity: 2
-
-- type: entity
   name: flavorless snowcone
-  parent: FoodFrozenSnowconeBase
+#  name: [Flavor] snowcone
+  parent: FoodFrozenBase
   id: FoodFrozenSnowcone
   description: It's just shaved ice. Still fun to chew on.
+#  description: [Liquid] drizzled over a snowball in a paper cup.
   components:
-  - type: SolutionContainerManager
-    solutions:
-      food:
-        maxVol: 20
-        reagents:
-          - ReagentId: Ice
-            Quantity: 8
+  - type: Sprite
+    layers:
+    - state: cone
+    - state: alpha-filling
+#      color: foo
+  - type: Food
+    trash: FoodFrozenSnowconeTrash
 
 - type: entity
   name: berry snowcone
-  parent: FoodFrozenSnowconeBase
+  parent: FoodFrozenBase
   id: FoodFrozenSnowconeBerry
   description: Berry syrup drizzled over a snowball in a paper cup.
   components:
@@ -188,7 +163,7 @@
 
 - type: entity
   name: fruit salad snowcone
-  parent: FoodFrozenSnowconeBase
+  parent: FoodFrozenBase
   id: FoodFrozenSnowconeFruit
   description: A delightful mix of citrus syrups drizzled over a snowball in a paper cup.
   components:
@@ -201,7 +176,7 @@
 
 - type: entity
   name: clowncone
-  parent: FoodFrozenSnowconeBase
+  parent: FoodFrozenBase
   id: FoodFrozenSnowconeClown
   description: Laughter drizzled over a snowball in a paper cup.
   components:
@@ -214,7 +189,7 @@
 
 - type: entity
   name: mime snowcone
-  parent: FoodFrozenSnowconeBase
+  parent: FoodFrozenBase
   id: FoodFrozenSnowconeMime
   description: ...
   components:
@@ -227,7 +202,7 @@
 
 - type: entity
   name: rainbow snowcone
-  parent: FoodFrozenSnowconeBase
+  parent: FoodFrozenBase
   id: FoodFrozenSnowconeRainbow
   description: A very colorful snowball in a paper cup.
   components:
@@ -262,16 +237,11 @@
   components:
   - type: Sprite
     sprite: Objects/Consumable/Food/frozen.rsi
-    netsync: false
-    layers:
-      - state: stick
-        map: [ "enum.DamageStateVisualLayers.Base" ]
-  - type: RandomSprite
-    available:
-      - enum.DamageStateVisualLayers.Base:
-          stick: ""
-      - enum.DamageStateVisualLayers.Base:
-          stick2: ""
+    state: stick
+  - type: RandomSpriteState
+    spriteStates:
+    - stick
+    - stick2
   - type: Tag
     tags:
     - Trash

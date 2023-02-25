@@ -16,14 +16,10 @@ namespace Content.Server.Examine
 
         private static readonly FormattedMessage _entityNotFoundMessage;
 
-        private static readonly FormattedMessage _entityOutOfRangeMessage;
-
         static ExamineSystem()
         {
             _entityNotFoundMessage = new FormattedMessage();
             _entityNotFoundMessage.AddText(Loc.GetString("examine-system-entity-does-not-exist"));
-            _entityOutOfRangeMessage = new FormattedMessage();
-            _entityOutOfRangeMessage.AddText(Loc.GetString("examine-system-cant-see-entity"));
         }
 
         public override void Initialize()
@@ -45,7 +41,7 @@ namespace Content.Server.Examine
                 verbs = _verbSystem.GetLocalVerbs(target, player, typeof(ExamineVerb));
 
             var ev = new ExamineSystemMessages.ExamineInfoResponseMessage(
-                target, 0, message, verbs?.ToList(), centerAtCursor
+                target, message, verbs?.ToList(), centerAtCursor
             );
 
             RaiseNetworkEvent(ev, session.ConnectedClient);
@@ -58,17 +54,11 @@ namespace Content.Server.Examine
             var channel = player.ConnectedClient;
 
             if (session.AttachedEntity is not {Valid: true} playerEnt
-                || !EntityManager.EntityExists(request.EntityUid))
+                || !EntityManager.EntityExists(request.EntityUid)
+                || !CanExamine(playerEnt, request.EntityUid))
             {
                 RaiseNetworkEvent(new ExamineSystemMessages.ExamineInfoResponseMessage(
-                    request.EntityUid, request.Id, _entityNotFoundMessage), channel);
-                return;
-            }
-
-            if (!CanExamine(playerEnt, request.EntityUid))
-            {
-                RaiseNetworkEvent(new ExamineSystemMessages.ExamineInfoResponseMessage(
-                    request.EntityUid, request.Id, _entityOutOfRangeMessage, knowTarget: false), channel);
+                    request.EntityUid, _entityNotFoundMessage), channel);
                 return;
             }
 
@@ -77,8 +67,7 @@ namespace Content.Server.Examine
                 verbs = _verbSystem.GetLocalVerbs(request.EntityUid, playerEnt, typeof(ExamineVerb));
 
             var text = GetExamineText(request.EntityUid, player.AttachedEntity);
-            RaiseNetworkEvent(new ExamineSystemMessages.ExamineInfoResponseMessage(
-                request.EntityUid, request.Id, text, verbs?.ToList()), channel);
+            RaiseNetworkEvent(new ExamineSystemMessages.ExamineInfoResponseMessage(request.EntityUid, text, verbs?.ToList()), channel);
         }
     }
 }

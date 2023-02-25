@@ -29,7 +29,7 @@
 
         - to: chairCursed
           steps:
-          - tag: Head
+          - prototype: HeadHuman
             icon:
               sprite: Mobs/Species/Human/parts.rsi
               state: "head_m"

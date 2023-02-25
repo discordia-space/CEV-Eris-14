@@ -5,7 +5,6 @@
   name: ammunition box (.30 rifle)
   components:
   - type: BallisticAmmoProvider
-    mayTransfer: true
     whitelist:
       tags:
         - CartridgeLightRifle

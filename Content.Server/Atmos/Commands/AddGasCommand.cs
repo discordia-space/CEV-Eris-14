@@ -4,7 +4,6 @@ using Content.Shared.Administration;
 using Content.Shared.Atmos;
 using Robust.Shared.Console;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 
 namespace Content.Server.Atmos.Commands
 {
@@ -26,7 +25,7 @@ namespace Content.Server.Atmos.Commands
                || !float.TryParse(args[4], out var moles)) return;
 
             var entMan = IoCManager.Resolve<IEntityManager>();
-            if (!entMan.HasComponent<MapGridComponent>(euid))
+            if (!entMan.HasComponent<IMapGridComponent>(euid))
             {
                 shell.WriteError($"Euid '{euid}' does not exist or is not a grid.");
                 return;

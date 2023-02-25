@@ -2,7 +2,6 @@ using Content.Shared.Popups;
 using Content.Shared.Rotatable;
 using Content.Shared.Verbs;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
 
 namespace Content.Server.Rotatable
 {
@@ -25,7 +24,6 @@ namespace Content.Server.Rotatable
             Verb verb = new();
             verb.Act = () => TryFlip(component, args.User);
             verb.Text = Loc.GetString("flippable-verb-get-data-text");
-            verb.DoContactInteraction = true;
             // TODO VERB ICONS Add Uno reverse card style icon?
             args.Verbs.Add(verb);
         }
@@ -39,13 +37,12 @@ namespace Content.Server.Rotatable
 
             // Check if the object is anchored, and whether we are still allowed to rotate it.
             if (!component.RotateWhileAnchored &&
-                EntityManager.TryGetComponent(component.Owner, out PhysicsComponent? physics) &&
+                EntityManager.TryGetComponent(component.Owner, out IPhysBody? physics) &&
                 physics.BodyType == BodyType.Static)
                 return;
 
             Verb resetRotation = new ()
             {
-                DoContactInteraction = true,
                 Act = () => EntityManager.GetComponent<TransformComponent>(component.Owner).LocalRotation = Angle.Zero,
                 Category = VerbCategory.Rotate,
                 IconTexture = "/Textures/Interface/VerbIcons/refresh.svg.192dpi.png",
@@ -83,7 +80,7 @@ namespace Content.Server.Rotatable
         /// </summary>
         public void TryFlip(FlippableComponent component, EntityUid user)
         {
-            if (EntityManager.TryGetComponent(component.Owner, out PhysicsComponent? physics) &&
+            if (EntityManager.TryGetComponent(component.Owner, out IPhysBody? physics) &&
                 physics.BodyType == BodyType.Static)
             {
                 component.Owner.PopupMessage(user, Loc.GetString("flippable-component-try-flip-is-stuck"));

@@ -1,5 +1,4 @@
-﻿using Robust.Shared.Serialization;
-using Robust.Shared.Serialization.Manager;
+﻿using Robust.Shared.Serialization.Manager;
 using Robust.Shared.Serialization.Markdown.Mapping;
 using Robust.Shared.Serialization.Markdown.Validation;
 using Robust.Shared.Serialization.TypeSerializers.Interfaces;
@@ -21,6 +20,11 @@ namespace Content.Shared.Construction.Steps
                 return typeof(ToolConstructionGraphStep);
             }
 
+            if (node.Has("prototype"))
+            {
+                return typeof(PrototypeConstructionGraphStep);
+            }
+
             if (node.Has("component"))
             {
                 return typeof(ComponentConstructionGraphStep);
@@ -36,26 +40,20 @@ namespace Content.Shared.Construction.Steps
                 return typeof(MultipleTagsConstructionGraphStep);
             }
 
-            if (node.Has("minTemperature") || node.Has("maxTemperature"))
-            {
-                return typeof(TemperatureConstructionGraphStep);
-            }
-
             return null;
         }
 
         public ConstructionGraphStep Read(ISerializationManager serializationManager,
             MappingDataNode node,
             IDependencyCollection dependencies,
-            SerializationHookContext hookCtx,
-            ISerializationContext? context = null,
-            ISerializationManager.InstantiationDelegate<ConstructionGraphStep>? instanceProvider = null)
+            bool skipHook,
+            ISerializationContext? context = null, ConstructionGraphStep? _ = null)
         {
             var type = GetType(node) ??
                        throw new ArgumentException(
                            "Tried to convert invalid YAML node mapping to ConstructionGraphStep!");
 
-            return (ConstructionGraphStep)serializationManager.Read(type, node, hookCtx, context)!;
+            return (ConstructionGraphStep)serializationManager.Read(type, node, context, skipHook)!;
         }
 
         public ValidationNode Validate(ISerializationManager serializationManager, MappingDataNode node,
@@ -64,8 +62,7 @@ namespace Content.Shared.Construction.Steps
         {
             var type = GetType(node);
 
-            if (type == null)
-                return new ErrorNode(node, "No construction graph step type found.");
+            if (type == null) return new ErrorNode(node, "No construction graph step type found.", true);
 
             return serializationManager.ValidateNode(type, node, context);
         }

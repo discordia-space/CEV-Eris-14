@@ -14,14 +14,13 @@ namespace Content.Client.Vehicle
             if (args.Sprite == null)
                 return;
 
-            // First check is for the sprite itself
-            if (AppearanceSystem.TryGetData<int>(uid, VehicleVisuals.DrawDepth, out var drawDepth, args.Component))
+            /// First check is for the sprite itself
+            if (args.Component.TryGetData(VehicleVisuals.DrawDepth, out int drawDepth))
             {
                 args.Sprite.DrawDepth = drawDepth;
             }
-
-            // Set vehicle layer to animated or not (i.e. are the wheels turning or not)
-            if (AppearanceSystem.TryGetData<bool>(uid, VehicleVisuals.AutoAnimate, out var autoAnimate, args.Component))
+            /// Set vehicle layer to animated or not (i.e. are the wheels turning or not)
+            if (args.Component.TryGetData(VehicleVisuals.AutoAnimate, out bool autoAnimate))
             {
                 args.Sprite.LayerSetAutoAnimated(VehicleVisualLayers.AutoAnimate, autoAnimate);
             }

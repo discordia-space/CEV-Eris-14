@@ -2,7 +2,6 @@ using Content.Server.Station;
 using JetBrains.Annotations;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
-using System.Diagnostics;
 
 namespace Content.Server.Maps;
 
@@ -14,7 +13,6 @@ namespace Content.Server.Maps;
 /// Make a new partial for your fancy new feature, it'll save you time later.
 /// </remarks>
 [Prototype("gameMap"), PublicAPI]
-[DebuggerDisplay("GameMapPrototype [{ID} - {MapName}]")]
 public sealed partial class GameMapPrototype : IPrototype
 {
     /// <inheritdoc/>

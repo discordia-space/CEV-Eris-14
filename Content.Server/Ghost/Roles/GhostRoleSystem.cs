@@ -11,13 +11,12 @@ using Content.Shared.Follower;
 using Content.Shared.GameTicking;
 using Content.Shared.Ghost;
 using Content.Shared.Ghost.Roles;
-using Content.Shared.Mobs;
+using Content.Shared.MobState;
 using JetBrains.Annotations;
 using Robust.Server.GameObjects;
 using Robust.Server.Player;
 using Robust.Shared.Console;
 using Robust.Shared.Enums;
-using Robust.Shared.Random;
 using Robust.Shared.Utility;
 
 namespace Content.Server.Ghost.Roles
@@ -28,7 +27,6 @@ namespace Content.Server.Ghost.Roles
         [Dependency] private readonly EuiManager _euiManager = default!;
         [Dependency] private readonly IPlayerManager _playerManager = default!;
         [Dependency] private readonly IAdminLogManager _adminLogger = default!;
-        [Dependency] private readonly IRobustRandom _random = default!;
         [Dependency] private readonly FollowerSystem _followerSystem = default!;
 
         private uint _nextRoleIdentifier;
@@ -56,16 +54,16 @@ namespace Content.Server.Ghost.Roles
 
         private void OnMobStateChanged(EntityUid uid, GhostRoleComponent component, MobStateChangedEvent args)
         {
-            switch (args.NewMobState)
+            switch (args.CurrentMobState)
             {
-                case MobState.Alive:
+                case DamageState.Alive:
                 {
                     if (!component.Taken)
                         RegisterGhostRole(component);
                     break;
                 }
-                case MobState.Critical:
-                case MobState.Dead:
+                case DamageState.Critical:
+                case DamageState.Dead:
                     UnregisterGhostRole(component);
                     break;
             }
@@ -267,12 +265,6 @@ namespace Content.Server.Ghost.Roles
 
         private void OnInit(EntityUid uid, GhostRoleComponent role, ComponentInit args)
         {
-            if (role.Probability < 1f && !_random.Prob(role.Probability))
-            {
-                RemComp<GhostRoleComponent>(uid);
-                return;
-            }
-
             if (role.RoleRules == "")
                 role.RoleRules = Loc.GetString("ghost-role-component-default-rules");
             RegisterGhostRole(role);

@@ -1,5 +1,5 @@
 ﻿using Content.Shared.Actions;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.Magic.Events;
 

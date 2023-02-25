@@ -13,7 +13,6 @@ using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using JetBrains.Annotations;
 using Robust.Server.GameObjects;
-using Robust.Shared.Player;
 using Robust.Shared.Timing;
 
 namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
@@ -26,8 +25,6 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
         [Dependency] private IAdminLogManager _adminLogger = default!;
         [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
         [Dependency] private readonly SharedAmbientSoundSystem _ambientSoundSystem = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearanceSystem = default!;
-        [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
 
         public override void Initialize()
         {
@@ -37,7 +34,6 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
             SubscribeLocalEvent<GasFilterComponent, AtmosDeviceUpdateEvent>(OnFilterUpdated);
             SubscribeLocalEvent<GasFilterComponent, AtmosDeviceDisabledEvent>(OnFilterLeaveAtmosphere);
             SubscribeLocalEvent<GasFilterComponent, InteractHandEvent>(OnFilterInteractHand);
-            SubscribeLocalEvent<GasFilterComponent, GasAnalyzerScanEvent>(OnFilterAnalyzed);
             // Bound UI subscriptions
             SubscribeLocalEvent<GasFilterComponent, GasFilterChangeRateMessage>(OnTransferRateChangeMessage);
             SubscribeLocalEvent<GasFilterComponent, GasFilterSelectGasMessage>(OnSelectGasMessage);
@@ -65,15 +61,15 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
             }
 
             // We multiply the transfer rate in L/s by the seconds passed since the last process to get the liters.
-            var transferVol = (float)(filter.TransferRate * (_gameTiming.CurTime - device.LastProcess).TotalSeconds);
+            var transferRatio = (float)(filter.TransferRate * (_gameTiming.CurTime - device.LastProcess).TotalSeconds) / inletNode.Air.Volume;
 
-            if (transferVol <= 0)
+            if (transferRatio <= 0)
             {
                 _ambientSoundSystem.SetAmbience(filter.Owner, false);
                 return;
             }
 
-            var removed = inletNode.Air.RemoveVolume(transferVol);
+            var removed = inletNode.Air.RemoveRatio(transferRatio);
 
             if (filter.FilteredGas.HasValue)
             {
@@ -113,7 +109,7 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
             }
             else
             {
-                _popupSystem.PopupCursor(Loc.GetString("comp-gas-filter-ui-needs-anchor"), args.User);
+                args.User.PopupMessageCursor(Loc.GetString("comp-gas-filter-ui-needs-anchor"));
             }
 
             args.Handled = true;
@@ -128,12 +124,12 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
                 new GasFilterBoundUserInterfaceState(EntityManager.GetComponent<MetaDataComponent>(filter.Owner).EntityName, filter.TransferRate, filter.Enabled, filter.FilteredGas));
         }
 
-        private void UpdateAppearance(EntityUid uid, GasFilterComponent? filter = null)
+        private void UpdateAppearance(EntityUid uid, GasFilterComponent? filter = null, AppearanceComponent? appearance = null)
         {
-            if (!Resolve(uid, ref filter, false))
+            if (!Resolve(uid, ref filter, ref appearance, false))
                 return;
 
-            _appearanceSystem.SetData(uid, FilterVisuals.Enabled, filter.Enabled);
+            appearance.SetData(FilterVisuals.Enabled, filter.Enabled);
         }
 
         private void OnToggleStatusMessage(EntityUid uid, GasFilterComponent filter, GasFilterToggleStatusMessage args)
@@ -156,51 +152,12 @@ namespace Content.Server.Atmos.Piping.Trinary.EntitySystems
 
         private void OnSelectGasMessage(EntityUid uid, GasFilterComponent filter, GasFilterSelectGasMessage args)
         {
-            if (args.ID.HasValue)
+            if (Enum.TryParse<Gas>(args.ID.ToString(), true, out var parsedGas))
             {
-                if (Enum.TryParse<Gas>(args.ID.ToString(), true, out var parsedGas))
-                {
-                    filter.FilteredGas = parsedGas;
-                    _adminLogger.Add(LogType.AtmosFilterChanged, LogImpact.Medium,
-                        $"{ToPrettyString(args.Session.AttachedEntity!.Value):player} set the filter on {ToPrettyString(uid):device} to {parsedGas.ToString()}");
-                    DirtyUI(uid, filter);
-                }
-                else
-                {
-                    Logger.Warning("atmos", $"{ToPrettyString(uid)} received GasFilterSelectGasMessage with an invalid ID: {args.ID}");
-                }
-            }
-            else
-            {
-                filter.FilteredGas = null;
-                _adminLogger.Add(LogType.AtmosFilterChanged, LogImpact.Medium,
-                    $"{ToPrettyString(args.Session.AttachedEntity!.Value):player} set the filter on {ToPrettyString(uid):device} to none");
+                filter.FilteredGas = parsedGas;
                 DirtyUI(uid, filter);
             }
-        }
 
-        /// <summary>
-        /// Returns the gas mixture for the gas analyzer
-        /// </summary>
-        private void OnFilterAnalyzed(EntityUid uid, GasFilterComponent component, GasAnalyzerScanEvent args)
-        {
-            if (!EntityManager.TryGetComponent(uid, out NodeContainerComponent? nodeContainer))
-                return;
-
-            var gasMixDict = new Dictionary<string, GasMixture?>();
-
-            nodeContainer.TryGetNode(component.InletName, out PipeNode? inlet);
-            nodeContainer.TryGetNode(component.FilterName, out PipeNode? filterNode);
-
-            if(inlet != null)
-                gasMixDict.Add(Loc.GetString("gas-analyzer-window-text-inlet"), inlet.Air);
-            if(filterNode != null)
-                gasMixDict.Add(Loc.GetString("gas-analyzer-window-text-filter"), filterNode.Air);
-            if(nodeContainer.TryGetNode(component.OutletName, out PipeNode? outlet))
-                gasMixDict.Add(Loc.GetString("gas-analyzer-window-text-outlet"), outlet.Air);
-
-            args.GasMixtures = gasMixDict;
-            args.DeviceFlipped = inlet != null && filterNode != null && inlet.CurrentPipeDirection.ToDirection() == filterNode.CurrentPipeDirection.ToDirection().GetClockwise90Degrees();
         }
     }
 }

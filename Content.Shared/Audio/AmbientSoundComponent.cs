@@ -1,44 +1,33 @@
-using Robust.Shared.Audio;
-using Robust.Shared.ComponentTrees;
+using Content.Shared.Sound;
 using Robust.Shared.GameStates;
-using Robust.Shared.Physics;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.Audio
 {
     [RegisterComponent]
     [NetworkedComponent]
-    [Access(typeof(SharedAmbientSoundSystem))]
-    public sealed class AmbientSoundComponent : Component, IComponentTreeEntry<AmbientSoundComponent>
+    public sealed class AmbientSoundComponent : Component
     {
+        [ViewVariables(VVAccess.ReadWrite)]
         [DataField("enabled")]
-        [ViewVariables(VVAccess.ReadWrite)] // only for map editing
         public bool Enabled { get; set; } = true;
 
-        [DataField("sound", required: true), ViewVariables(VVAccess.ReadWrite)] // only for map editing
+        [DataField("sound", required: true), ViewVariables(VVAccess.ReadWrite)]
         public SoundSpecifier Sound = default!;
 
         /// <summary>
         /// How far away this ambient sound can potentially be heard.
         /// </summary>
-        [ViewVariables(VVAccess.ReadWrite)] // only for map editing
+        [ViewVariables(VVAccess.ReadWrite)]
         [DataField("range")]
         public float Range = 2f;
 
         /// <summary>
         /// Applies this volume to the sound being played.
         /// </summary>
-        [ViewVariables(VVAccess.ReadWrite)] // only for map editing
+        [ViewVariables(VVAccess.ReadWrite)]
         [DataField("volume")]
         public float Volume = -10f;
-
-        public EntityUid? TreeUid { get; set; }
-
-        public DynamicTree<ComponentTreeEntry<AmbientSoundComponent>>? Tree { get; set; }
-
-        public bool AddToTree => Enabled;
-
-        public bool TreeUpdateQueued { get; set; }
     }
 
     [Serializable, NetSerializable]

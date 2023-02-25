@@ -5,10 +5,6 @@
   id: FoodPizzaBase
   abstract: true
   components:
-  - type: FlavorProfile
-    flavors:
-      - oily
-      - bread
   - type: Food
   - type: Sprite
     sprite: Objects/Consumable/Food/Baked/pizza.rsi
@@ -35,10 +31,6 @@
   id: FoodPizzaSliceBase
   abstract: true
   components:
-  - type: FlavorProfile
-    flavors:
-      - oily
-      - bread
   - type: Food
   - type: Sprite
     sprite: Objects/Consumable/Food/Baked/pizza.rsi
@@ -67,11 +59,6 @@
   id: FoodPizzaMargherita
   description: The flavor of Italy.
   components:
-  - type: FlavorProfile
-    flavors:
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: margherita
@@ -84,14 +71,10 @@
   id: FoodPizzaMargheritaSlice
   description: A slice of Italy.
   components:
-  - type: FlavorProfile
-    flavors:
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: margherita-slice
+# Tastes like crust, tomato, cheese.
 
 - type: entity
   name: meat pizza
@@ -99,12 +82,6 @@
   id: FoodPizzaMeat
   description: Greasy pizza with delicious meat.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: meat
@@ -117,12 +94,6 @@
   id: FoodPizzaMeatSlice
   description: A nutritious slice of meatpizza.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: meat-slice
@@ -134,11 +105,6 @@
   id: FoodPizzaMushroom
   description: Very special pizza.
   components:
-  - type: FlavorProfile
-    flavors:
-      - mushroom
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: mushroom
@@ -151,11 +117,6 @@
   id: FoodPizzaMushroomSlice
   description: Maybe it is the last slice of pizza in your life.
   components:
-  - type: FlavorProfile
-    flavors:
-      - mushroom
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: mushroom-slice
@@ -167,30 +128,11 @@
   id: FoodPizzaVegetable
   description: The station's vegetarians will thank you for making this.
   components:
-  - type: FlavorProfile
-    flavors:
-      - eggplant
-      - corn
-      - tomato
-      - oily
-      - cheesy
-      - bread
   - type: Sprite
     layers:
     - state: vegetable
   - type: SliceableFood
     slice: FoodPizzaVegetableSlice
-  - type: SolutionContainerManager
-    solutions:
-      food:
-        maxVol: 40
-        reagents:
-        - ReagentId: Nutriment
-          Quantity: 25
-        - ReagentId: JuiceCarrot
-          Quantity: 5
-        - ReagentId: Vitamin
-          Quantity: 5
 
 - type: entity
   name: slice of vegetable pizza
@@ -198,30 +140,9 @@
   id: FoodPizzaVegetableSlice
   description: A slice of this is enough to satisfy even the pickiest station personnel.
   components:
-  - type: FlavorProfile
-    flavors:
-      - eggplant
-      - corn
-      - tomato
-      - carrot
-      - oily
-      - cheesy
-      - bread
   - type: Sprite
     layers:
     - state: vegetable-slice
-  - type: SolutionContainerManager
-    solutions:
-      food:
-        maxVol: 40
-        reagents:
-        - ReagentId: Nutriment
-          Quantity: 4
-        - ReagentId: JuiceCarrot
-          Quantity: 1
-        - ReagentId: Vitamin
-          Quantity: 1
-
 # Tastes like crust, tomato, cheese, carrot.
 
 - type: entity
@@ -230,9 +151,6 @@
   id: FoodPizzaDonkpocket
   description: Who thought this would be a good idea?
   components:
-  - type: FlavorProfile
-    flavors:
-      - donk
   - type: Sprite
     layers:
     - state: donkpocket
@@ -257,9 +175,6 @@
   id: FoodPizzaDonkpocketSlice
   description: Smells like donk-pocket.
   components:
-  - type: FlavorProfile
-    flavors:
-      - donk
   - type: Sprite
     layers:
     - state: donkpocket-slice
@@ -282,12 +197,6 @@
   id: FoodPizzaDank
   description: The hippie's pizza of choice.
   components:
-  - type: FlavorProfile
-    flavors:
-      - oily
-      - bread
-      - cheesy
-      - leafy
   - type: Sprite
     layers:
     - state: dank
@@ -311,12 +220,6 @@
   id: FoodPizzaDankSlice
   description: So good, man...
   components:
-  - type: FlavorProfile
-    flavors:
-      - oily
-      - bread
-      - cheesy
-      - leafy
   - type: Sprite
     layers:
     - state: dank-slice
@@ -339,12 +242,6 @@
   id: FoodPizzaSassysage
   description: You can really smell the sassiness.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: sassysage
@@ -357,12 +254,6 @@
   id: FoodPizzaSassysageSlice
   description: Deliciously sassy.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: sassysage-slice
@@ -374,13 +265,6 @@
   id: FoodPizzaPineapple
   description: Makes people burst into tears. Tears of joy or sadness depends on the persons fondness for pineapple.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - pineapple
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: pineapple
@@ -393,13 +277,6 @@
   id: FoodPizzaPineappleSlice
   description: A slice of joy/sin.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - pineapple
-      - cheesy
-      - oily
-      - bread
   - type: Sprite
     layers:
     - state: pineapple-slice
@@ -412,13 +289,6 @@
   id: FoodPizzaArnold
   description: Hello, you've reached Arnold's pizza shop. I'm not here now, I'm out killing pepperoni.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
-      - gunpowder
   - type: Sprite
     layers:
     - state: arnold
@@ -444,13 +314,6 @@
   id: FoodPizzaArnoldSlice
   description: I come over, maybe I give you a pizza, maybe I break off your arm.
   components:
-  - type: FlavorProfile
-    flavors:
-      - meaty
-      - cheesy
-      - oily
-      - bread
-      - gunpowder
   - type: Sprite
     layers:
     - state: arnold-slice
@@ -476,11 +339,6 @@
   id: FoodPizzaMoldySlice
   description: Once a perfectly good slice of pizza pie, but now it lies here, rancid and bursting with spores.
   components:
-  - type: FlavorProfile
-    flavors:
-      - bitter
-      - terrible
-      - mushroom
   - type: Sprite
     layers:
     - state: moldy-slice

@@ -1,5 +1,4 @@
-﻿using Content.Server.Botany.Systems;
-using Content.Shared.Chemistry.Reagent;
+﻿using Content.Shared.Chemistry.Reagent;
 using JetBrains.Annotations;
 
 namespace Content.Server.Chemistry.ReagentEffects.PlantMetabolism
@@ -12,9 +11,7 @@ namespace Content.Server.Chemistry.ReagentEffects.PlantMetabolism
             if (!CanMetabolize(args.SolutionEntity, out var plantHolderComp, args.EntityManager, mustHaveAlivePlant: false))
                 return;
 
-            var plantHolder = args.EntityManager.System<PlantHolderSystem>();
-
-            plantHolder.AdjustWater(args.SolutionEntity, Amount, plantHolderComp);
+            plantHolderComp.AdjustWater(Amount);
         }
     }
 }

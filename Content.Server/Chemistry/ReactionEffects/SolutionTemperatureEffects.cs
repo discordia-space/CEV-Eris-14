@@ -1,7 +1,5 @@
 using Content.Shared.Chemistry.Components;
 using Content.Shared.Chemistry.Reagent;
-using Robust.Shared.Prototypes;
-using static Robust.Shared.Physics.DynamicTree;
 
 namespace Content.Server.Chemistry.ReactionEffects
 {
@@ -30,12 +28,13 @@ namespace Content.Server.Chemistry.ReactionEffects
     ///     Adjusts the temperature of the solution involved in the reaction.
     /// </summary>
     [DataDefinition]
-    public sealed class AdjustSolutionTemperatureEffect : ReagentEffect
+    [Virtual]
+    public class AdjustSolutionTemperatureEffect : ReagentEffect
     {
         /// <summary>
-        ///     The change in temperature.
+        ///     The total change in the thermal energy of the solution.
         /// </summary>
-        [DataField("delta", required: true)] private float _delta;
+        [DataField("delta", required: true)] protected float Delta;
 
         /// <summary>
         ///     The minimum temperature this effect can reach.
@@ -52,62 +51,47 @@ namespace Content.Server.Chemistry.ReactionEffects
         /// </summary>
         [DataField("scaled")] private bool _scaled;
 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="solution"></param>
+        /// <returns></returns>
+        protected virtual float GetDeltaT(Solution solution) => Delta;
+
         public override void Effect(ReagentEffectArgs args)
         {
             var solution = args.Source;
-            if (solution == null || solution.Volume == 0)
+            if (solution == null)
                 return;
 
-            var deltaT = _scaled ? _delta * (float) args.Quantity : _delta;
-            solution.Temperature = Math.Clamp(solution.Temperature + deltaT, _minTemp, _maxTemp);
+            var deltaT = GetDeltaT(solution);
+            if (_scaled)
+                deltaT = deltaT * (float) args.Quantity;
+
+            if (deltaT == 0.0d)
+                return;
+            if (deltaT > 0.0d && solution.Temperature >= _maxTemp)
+                return;
+            if (deltaT < 0.0d && solution.Temperature <= _minTemp)
+                return;
+
+            solution.Temperature = MathF.Max(MathF.Min(solution.Temperature + deltaT, _minTemp), _maxTemp);
         }
     }
 
     /// <summary>
     ///     Adjusts the thermal energy of the solution involved in the reaction.
     /// </summary>
-    public sealed class AdjustSolutionThermalEnergyEffect : ReagentEffect
+    public sealed class AdjustSolutionThermalEnergyEffect : AdjustSolutionTemperatureEffect
     {
-        /// <summary>
-        ///     The change in energy.
-        /// </summary>
-        [DataField("delta", required: true)] private float _delta;
-
-        /// <summary>
-        ///     The minimum temperature this effect can reach.
-        /// </summary>
-        [DataField("minTemp")] private float _minTemp = 0.0f;
-
-        /// <summary>
-        ///     The maximum temperature this effect can reach.
-        /// </summary>
-        [DataField("maxTemp")] private float _maxTemp = float.PositiveInfinity;
-
-        /// <summary>
-        ///     If true, then scale ranges by intensity. If not, the ranges are the same regardless of reactant amount.
-        /// </summary>
-        [DataField("scaled")] private bool _scaled;
-
-        public override void Effect(ReagentEffectArgs args)
+        protected override float GetDeltaT(Solution solution)
         {
-            var solution = args.Source;
-            if (solution == null || solution.Volume == 0)
-                return;
-
-            if (_delta > 0 && solution.Temperature >= _maxTemp)
-                return;
-            if (_delta < 0 && solution.Temperature <= _minTemp)
-                return;
-
-            var heatCap = solution.GetHeatCapacity(null);
-            var deltaT = _scaled
-                ? _delta / heatCap * (float) args.Quantity 
-                : _delta / heatCap;
-
-            solution.Temperature = Math.Clamp(solution.Temperature + deltaT, _minTemp, _maxTemp);
+            var heatCapacity = solution.HeatCapacity;
+            if (heatCapacity == 0.0f)
+                return 0.0f;
+            return Delta / heatCapacity;
         }
     }
-
 }
 
 

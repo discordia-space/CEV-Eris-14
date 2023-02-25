@@ -20,7 +20,7 @@ public sealed class GasArtifactComponent : Component
     ///     List of possible activation gases to pick on startup.
     /// </summary>
     [DataField("possibleGas")]
-    public List<Gas> PossibleGases = new()
+    public Gas[] PossibleGases =
     {
         Gas.Oxygen,
         Gas.Plasma,
@@ -28,8 +28,6 @@ public sealed class GasArtifactComponent : Component
         Gas.CarbonDioxide,
         Gas.Tritium,
         Gas.Miasma,
-        Gas.NitrousOxide,
-        Gas.Frezon
     };
 
     /// <summary>

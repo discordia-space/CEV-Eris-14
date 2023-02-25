@@ -6,7 +6,7 @@ namespace Content.Server.Advertisements
     public sealed class AdvertisementsPackPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         [DataField("advertisements")]

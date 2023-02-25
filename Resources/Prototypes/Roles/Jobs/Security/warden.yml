@@ -1,13 +1,9 @@
 - type: job
   id: Warden
   name: job-name-warden
-  description: job-description-warden
-  playTimeTracker: JobWarden
-  requirements:
-    - !type:DepartmentTimeRequirement
-      department: Security
-      time: 10800
   startingGear: WardenGear
+  departments:
+  - Security
   icon: "Warden"
   supervisors: job-supervisors-hos
   canBeAntag: false
@@ -25,7 +21,7 @@
     head: ClothingHeadHatWarden
     jumpsuit: ClothingUniformJumpsuitWarden
     back: ClothingBackpackSecurityFilled
-    shoes: ClothingShoesBootsCombatFilled
+    shoes: ClothingShoesBootsJack
     eyes: ClothingEyesGlassesSecurity
     outerClothing: ClothingOuterCoatWarden
     id: WardenPDA

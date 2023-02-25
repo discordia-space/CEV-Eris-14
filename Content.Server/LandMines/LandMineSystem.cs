@@ -35,7 +35,7 @@ public sealed class LandMineSystem : EntitySystem
             _popupSystem.PopupCoordinates(
                 Loc.GetString("land-mine-triggered", ("mine", uid)),
                 Transform(uid).Coordinates,
-                args.Tripper,
+                Filter.Entities(args.Tripper),
                 PopupType.LargeCaution);
         }
     }

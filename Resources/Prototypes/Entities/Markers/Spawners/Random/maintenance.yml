@@ -7,16 +7,12 @@
     - type: Sprite
       layers:
         - state: red
-        - sprite: Clothing/Eyes/Glasses/gar.rsi
-          state: icon-super
+        - texture: Clothing/Eyes/Glasses/gar.rsi/icon-super.png
     - type: RandomSpawner
       rarePrototypes:
         - CigarGold
         - ClothingNeckCloakHerald
         - ClothingHeadHelmetTemplar
-        - ClothingNeckCloakTrans
-        - ClothingNeckCloakAdmin
-        - ClothingNeckCloakGoliathCloak
         - ToySkeleton
         - Basketball
         - Football
@@ -25,15 +21,6 @@
         - Skub
         - ClothingHeadHatCatEars
         - DrinkMugDog
-        - ClothingNeckLGBTPin
-        - ClothingNeckAromanticPin
-        - ClothingNeckAsexualPin
-        - ClothingNeckBisexualPin
-        - ClothingNeckIntersexPin
-        - ClothingNeckLesbianPin
-        - ClothingNeckNonBinaryPin
-        - ClothingNeckPansexualPin
-        - ClothingNeckTransPin
       rareChance: 0.01
       prototypes:
         - Lighter
@@ -50,7 +37,6 @@
         - ClothingShoeSlippersDuck
         - ClothingUnderSocksBee
         - ClothingUnderSocksCoder
-        - ClothingHeadHatSquid
       chance: 0.6
       offset: 0.0
 
@@ -70,7 +56,7 @@
       rarePrototypes:
         - lanternextrabright
         - PowerCellHigh
-        - NetProbeCartridge
+        - PowerCellMicroreactor
       rareChance: 0.08
       prototypes:
         - FlashlightLantern
@@ -98,8 +84,7 @@
     - type: Sprite
       layers:
         - state: red
-        - sprite: Objects/Weapons/Melee/machete.rsi
-          state: icon
+        - texture: Objects/Weapons/Melee/machete.rsi/icon.png
     - type: RandomSpawner
       rarePrototypes:
         - Machete
@@ -118,6 +103,5 @@
         - WeaponFlareGun
         - Spear
         - LidSalami
-        - ClothingEyesBlindfold
       chance: 0.6
       offset: 0.0

@@ -18,20 +18,13 @@ namespace Content.Server.Ghost.Roles.Components
         [ViewVariables(VVAccess.ReadWrite)] [DataField("makeSentient")]
         protected bool MakeSentient = true;
 
-        /// <summary>
-        ///     The probability that this ghost role will be available after init.
-        ///     Used mostly for takeover roles that want some probability of being takeover, but not 100%.
-        /// </summary>
-        [DataField("prob")]
-        public float Probability = 1f;
-
         // We do this so updating RoleName and RoleDescription in VV updates the open EUIs.
 
         [ViewVariables(VVAccess.ReadWrite)]
         [Access(typeof(GhostRoleSystem), Other = AccessPermissions.ReadWriteExecute)] // FIXME Friends
         public string RoleName
         {
-            get => Loc.GetString(_roleName);
+            get => _roleName;
             set
             {
                 _roleName = value;
@@ -43,7 +36,7 @@ namespace Content.Server.Ghost.Roles.Components
         [Access(typeof(GhostRoleSystem), Other = AccessPermissions.ReadWriteExecute)] // FIXME Friends
         public string RoleDescription
         {
-            get => Loc.GetString(_roleDescription);
+            get => _roleDescription;
             set
             {
                 _roleDescription = value;
@@ -62,14 +55,6 @@ namespace Content.Server.Ghost.Roles.Components
                 EntitySystem.Get<GhostRoleSystem>().UpdateAllEui();
             }
         }
-
-        [DataField("allowSpeech")]
-        [ViewVariables(VVAccess.ReadWrite)]
-        public bool AllowSpeech { get; set; } = true;
-
-        [DataField("allowMovement")]
-        [ViewVariables(VVAccess.ReadWrite)]
-        public bool AllowMovement { get; set; }
 
         [ViewVariables(VVAccess.ReadOnly)]
         public bool Taken { get; set; }

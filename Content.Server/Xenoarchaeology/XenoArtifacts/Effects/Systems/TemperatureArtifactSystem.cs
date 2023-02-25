@@ -26,7 +26,7 @@ public sealed class TemperatureArtifactSystem : EntitySystem
             return;
         UpdateTileTemperature(component, center);
 
-        if (component.AffectAdjacentTiles && transform.GridUid != null)
+        if (component.EffectAdjacentTiles && transform.GridUid != null)
         {
             var adjacent = _atmosphereSystem.GetAdjacentTileMixtures(transform.GridUid.Value,
                 _transformSystem.GetGridOrMapTilePosition(uid, transform), excite: true);

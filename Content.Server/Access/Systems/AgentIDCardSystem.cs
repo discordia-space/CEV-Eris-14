@@ -3,9 +3,7 @@ using Content.Server.Access.Components;
 using Content.Shared.Access.Systems;
 using Content.Shared.Interaction;
 using Content.Server.Popups;
-using Content.Server.UserInterface;
 using Robust.Shared.Player;
-using Robust.Server.GameObjects;
 
 namespace Content.Server.Access.Systems
 {
@@ -13,24 +11,23 @@ namespace Content.Server.Access.Systems
     {
         [Dependency] private readonly PopupSystem _popupSystem = default!;
         [Dependency] private readonly IdCardSystem _cardSystem = default!;
-        [Dependency] private readonly UserInterfaceSystem _uiSystem = default!;
 
         public override void Initialize()
         {
             base.Initialize();
             SubscribeLocalEvent<AgentIDCardComponent, AfterInteractEvent>(OnAfterInteract);
             // BUI
-            SubscribeLocalEvent<AgentIDCardComponent, AfterActivatableUIOpenEvent>(AfterUIOpen);
             SubscribeLocalEvent<AgentIDCardComponent, AgentIDCardNameChangedMessage>(OnNameChanged);
             SubscribeLocalEvent<AgentIDCardComponent, AgentIDCardJobChangedMessage> (OnJobChanged);
+
         }
 
         private void OnAfterInteract(EntityUid uid, AgentIDCardComponent component, AfterInteractEvent args)
         {
-            if (!TryComp<AccessComponent>(args.Target, out var targetAccess) || !HasComp<IdCardComponent>(args.Target) || args.Target == null)
+            if (!TryComp<AccessComponent>(args.Target, out var targetAccess) || !TryComp<IdCardComponent>(uid, out var targetIDCard) || args.Target == null)
                 return;
 
-            if (!TryComp<AccessComponent>(uid, out var access) || !HasComp<IdCardComponent>(uid))
+            if (!TryComp<AccessComponent>(uid, out var access) || !TryComp<IdCardComponent>(uid, out var idCard))
                 return;
 
             var beforeLength = access.Tags.Count;
@@ -39,27 +36,15 @@ namespace Content.Server.Access.Systems
 
             if (addedLength == 0)
             {
-                _popupSystem.PopupEntity(Loc.GetString("agent-id-no-new", ("card", args.Target)), args.Target.Value, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("agent-id-no-new", ("card", args.Target)), args.Target.Value, Filter.Entities(args.User));
                 return;
             }
             else if (addedLength == 1)
             {
-                _popupSystem.PopupEntity(Loc.GetString("agent-id-new-1", ("card", args.Target)), args.Target.Value, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("agent-id-new-1", ("card", args.Target)), args.Target.Value, Filter.Entities(args.User));
                 return;
             }
-            _popupSystem.PopupEntity(Loc.GetString("agent-id-new", ("number", addedLength), ("card", args.Target)), args.Target.Value, args.User);
-        }
-
-        private void AfterUIOpen(EntityUid uid, AgentIDCardComponent component, AfterActivatableUIOpenEvent args)
-        {
-            if (!_uiSystem.TryGetUi(component.Owner, AgentIDCardUiKey.Key, out var ui))
-                return;
-
-            if (!TryComp<IdCardComponent>(uid, out var idCard))
-                return;
-
-            var state = new AgentIDCardBoundUserInterfaceState(idCard.FullName ?? "", idCard.JobTitle ?? "");
-            ui.SetState(state, args.Session);
+            _popupSystem.PopupEntity(Loc.GetString("agent-id-new", ("number", addedLength), ("card", args.Target)), args.Target.Value, Filter.Entities(args.User));
         }
 
         private void OnJobChanged(EntityUid uid, AgentIDCardComponent comp, AgentIDCardJobChangedMessage args)

@@ -4,8 +4,7 @@
     xmlns:adminbusTab="clr-namespace:Content.Client.Administration.UI.Tabs.AdminbusTab"
     xmlns:atmosTab="clr-namespace:Content.Client.Administration.UI.Tabs.AtmosTab"
     xmlns:tabs="clr-namespace:Content.Client.Administration.UI.Tabs"
-    xmlns:playerTab="clr-namespace:Content.Client.Administration.UI.Tabs.PlayerTab"
-    xmlns:objectsTab="clr-namespace:Content.Client.Administration.UI.Tabs.ObjectsTab">
+    xmlns:playerTab="clr-namespace:Content.Client.Administration.UI.Tabs.PlayerTab">
     <TabContainer Name="MasterTabContainer">
         <adminTab:AdminTab />
         <adminbusTab:AdminbusTab />
@@ -13,6 +12,5 @@
         <tabs:RoundTab />
         <tabs:ServerTab />
         <playerTab:PlayerTab Name="PlayerTabControl" Access="Public" />
-        <objectsTab:ObjectsTab Name="ObjectsTabControl" Access="Public" />
     </TabContainer>
 </DefaultWindow>

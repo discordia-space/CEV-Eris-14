@@ -1,7 +1,5 @@
 using Content.Server.Shuttles.Systems;
-using Content.Shared.Construction.Prototypes;
 using Content.Shared.Damage;
-using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Server.Shuttles.Components
 {
@@ -43,11 +41,10 @@ namespace Content.Server.Shuttles.Components
         public bool IsOn;
 
         [ViewVariables(VVAccess.ReadWrite)]
-        public float Thrust;
+        [DataField("thrust")]
+        public float Thrust = 750f;
 
-        [DataField("baseThrust"), ViewVariables(VVAccess.ReadWrite)]
-        public float BaseThrust = 750f;
-
+        [ViewVariables]
         [DataField("thrusterType")]
         public ThrusterType Type = ThrusterType.Linear;
 
@@ -62,9 +59,9 @@ namespace Content.Server.Shuttles.Components
         /// <summary>
         /// How much damage is done per second to anything colliding with our thrust.
         /// </summary>
-        [DataField("damage")] public DamageSpecifier? Damage = new();
+        [ViewVariables] [DataField("damage")] public DamageSpecifier? Damage = new();
 
-        [DataField("requireSpace")]
+        [ViewVariables] [DataField("requireSpace")]
         public bool RequireSpace = true;
 
         // Used for burns
@@ -72,12 +69,6 @@ namespace Content.Server.Shuttles.Components
         public List<EntityUid> Colliding = new();
 
         public bool Firing = false;
-
-        [DataField("machinePartThrust", customTypeSerializer: typeof(PrototypeIdSerializer<MachinePartPrototype>))]
-        public string MachinePartThrust = "Laser";
-
-        [DataField("partRatingThrustMultiplier")]
-        public float PartRatingThrustMultiplier = 1.5f;
     }
 
     public enum ThrusterType

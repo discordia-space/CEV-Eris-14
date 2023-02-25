@@ -49,7 +49,7 @@
         /// <summary>
         ///     Admin chat
         /// </summary>
-        Admin = ChatChannel.AdminChat,
+        Admin = ChatChannel.Admin,
 
         Console = ChatChannel.Unspecified
     }

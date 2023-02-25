@@ -10,7 +10,7 @@ namespace Content.Shared.DeviceNetwork;
 [Serializable, NetSerializable]
 public sealed class DeviceFrequencyPrototype : IPrototype
 {
-    [IdDataField]
+    [IdDataFieldAttribute]
     public string ID { get; } = default!;
 
     // TODO Somehow Allow per-station or some other type of named but randomized frequencies?

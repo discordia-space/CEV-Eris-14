@@ -14,7 +14,6 @@ using Content.Shared.Database;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Light;
-using Content.Shared.Light.Component;
 using Content.Shared.Popups;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
@@ -40,7 +39,6 @@ namespace Content.Server.Light.EntitySystems
         [Dependency] private readonly SignalLinkerSystem _signalSystem = default!;
         [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
         [Dependency] private readonly DoAfterSystem _doAfterSystem = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
         private static readonly TimeSpan ThunkDelay = TimeSpan.FromSeconds(2);
         public const string LightBulbContainer = "light_bulb";
@@ -117,9 +115,9 @@ namespace Content.Server.Light.EntitySystems
                 {
                     // apply damage to users hands and show message with sound
                     var burnMsg = Loc.GetString("powered-light-component-burn-hand");
-                    _popupSystem.PopupEntity(burnMsg, uid, userUid);
+                    _popupSystem.PopupEntity(burnMsg, uid, Filter.Entities(userUid));
 
-                    var damage = _damageableSystem.TryChangeDamage(userUid, light.Damage, origin: userUid);
+                    var damage = _damageableSystem.TryChangeDamage(userUid, light.Damage);
 
                     if (damage != null)
                         _adminLogger.Add(LogType.Damaged,
@@ -142,7 +140,7 @@ namespace Content.Server.Light.EntitySystems
 
             // removing a working bulb, so require a delay
             light.CancelToken = new CancellationTokenSource();
-            _doAfterSystem.DoAfter(new DoAfterEventArgs(userUid, light.EjectBulbDelay, light.CancelToken.Token, uid)
+            _doAfterSystem.DoAfter(new DoAfterEventArgs((EntityUid) userUid, light.EjectBulbDelay, light.CancelToken.Token, uid)
             {
                 BreakOnUserMove = true,
                 BreakOnDamage = true,
@@ -272,41 +270,44 @@ namespace Content.Server.Light.EntitySystems
             {
                 SetLight(uid, false, light: light);
                 powerReceiver.Load = 0;
-                _appearance.SetData(uid, PoweredLightVisuals.BulbState, PoweredLightState.Empty, appearance);
+                appearance?.SetData(PoweredLightVisuals.BulbState, PoweredLightState.Empty);
                 return;
             }
-
-            switch (lightBulb.State)
+            else
             {
-                case LightBulbState.Normal:
-                    if (powerReceiver.Powered && light.On)
-                    {
-                        SetLight(uid, true, lightBulb.Color, light, lightBulb.LightRadius, lightBulb.LightEnergy, lightBulb.LightSoftness);
-                        _appearance.SetData(uid, PoweredLightVisuals.BulbState, PoweredLightState.On, appearance);
-                        var time = _gameTiming.CurTime;
-                        if (time > light.LastThunk + ThunkDelay)
-                        {
-                            light.LastThunk = time;
-                            SoundSystem.Play(light.TurnOnSound.GetSound(), Filter.Pvs(uid), uid, AudioParams.Default.WithVolume(-10f));
-                        }
-                    }
-                    else
-                    {
-                        SetLight(uid, false, light: light);
-                        _appearance.SetData(uid, PoweredLightVisuals.BulbState, PoweredLightState.Off, appearance);
-                    }
-                    break;
-                case LightBulbState.Broken:
-                    SetLight(uid, false, light: light);
-                    _appearance.SetData(uid, PoweredLightVisuals.BulbState, PoweredLightState.Broken, appearance);
-                    break;
-                case LightBulbState.Burned:
-                    SetLight(uid, false, light: light);
-                    _appearance.SetData(uid, PoweredLightVisuals.BulbState, PoweredLightState.Burned, appearance);
-                    break;
-            }
 
-            powerReceiver.Load = (light.On && lightBulb.State == LightBulbState.Normal) ? lightBulb.PowerUse : 0;
+                switch (lightBulb.State)
+                {
+                    case LightBulbState.Normal:
+                        if (powerReceiver.Powered && light.On)
+                        {
+                            SetLight(uid, true, lightBulb.Color, light, lightBulb.LightRadius, lightBulb.LightEnergy, lightBulb.LightSoftness);
+                            appearance?.SetData(PoweredLightVisuals.BulbState, PoweredLightState.On);
+                            var time = _gameTiming.CurTime;
+                            if (time > light.LastThunk + ThunkDelay)
+                            {
+                                light.LastThunk = time;
+                                SoundSystem.Play(light.TurnOnSound.GetSound(), Filter.Pvs(uid), uid, AudioParams.Default.WithVolume(-10f));
+                            }
+                        }
+                        else
+                        {
+                            SetLight(uid, false, light: light);
+                            appearance?.SetData(PoweredLightVisuals.BulbState, PoweredLightState.Off);
+                        }
+                        break;
+                    case LightBulbState.Broken:
+                        SetLight(uid, false, light: light);
+                        appearance?.SetData(PoweredLightVisuals.BulbState, PoweredLightState.Broken);
+                        break;
+                    case LightBulbState.Burned:
+                        SetLight(uid, false, light: light);
+                        appearance?.SetData(PoweredLightVisuals.BulbState, PoweredLightState.Burned);
+                        break;
+                }
+
+                powerReceiver.Load = (light.On && lightBulb.State == LightBulbState.Normal) ? lightBulb.PowerUse : 0;
+            }
         }
 
         /// <summary>
@@ -337,21 +338,21 @@ namespace Content.Server.Light.EntitySystems
 
             light.LastGhostBlink = time;
 
-            ToggleBlinkingLight(uid, light, true);
+            ToggleBlinkingLight(light, true);
             light.Owner.SpawnTimer(light.GhostBlinkingTime, () =>
             {
-                ToggleBlinkingLight(uid, light, false);
+                ToggleBlinkingLight(light, false);
             });
 
             args.Handled = true;
         }
 
-        private void OnPowerChanged(EntityUid uid, PoweredLightComponent component, ref PowerChangedEvent args)
+        private void OnPowerChanged(EntityUid uid, PoweredLightComponent component, PowerChangedEvent args)
         {
             UpdateLight(uid, component);
         }
 
-        public void ToggleBlinkingLight(EntityUid uid, PoweredLightComponent light, bool isNowBlinking)
+        public void ToggleBlinkingLight(PoweredLightComponent light, bool isNowBlinking)
         {
             if (light.IsBlinking == isNowBlinking)
                 return;
@@ -360,8 +361,7 @@ namespace Content.Server.Light.EntitySystems
 
             if (!EntityManager.TryGetComponent(light.Owner, out AppearanceComponent? appearance))
                 return;
-
-            _appearance.SetData(uid, PoweredLightVisuals.Blinking, isNowBlinking, appearance);
+            appearance.SetData(PoweredLightVisuals.Blinking, isNowBlinking);
         }
 
         private void OnSignalReceived(EntityUid uid, PoweredLightComponent component, SignalReceivedEvent args)

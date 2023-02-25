@@ -2,32 +2,33 @@
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Xenoarchaeology.XenoArtifacts.Effects.Components;
 using Content.Server.Xenoarchaeology.XenoArtifacts.Events;
+using Robust.Shared.Random;
 
 namespace Content.Server.Xenoarchaeology.XenoArtifacts.Effects.Systems;
 
 public sealed class GasArtifactSystem : EntitySystem
 {
     [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
+    [Dependency] private readonly IRobustRandom _random = default!;
 
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<GasArtifactComponent, ArtifactNodeEnteredEvent>(OnNodeEntered);
+        SubscribeLocalEvent<GasArtifactComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<GasArtifactComponent, ArtifactActivatedEvent>(OnActivate);
     }
 
-    private void OnNodeEntered(EntityUid uid, GasArtifactComponent component, ArtifactNodeEnteredEvent args)
+    private void OnMapInit(EntityUid uid, GasArtifactComponent component, MapInitEvent args)
     {
-        if (component.SpawnGas == null && component.PossibleGases.Count != 0)
+        if (component.SpawnGas == null && component.PossibleGases.Length != 0)
         {
-            var gas = component.PossibleGases[args.RandomSeed % component.PossibleGases.Count];
+            var gas = _random.Pick(component.PossibleGases);
             component.SpawnGas = gas;
         }
 
         if (component.SpawnTemperature == null)
         {
-            var temp = args.RandomSeed % component.MaxRandomTemperature - component.MinRandomTemperature +
-                       component.MinRandomTemperature;
+            var temp = _random.NextFloat(component.MinRandomTemperature, component.MaxRandomTemperature);
             component.SpawnTemperature = temp;
         }
     }
@@ -36,6 +37,8 @@ public sealed class GasArtifactSystem : EntitySystem
     {
         if (component.SpawnGas == null || component.SpawnTemperature == null)
             return;
+
+        var transform = Transform(uid);
 
         var environment = _atmosphereSystem.GetContainingMixture(uid, false, true);
         if (environment == null)

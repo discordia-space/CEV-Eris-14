@@ -1,5 +1,8 @@
 using Content.Shared.Damage;
+using Content.Shared.MobState.Components;
 using Content.Shared.Hands.EntitySystems;
+using Content.Shared.CharacterAppearance.Components;
+using Content.Shared.CharacterAppearance.Systems;
 using Content.Server.Disease.Components;
 using Content.Server.Body.Components;
 using Content.Server.Atmos.Components;
@@ -16,20 +19,15 @@ using Content.Server.Ghost.Roles.Components;
 using Content.Server.Hands.Components;
 using Content.Server.Mind.Commands;
 using Content.Server.Temperature.Components;
+using Content.Server.Weapon.Melee.Components;
+using Robust.Shared.Containers;
 using Content.Shared.Movement.Components;
+using Content.Shared.MobState;
 using Robust.Shared.Prototypes;
 using Content.Shared.Roles;
 using Content.Server.Traitor;
 using Content.Shared.Zombies;
-using Content.Shared.Popups;
 using Content.Server.Atmos.Miasma;
-using Content.Server.Humanoid;
-using Content.Server.IdentityManagement;
-using Content.Shared.Humanoid;
-using Content.Shared.Mobs;
-using Content.Shared.Movement.Systems;
-using Content.Shared.Weapons.Melee;
-using Robust.Shared.Audio;
 
 namespace Content.Server.Zombies
 {
@@ -46,9 +44,7 @@ namespace Content.Server.Zombies
         [Dependency] private readonly BloodstreamSystem _bloodstream = default!;
         [Dependency] private readonly ServerInventorySystem _serverInventory = default!;
         [Dependency] private readonly DamageableSystem _damageable = default!;
-        [Dependency] private readonly HumanoidAppearanceSystem _sharedHuApp = default!;
-        [Dependency] private readonly IdentitySystem _identity = default!;
-        [Dependency] private readonly MovementSpeedModifierSystem _movementSpeedModifier = default!;
+        [Dependency] private readonly SharedHumanoidAppearanceSystem _sharedHuApp = default!;
         [Dependency] private readonly IChatManager _chatMan = default!;
         [Dependency] private readonly IPrototypeManager _proto = default!;
 
@@ -64,8 +60,8 @@ namespace Content.Server.Zombies
         /// </summary>
         private void OnDamageChanged(EntityUid uid, ZombifyOnDeathComponent component, MobStateChangedEvent args)
         {
-            if (args.NewMobState == MobState.Dead ||
-                args.NewMobState == MobState.Critical)
+            if (args.CurrentMobState.IsDead() ||
+                args.CurrentMobState.IsCritical())
             {
                 ZombifyEntity(uid);
             }
@@ -79,7 +75,7 @@ namespace Content.Server.Zombies
         /// <remarks>
         ///     ALRIGHT BIG BOY. YOU'VE COME TO THE LAYER OF THE BEAST. THIS IS YOUR WARNING.
         ///     This function is the god function for zombie stuff, and it is cursed. I have
-        ///     attempted to label everything thouroughly for your sanity. I have attempted to
+        ///     attempted to label everything thouroughly for your sanity. I have attempted to 
         ///     rewrite this, but this is how it shall lie eternal. Turn back now.
         ///     -emo
         /// </remarks>
@@ -92,8 +88,8 @@ namespace Content.Server.Zombies
             //you're a real zombie now, son.
             var zombiecomp = AddComp<ZombieComponent>(target);
 
-            //we need to basically remove all of these because zombies shouldn't
-            //get diseases, breath, be thirst, be hungry, or die in space
+            ///we need to basically remove all of these because zombies shouldn't
+            ///get diseases, breath, be thirst, be hungry, or die in space
             RemComp<DiseaseCarrierComponent>(target);
             RemComp<RespiratorComponent>(target);
             RemComp<BarotraumaComponent>(target);
@@ -102,63 +98,52 @@ namespace Content.Server.Zombies
 
             //funny voice
             EnsureComp<ReplacementAccentComponent>(target).Accent = "zombie";
-            var rotting = EnsureComp<RottingComponent>(target);
-            rotting.DealDamage = false;
+            EnsureComp<RottingComponent>(target);
 
-            //This is needed for stupid entities that fuck up combat mode component
-            //in an attempt to make an entity not attack. This is the easiest way to do it.
+            ///This is needed for stupid entities that fuck up combat mode component
+            ///in an attempt to make an entity not attack. This is the easiest way to do it.
             RemComp<CombatModeComponent>(target);
-            var combat = AddComp<CombatModeComponent>(target);
-            combat.IsInCombatMode = true;
+            AddComp<CombatModeComponent>(target);
 
-            //This is the actual damage of the zombie. We assign the visual appearance
-            //and range here because of stuff we'll find out later
+            ///This is the actual damage of the zombie. We assign the visual appearance
+            ///and range here because of stuff we'll find out later
             var melee = EnsureComp<MeleeWeaponComponent>(target);
-            melee.ClickAnimation = zombiecomp.AttackAnimation;
-            melee.WideAnimation = zombiecomp.AttackAnimation;
-            melee.Range = 1.5f;
-            Dirty(melee);
+            melee.Arc = zombiecomp.AttackArc;
+            melee.ClickArc = zombiecomp.AttackArc;
+            melee.Range = 0.75f;
 
             //We have specific stuff for humanoid zombies because they matter more
             if (TryComp<HumanoidAppearanceComponent>(target, out var huApComp)) //huapcomp
             {
-                //store some values before changing them in case the humanoid get cloned later
-                zombiecomp.BeforeZombifiedSkinColor = huApComp.SkinColor;
-                zombiecomp.BeforeZombifiedCustomBaseLayers = new(huApComp.CustomBaseLayers);
+                //this bs is done because you can't directly update humanoid appearances
+                var appearance = huApComp.Appearance;
+                appearance = appearance.WithSkinColor(zombiecomp.SkinColor).WithEyeColor(zombiecomp.EyeColor);
+                _sharedHuApp.UpdateAppearance(target, appearance, huApComp);
+                _sharedHuApp.ForceAppearanceUpdate(target, huApComp);
 
-                _sharedHuApp.SetSkinColor(target, zombiecomp.SkinColor, humanoid: huApComp);
-                _sharedHuApp.SetBaseLayerColor(target, HumanoidVisualLayers.Eyes, zombiecomp.EyeColor, humanoid: huApComp);
-
-                // this might not resync on clone?
-                _sharedHuApp.SetBaseLayerId(target, HumanoidVisualLayers.Tail, zombiecomp.BaseLayerExternal, humanoid: huApComp);
-                _sharedHuApp.SetBaseLayerId(target, HumanoidVisualLayers.HeadSide, zombiecomp.BaseLayerExternal, humanoid: huApComp);
-                _sharedHuApp.SetBaseLayerId(target, HumanoidVisualLayers.HeadTop, zombiecomp.BaseLayerExternal, humanoid: huApComp);
-                _sharedHuApp.SetBaseLayerId(target, HumanoidVisualLayers.Snout, zombiecomp.BaseLayerExternal, humanoid: huApComp);
-
-                //This is done here because non-humanoids shouldn't get baller damage
-                //lord forgive me for the hardcoded damage
+                ///This is done here because non-humanoids shouldn't get baller damage
+                ///lord forgive me for the hardcoded damage
                 DamageSpecifier dspec = new();
                 dspec.DamageDict.Add("Slash", 13);
                 dspec.DamageDict.Add("Piercing", 7);
-                dspec.DamageDict.Add("Structural", 10);
                 melee.Damage = dspec;
             }
 
             //The zombie gets the assigned damage weaknesses and strengths
             _damageable.SetDamageModifierSetId(target, "Zombie");
 
-            //This makes it so the zombie doesn't take bloodloss damage.
-            //NOTE: they are supposed to bleed, just not take damage
+            ///This makes it so the zombie doesn't take bloodloss damage.
+            ///NOTE: they are supposed to bleed, just not take damage
             _bloodstream.SetBloodLossThreshold(target, 0f);
 
             //This is specifically here to combat insuls, because frying zombies on grilles is funny as shit.
             _serverInventory.TryUnequip(target, "gloves", true, true);
 
             //popup
-            _popupSystem.PopupEntity(Loc.GetString("zombie-transform", ("target", target)), target, PopupType.LargeCaution);
+            _popupSystem.PopupEntity(Loc.GetString("zombie-transform", ("target", target)), target, Filter.Pvs(target));
 
             //Make it sentient if it's an animal or something
-            if (!HasComp<InputMoverComponent>(target)) //this component is cursed and fucks shit up
+            if (!HasComp<SharedDummyInputMoverComponent>(target)) //this component is cursed and fucks shit up
                 MakeSentientCommand.MakeSentient(target, EntityManager);
 
             //Make the zombie not die in the cold. Good for space zombies
@@ -170,11 +155,8 @@ namespace Content.Server.Zombies
                 _damageable.SetAllDamage(damageablecomp, 0);
 
             //gives it the funny "Zombie ___" name.
-            var meta = MetaData(target);
-            zombiecomp.BeforeZombifiedEntityName = meta.EntityName;
-            meta.EntityName = Loc.GetString("zombie-name-prefix", ("target", meta.EntityName));
-
-            _identity.QueueIdentityUpdate(target);
+            if (TryComp<MetaDataComponent>(target, out var meta))
+                meta.EntityName = Loc.GetString("zombie-name-prefix", ("target", meta.EntityName));
 
             //He's gotta have a mind
             var mindcomp = EnsureComp<MindComponent>(target);
@@ -195,8 +177,8 @@ namespace Content.Server.Zombies
                 ghostcomp.RoleRules = Loc.GetString("zombie-role-rules");
             }
 
-            //Goes through every hand, drops the items in it, then removes the hand
-            //may become the source of various bugs.
+            ///Goes through every hand, drops the items in it, then removes the hand
+            ///may become the source of various bugs. 
             foreach (var hand in _sharedHands.EnumerateHands(target))
             {
                 _sharedHands.SetActiveHand(target, hand);
@@ -207,8 +189,6 @@ namespace Content.Server.Zombies
 
             //zombie gamemode stuff
             RaiseLocalEvent(new EntityZombifiedEvent(target));
-            //zombies get slowdown once they convert
-            _movementSpeedModifier.RefreshMovementSpeedModifiers(target);
         }
     }
 }

@@ -1,8 +1,7 @@
 using Content.Server.Light.Components;
 using Content.Shared.Destructible;
-using Content.Shared.Light.Component;
+using Content.Shared.Light;
 using Content.Shared.Throwing;
-using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Player;
 
@@ -10,8 +9,6 @@ namespace Content.Server.Light.EntitySystems
 {
     public sealed class LightBulbSystem : EntitySystem
     {
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
-
         public override void Initialize()
         {
             base.Initialize();
@@ -28,7 +25,7 @@ namespace Content.Server.Light.EntitySystems
             SetState(uid, bulb.State, bulb);
         }
 
-        private void HandleLand(EntityUid uid, LightBulbComponent bulb, ref LandEvent args)
+        private void HandleLand(EntityUid uid, LightBulbComponent bulb, LandEvent args)
         {
             PlayBreakSound(uid, bulb);
             SetState(uid, LightBulbState.Broken, bulb);
@@ -78,8 +75,8 @@ namespace Content.Server.Light.EntitySystems
                 return;
 
             // try to update appearance and color
-            _appearance.SetData(uid, LightBulbVisuals.State, bulb.State, appearance);
-            _appearance.SetData(uid, LightBulbVisuals.Color, bulb.Color, appearance);
+            appearance.SetData(LightBulbVisuals.State, bulb.State);
+            appearance.SetData(LightBulbVisuals.Color, bulb.Color);
         }
     }
 }

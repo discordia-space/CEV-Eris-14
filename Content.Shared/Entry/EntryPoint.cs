@@ -1,9 +1,10 @@
+using Content.Shared.CharacterAppearance;
 using Content.Shared.Chemistry.Reaction;
 using Content.Shared.Chemistry.Reagent;
-using Content.Shared.Humanoid.Markings;
 using Content.Shared.IoC;
 using Content.Shared.Localizations;
 using Content.Shared.Maps;
+using Content.Shared.Markings;
 using Robust.Shared;
 using Robust.Shared.Configuration;
 using Robust.Shared.ContentPack;
@@ -21,6 +22,8 @@ namespace Content.Shared.Entry
         {
             IoCManager.InjectDependencies(this);
             SharedContentIoC.Register();
+
+            Localization.Init();
         }
 
         public override void Init()
@@ -31,11 +34,14 @@ namespace Content.Shared.Entry
         {
             base.PostInit();
 
-            InitTileDefinitions();
+            _initTileDefinitions();
+            IoCManager.Resolve<SpriteAccessoryManager>().Initialize();
             IoCManager.Resolve<MarkingManager>().Initialize();
 
             var configMan = IoCManager.Resolve<IConfigurationManager>();
-#if DEBUG
+#if FULL_RELEASE
+            configMan.OverrideDefault(CVars.NetInterpRatio, 2);
+#else
             configMan.OverrideDefault(CVars.NetFakeLagMin, 0.075f);
             configMan.OverrideDefault(CVars.NetFakeLoss, 0.005f);
             configMan.OverrideDefault(CVars.NetFakeDuplicates, 0.005f);
@@ -44,19 +50,20 @@ namespace Content.Shared.Entry
             // just leaving this disabled.
             // configMan.OverrideDefault(CVars.NetFakeLagRand, 0.01f);
 #endif
+
         }
 
-        private void InitTileDefinitions()
+        private void _initTileDefinitions()
         {
             // Register space first because I'm a hard coding hack.
-            var spaceDef = _prototypeManager.Index<ContentTileDefinition>(ContentTileDefinition.SpaceID);
+            var spaceDef = _prototypeManager.Index<ContentTileDefinition>("space");
 
             _tileDefinitionManager.Register(spaceDef);
 
             var prototypeList = new List<ContentTileDefinition>();
             foreach (var tileDef in _prototypeManager.EnumeratePrototypes<ContentTileDefinition>())
             {
-                if (tileDef.ID == ContentTileDefinition.SpaceID)
+                if (tileDef.ID == "space")
                 {
                     continue;
                 }

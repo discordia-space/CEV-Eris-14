@@ -7,13 +7,13 @@ namespace Content.Shared.Atmos.Prototypes
     [Prototype("gas")]
     public sealed class GasPrototype : IPrototype
     {
-        [DataField("name")] public string Name { get; set; } = "";
+        [DataField("name")] public string Name { get; } = string.Empty;
 
         // TODO: Control gas amount necessary for overlay to appear
         // TODO: Add interfaces for gas behaviours e.g. breathing, burning
 
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         /// <summary>
@@ -44,10 +44,7 @@ namespace Content.Shared.Atmos.Prototypes
         /// <summary>
         ///     Visibility for this gas will be max after this value.
         /// </summary>
-        public float GasMolesVisibleMax => GasMolesVisible * GasVisibilityFactor;
-
-        [DataField("gasVisbilityFactor")]
-        public float GasVisibilityFactor = Atmospherics.FactorGasVisibleMax;
+        public float GasMolesVisibleMax => GasMolesVisible * Atmospherics.FactorGasVisibleMax;
 
         /// <summary>
         ///     If this reagent is in gas form, this is the path to the overlay that will be used to make the gas visible.
@@ -80,8 +77,5 @@ namespace Content.Shared.Atmos.Prototypes
         public string? Reagent { get; } = default!;
 
         [DataField("color")] public string Color { get; } = string.Empty;
-
-        [DataField("pricePerMole")]
-        public float PricePerMole { get; set; } = 0;
     }
 }

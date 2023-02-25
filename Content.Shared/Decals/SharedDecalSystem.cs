@@ -1,80 +1,94 @@
 using System.Diagnostics.CodeAnalysis;
+using Robust.Shared;
+using Robust.Shared.Configuration;
 using Robust.Shared.Map;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
-using static Content.Shared.Decals.DecalGridComponent;
 
 namespace Content.Shared.Decals
 {
     public abstract class SharedDecalSystem : EntitySystem
     {
         [Dependency] protected readonly IPrototypeManager PrototypeManager = default!;
+        [Dependency] private readonly IConfigurationManager _configurationManager = default!;
         [Dependency] protected readonly IMapManager MapManager = default!;
 
-        // Note that this constant is effectively baked into all map files, because of how they save the grid decal component.
-        // So if this ever needs changing, the maps need converting.
+        protected readonly Dictionary<EntityUid, Dictionary<uint, Vector2i>> ChunkIndex = new();
+
         public const int ChunkSize = 32;
         public static Vector2i GetChunkIndices(Vector2 coordinates) => new ((int) Math.Floor(coordinates.X / ChunkSize), (int) Math.Floor(coordinates.Y / ChunkSize));
+
+        private float _viewSize;
 
         public override void Initialize()
         {
             base.Initialize();
 
             SubscribeLocalEvent<GridInitializeEvent>(OnGridInitialize);
-            SubscribeLocalEvent<DecalGridComponent, ComponentStartup>(OnCompStartup);
+            _configurationManager.OnValueChanged(CVars.NetMaxUpdateRange, OnPvsRangeChanged, true);
+        }
+
+        public override void Shutdown()
+        {
+            base.Shutdown();
+            _configurationManager.UnsubValueChanged(CVars.NetMaxUpdateRange, OnPvsRangeChanged);
+        }
+
+        private void OnPvsRangeChanged(float obj)
+        {
+            _viewSize = obj * 2f;
         }
 
         private void OnGridInitialize(GridInitializeEvent msg)
         {
-            EnsureComp<DecalGridComponent>(msg.EntityUid);
-        }
-        
-        private void OnCompStartup(EntityUid uid, DecalGridComponent component, ComponentStartup args)
-        {
-            foreach (var (indices, decals) in component.ChunkCollection.ChunkCollection)
+            var comp = EntityManager.EnsureComponent<DecalGridComponent>(msg.EntityUid);
+            ChunkIndex[msg.EntityUid] = new();
+            foreach (var (indices, decals) in comp.ChunkCollection.ChunkCollection)
             {
-                foreach (var decalUid in decals.Decals.Keys)
+                foreach (var uid in decals.Keys)
                 {
-                    component.DecalIndex[decalUid] = indices;
+                    ChunkIndex[msg.EntityUid][uid] = indices;
                 }
             }
         }
 
-        protected Dictionary<Vector2i, DecalChunk>? ChunkCollection(EntityUid gridEuid, DecalGridComponent? comp = null)
+        protected DecalGridComponent.DecalGridChunkCollection DecalGridChunkCollection(EntityUid gridEuid) =>
+            Comp<DecalGridComponent>(gridEuid).ChunkCollection;
+        protected Dictionary<Vector2i, Dictionary<uint, Decal>> ChunkCollection(EntityUid gridEuid) => DecalGridChunkCollection(gridEuid).ChunkCollection;
+
+        protected virtual void DirtyChunk(EntityUid id, Vector2i chunkIndices) {}
+
+        protected bool RemoveDecalInternal(EntityUid gridId, uint uid)
         {
-            if (!Resolve(gridEuid, ref comp))
-                return null;
+            if (!RemoveDecalHook(gridId, uid)) return false;
 
-            return comp.ChunkCollection.ChunkCollection;
-        }
-
-        protected virtual void DirtyChunk(EntityUid id, Vector2i chunkIndices, DecalChunk chunk) {}
-
-        // internal, so that client/predicted code doesn't accidentally remove decals. There is a public server-side function.
-        protected bool RemoveDecalInternal(EntityUid gridId, uint decalId, [NotNullWhen(true)] out Decal? removed, DecalGridComponent? component = null)
-        {
-            removed = null;
-            if (!Resolve(gridId, ref component))
-                return false;
-
-            if (!component.DecalIndex.Remove(decalId, out var indices)
-                || !component.ChunkCollection.ChunkCollection.TryGetValue(indices, out var chunk)
-                || !chunk.Decals.Remove(decalId, out removed))
+            if (!ChunkIndex.TryGetValue(gridId, out var values) || !values.TryGetValue(uid, out var indices))
             {
                 return false;
             }
 
-            if (chunk.Decals.Count == 0)
-                component.ChunkCollection.ChunkCollection.Remove(indices);
+            var chunkCollection = ChunkCollection(gridId);
+            if (!chunkCollection.TryGetValue(indices, out var chunk) || !chunk.Remove(uid))
+            {
+                return false;
+            }
 
-            DirtyChunk(gridId, indices, chunk);
-            OnDecalRemoved(gridId, decalId, component, indices, chunk);
+            if (chunkCollection[indices].Count == 0)
+                chunkCollection.Remove(indices);
+
+            ChunkIndex[gridId].Remove(uid);
+            DirtyChunk(gridId, indices);
             return true;
         }
 
-        protected virtual void OnDecalRemoved(EntityUid gridId, uint decalId, DecalGridComponent component, Vector2i indices, DecalChunk chunk)
+        protected virtual bool RemoveDecalHook(EntityUid gridId, uint uid) => true;
+
+        protected (Box2 view, MapId mapId) CalcViewBounds(in EntityUid euid, TransformComponent xform)
         {
-            // used by client-side overlay code
+            var view = Box2.UnitCentered.Scale(_viewSize).Translated(xform.WorldPosition);
+            var map = xform.MapID;
+
+            return (view, map);
         }
     }
 

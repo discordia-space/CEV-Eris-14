@@ -7,7 +7,7 @@ namespace Content.Shared.Tools
     [Prototype("tool")]
     public sealed class ToolQualityPrototype : IPrototype
     {
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         /// <summary>

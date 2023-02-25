@@ -16,6 +16,7 @@ namespace Content.Server.Nutrition.Components
     [RegisterComponent]
     public sealed class ThirstComponent : Component
     {
+
         // Base stuff
         [ViewVariables(VVAccess.ReadWrite)]
         [DataField("baseDecayRate")]
@@ -31,10 +32,8 @@ namespace Content.Server.Nutrition.Components
         public ThirstThreshold LastThirstThreshold;
 
         [ViewVariables(VVAccess.ReadWrite)]
-        [DataField("startingThirst")]
-        public float CurrentThirst = -1f;
+        public float CurrentThirst;
 
-        [DataField("thresholds")]
         public Dictionary<ThirstThreshold, float> ThirstThresholds { get; } = new()
         {
             {ThirstThreshold.OverHydrated, 600.0f},
@@ -46,6 +45,7 @@ namespace Content.Server.Nutrition.Components
 
         public static readonly Dictionary<ThirstThreshold, AlertType> ThirstThresholdAlertTypes = new()
         {
+            {ThirstThreshold.OverHydrated, AlertType.Overhydrated},
             {ThirstThreshold.Thirsty, AlertType.Thirsty},
             {ThirstThreshold.Parched, AlertType.Parched},
             {ThirstThreshold.Dead, AlertType.Parched},

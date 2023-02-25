@@ -30,7 +30,7 @@ public sealed partial class AdminNotesLine : BoxContainer
     public string EditText => _edit?.Text ?? OriginalMessage;
 
     public event Action<AdminNotesLine>? OnSubmitted;
-    public event Func<AdminNotesLine, bool>? OnClicked;
+    public event Func<AdminNotesLine, bool>? OnRightClicked;
 
     private void AddLabel()
     {
@@ -92,7 +92,7 @@ public sealed partial class AdminNotesLine : BoxContainer
             return;
         }
 
-        if (OnClicked?.Invoke(this) == true)
+        if (OnRightClicked?.Invoke(this) == true)
         {
             args.Handle();
         }
@@ -137,6 +137,6 @@ public sealed partial class AdminNotesLine : BoxContainer
         }
 
         OnSubmitted = null;
-        OnClicked = null;
+        OnRightClicked = null;
     }
 }

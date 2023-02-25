@@ -1,5 +1,6 @@
 using Content.Client.Changelog;
 using Content.Client.Credits;
+using Content.Client.Links;
 using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Shared.IoC;

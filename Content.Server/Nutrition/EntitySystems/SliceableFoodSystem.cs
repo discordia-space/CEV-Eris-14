@@ -59,21 +59,17 @@ namespace Content.Server.Nutrition.EntitySystems
             var sliceUid = EntityManager.SpawnEntity(component.Slice, transform.Coordinates);
 
             var lostSolution = _solutionContainerSystem.SplitSolution(uid, solution,
-                solution.Volume / FixedPoint2.New(component.Count));
+                solution.CurrentVolume / FixedPoint2.New(component.Count));
 
             // Fill new slice
             FillSlice(sliceUid, lostSolution);
 
-            var inCont = _containerSystem.IsEntityInContainer(component.Owner);
-            if (inCont)
+            if (EntityManager.TryGetComponent(user, out HandsComponent? handsComponent))
             {
-                _handsSystem.PickupOrDrop(user, sliceUid);
-            }
-            else
-            {
-                var xform = Transform(sliceUid);
-                _containerSystem.AttachParentToContainerOrGrid(xform);
-                xform.LocalRotation = 0;
+                if (_containerSystem.IsEntityInContainer(component.Owner))
+                {
+                    _handsSystem.PickupOrDrop(user, sliceUid, handsComp: handsComponent);
+                }
             }
 
             SoundSystem.Play(component.Sound.GetSound(), Filter.Pvs(uid),
@@ -88,26 +84,15 @@ namespace Content.Server.Nutrition.EntitySystems
             }
 
             // Split last slice
-            if (component.Count > 1)
-                return true;
+            if (component.Count == 1) {
+                var lastSlice = EntityManager.SpawnEntity(component.Slice, transform.Coordinates);
 
-            sliceUid = EntityManager.SpawnEntity(component.Slice, transform.Coordinates);
+                // Fill last slice with the rest of the solution
+                FillSlice(lastSlice, solution);
 
-            // Fill last slice with the rest of the solution
-            FillSlice(sliceUid, solution);
-
-            if (inCont)
-            {
-                _handsSystem.PickupOrDrop(user, sliceUid);
-            }
-            else
-            {
-                var xform = Transform(sliceUid);
-                _containerSystem.AttachParentToContainerOrGrid(xform);
-                xform.LocalRotation = 0;
+                EntityManager.DeleteEntity(uid);
             }
 
-            EntityManager.DeleteEntity(uid);
             return true;
         }
 

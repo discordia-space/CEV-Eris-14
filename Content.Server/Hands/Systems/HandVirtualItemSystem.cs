@@ -2,7 +2,6 @@ using Content.Shared.Hands;
 using Content.Shared.Hands.Components;
 using Content.Shared.Hands.EntitySystems;
 using JetBrains.Annotations;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Content.Server.Hands.Systems
 {
@@ -11,21 +10,16 @@ namespace Content.Server.Hands.Systems
     {
         [Dependency] private readonly SharedHandsSystem _handsSystem = default!;
 
-        public bool TrySpawnVirtualItemInHand(EntityUid blockingEnt, EntityUid user) => TrySpawnVirtualItemInHand(blockingEnt, user, out _);
-
-        public bool TrySpawnVirtualItemInHand(EntityUid blockingEnt, EntityUid user, [NotNullWhen(true)] out EntityUid? virtualItem)
+        public bool TrySpawnVirtualItemInHand(EntityUid blockingEnt, EntityUid user)
         {
             if (!_handsSystem.TryGetEmptyHand(user, out var hand))
-            {
-                virtualItem = null;
                 return false;
-            }
 
             var pos = EntityManager.GetComponent<TransformComponent>(user).Coordinates;
-            virtualItem = EntityManager.SpawnEntity("HandVirtualItem", pos);
-            var virtualItemComp = EntityManager.GetComponent<HandVirtualItemComponent>(virtualItem.Value);
+            var virtualItem = EntityManager.SpawnEntity("HandVirtualItem", pos);
+            var virtualItemComp = EntityManager.GetComponent<HandVirtualItemComponent>(virtualItem);
             virtualItemComp.BlockingEntity = blockingEnt;
-            _handsSystem.DoPickup(user, hand, virtualItem.Value);
+            _handsSystem.DoPickup(user, hand, virtualItem);
             return true;
         }
 

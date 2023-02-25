@@ -19,13 +19,12 @@
     sprite: Structures/Furniture/furniture.rsi
     state: rack
     netsync: false
-    snapCardinals: true
   - type: Fixtures
     fixtures:
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.3,-0.3,0.3,0.3"
-      density: 140
+      mass: 50
       mask:
       - MachineMask
       layer:
@@ -50,5 +49,3 @@
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
   - type: Climbable
-  - type: StaticPrice
-    price: 150

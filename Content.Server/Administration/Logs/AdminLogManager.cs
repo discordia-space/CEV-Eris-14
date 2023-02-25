@@ -24,7 +24,6 @@ public sealed partial class AdminLogManager : SharedAdminLogManager, IAdminLogMa
     [Dependency] private readonly IGameTiming _timing = default!;
     [Dependency] private readonly IDynamicTypeFactory _typeFactory = default!;
     [Dependency] private readonly IReflectionManager _reflection = default!;
-    [Dependency] private readonly IDependencyCollection _dependencies = default!;
 
     public const string SawmillId = "admin.logs";
 
@@ -300,7 +299,7 @@ public sealed partial class AdminLogManager : SharedAdminLogManager, IAdminLogMa
         Add(type, LogImpact.Medium, ref handler);
     }
 
-    public async Task<List<SharedAdminLog>> All(LogFilter? filter = null, Func<List<SharedAdminLog>>? listProvider = null)
+    public async Task<List<SharedAdminLog>> All(LogFilter? filter = null)
     {
         if (TrySearchCache(filter, out var results))
         {
@@ -308,16 +307,7 @@ public sealed partial class AdminLogManager : SharedAdminLogManager, IAdminLogMa
         }
 
         var initialSize = Math.Min(filter?.Limit ?? 0, 1000);
-        List<SharedAdminLog> list;
-        if (listProvider != null)
-        {
-            list = listProvider();
-            list.EnsureCapacity(initialSize);
-        }
-        else
-        {
-            list = new List<SharedAdminLog>(initialSize);
-        }
+        var list = new List<SharedAdminLog>(initialSize);
 
         await foreach (var log in _db.GetAdminLogs(filter).WithCancellation(filter?.CancellationToken ?? default))
         {

@@ -19,8 +19,7 @@ namespace Content.Server.Destructible.Thresholds.Behaviors
         /// </summary>
         /// <param name="owner">Entity on which behavior is executed</param>
         /// <param name="system">system calling the behavior</param>
-        /// <param name="cause"></param>
-        public void Execute(EntityUid owner, DestructibleSystem system, EntityUid? cause = null)
+        public void Execute(EntityUid owner, DestructibleSystem system)
         {
             var solutionContainerSystem = EntitySystem.Get<SolutionContainerSystem>();
             var spillableSystem = EntitySystem.Get<SpillableSystem>();

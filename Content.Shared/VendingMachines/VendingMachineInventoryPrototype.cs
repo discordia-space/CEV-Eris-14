@@ -1,6 +1,5 @@
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
-using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Dictionary;
 
 namespace Content.Shared.VendingMachines
 {
@@ -8,16 +7,25 @@ namespace Content.Shared.VendingMachines
     public sealed class VendingMachineInventoryPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
-        [DataField("startingInventory", customTypeSerializer:typeof(PrototypeIdDictionarySerializer<uint, EntityPrototype>))]
+        [DataField("name")]
+        public string Name { get; } = string.Empty;
+
+        [DataField("animationDuration")]
+        public double AnimationDuration { get; }
+
+        [DataField("spriteName")]
+        public string SpriteName { get; } = string.Empty;
+
+        [DataField("startingInventory")]
         public Dictionary<string, uint> StartingInventory { get; } = new();
 
-        [DataField("emaggedInventory", customTypeSerializer:typeof(PrototypeIdDictionarySerializer<uint, EntityPrototype>))]
+        [DataField("emaggedInventory")]
         public Dictionary<string, uint>? EmaggedInventory { get; }
 
-        [DataField("contrabandInventory", customTypeSerializer:typeof(PrototypeIdDictionarySerializer<uint, EntityPrototype>))]
+        [DataField("contrabandInventory")]
         public Dictionary<string, uint>? ContrabandInventory { get; }
     }
 }

@@ -1,8 +1,7 @@
 using Content.Shared.Actions.ActionTypes;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.GameStates;
 using Robust.Shared.Map;
-using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 
 namespace Content.Shared.Weapons.Ranged.Components;
 
@@ -33,13 +32,13 @@ public class GunComponent : Component
     /// Last time the gun fired.
     /// Used for recoil purposes.
     /// </summary>
-    [DataField("lastFire")]
+    [ViewVariables, DataField("lastFire")]
     public TimeSpan LastFire = TimeSpan.Zero;
 
     /// <summary>
     /// What the current spread is for shooting. This gets changed every time the gun fires.
     /// </summary>
-    [DataField("currentAngle")]
+    [ViewVariables, DataField("currentAngle")]
     public Angle CurrentAngle;
 
     /// <summary>
@@ -51,7 +50,7 @@ public class GunComponent : Component
     /// <summary>
     /// How much the <see cref="CurrentAngle"/> decreases per second.
     /// </summary>
-    [DataField("angleDecay")]
+    [ViewVariables, DataField("angleDecay")]
     public Angle AngleDecay = Angle.FromDegrees(4);
 
     /// <summary>
@@ -87,16 +86,10 @@ public class GunComponent : Component
     public float FireRate = 8f;
 
     /// <summary>
-    /// How fast the projectile moves.
-    /// </summary>
-    [ViewVariables(VVAccess.ReadWrite), DataField("projectileSpeed")]
-    public float ProjectileSpeed = 25f;
-
-    /// <summary>
     /// When the gun is next available to be shot.
     /// Can be set multiple times in a single tick due to guns firing faster than a single tick time.
     /// </summary>
-    [DataField("nextFire", customTypeSerializer:typeof(TimeOffsetSerializer))]
+    [ViewVariables, DataField("nextFire")]
     public TimeSpan NextFire = TimeSpan.Zero;
 
     /// <summary>
@@ -113,13 +106,6 @@ public class GunComponent : Component
 
     [DataField("selectModeAction")]
     public InstantAction? SelectModeAction;
-
-    /// <summary>
-    /// Whether or not information about
-    /// the gun will be shown on examine.
-    /// </summary>
-    [DataField("showExamineText")]
-    public bool ShowExamineText = true;
 }
 
 [Flags]

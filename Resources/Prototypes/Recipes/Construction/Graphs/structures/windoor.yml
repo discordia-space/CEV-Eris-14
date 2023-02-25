@@ -112,7 +112,6 @@
       - !type:AirlockBolted
         value: false
       - !type:WirePanel {}
-      - !type:AllWiresCut
       completed:
       - !type:EmptyAllContainers {}
       steps:
@@ -213,7 +212,6 @@
       - !type:WirePanel {}
       - !type:ContainerNotEmpty # TODO ShadowCommander: Remove when map gets updated
         container: board
-      - !type:AllWiresCut
       completed:
       - !type:EmptyAllContainers {}
       steps:

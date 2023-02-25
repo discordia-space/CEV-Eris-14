@@ -1,8 +1,10 @@
-﻿using Content.Client.Atmos.EntitySystems;
+﻿using System;
+using Content.Client.Atmos.EntitySystems;
 using Content.Shared.Atmos;
 using Content.Shared.Atmos.Piping.Trinary.Components;
 using JetBrains.Annotations;
 using Robust.Client.GameObjects;
+using Robust.Shared.GameObjects;
 
 namespace Content.Client.Atmos.UI
 {
@@ -16,7 +18,7 @@ namespace Content.Client.Atmos.UI
         private GasFilterWindow? _window;
         private const float MaxTransferRate = Atmospherics.MaxTransferRate;
 
-        public GasFilterBoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey)
+        public GasFilterBoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey)
         {
         }
 
@@ -24,7 +26,7 @@ namespace Content.Client.Atmos.UI
         {
             base.Open();
 
-            var atmosSystem = IoCManager.Resolve<IEntitySystemManager>().GetEntitySystem<AtmosphereSystem>();
+            var atmosSystem = EntitySystem.Get<AtmosphereSystem>();
 
             _window = new GasFilterWindow(atmosSystem.Gases);
 
@@ -56,16 +58,9 @@ namespace Content.Client.Atmos.UI
 
         private void OnSelectGasPressed()
         {
-            if (_window is null) return;
-            if (_window.SelectedGas is null)
-            {
-                SendMessage(new GasFilterSelectGasMessage(null));
-            }
-            else
-            {
-                if (!int.TryParse(_window.SelectedGas, out var gas)) return;
-                SendMessage(new GasFilterSelectGasMessage(gas));
-            }
+            if (_window is null || _window.SelectedGas is null) return;
+            if (!Int32.TryParse(_window.SelectedGas, out var gas)) return;
+            SendMessage(new GasFilterSelectGasMessage(gas));
         }
 
         /// <summary>
@@ -83,14 +78,13 @@ namespace Content.Client.Atmos.UI
             _window.SetTransferRate(cast.TransferRate);
             if (cast.FilteredGas is not null)
             {
-                var atmos = IoCManager.Resolve<IEntitySystemManager>().GetEntitySystem<AtmosphereSystem>();
+                var atmos = EntitySystem.Get<AtmosphereSystem>();
                 var gas = atmos.GetGas((Gas) cast.FilteredGas);
-                var gasName = Loc.GetString(gas.Name);
-                _window.SetGasFiltered(gas.ID, gasName);
+                _window.SetGasFiltered(gas.ID, gas.Name);
             }
             else
             {
-                _window.SetGasFiltered(null, Loc.GetString("comp-gas-filter-ui-filter-gas-none"));
+                _window.SetGasFiltered(null, "None");
             }
         }
 

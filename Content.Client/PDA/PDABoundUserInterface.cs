@@ -1,27 +1,18 @@
-using Content.Client.CartridgeLoader;
-using Content.Shared.CartridgeLoader;
-using Content.Shared.CCVar;
+using Content.Client.Message;
 using Content.Shared.Containers.ItemSlots;
-using Content.Shared.CrewManifest;
 using Content.Shared.PDA;
 using JetBrains.Annotations;
 using Robust.Client.GameObjects;
-using Robust.Client.UserInterface;
-using Robust.Shared.Configuration;
 
 namespace Content.Client.PDA
 {
     [UsedImplicitly]
-    public sealed class PDABoundUserInterface : CartridgeLoaderBoundUserInterface
+    public sealed class PDABoundUserInterface : BoundUserInterface
     {
-        [Dependency] private readonly IEntityManager? _entityManager = default!;
-        [Dependency] private readonly IConfigurationManager _configManager = default!;
-
         private PDAMenu? _menu;
 
-        public PDABoundUserInterface(ClientUserInterfaceComponent owner, Enum uiKey) : base(owner, uiKey)
+        public PDABoundUserInterface(ClientUserInterfaceComponent owner, object uiKey) : base(owner, uiKey)
         {
-            IoCManager.InjectDependencies(this);
         }
 
         protected override void Open()
@@ -29,21 +20,12 @@ namespace Content.Client.PDA
             base.Open();
             SendMessage(new PDARequestUpdateInterfaceMessage());
             _menu = new PDAMenu();
-            _menu.OpenCenteredLeft();
+            _menu.OpenToLeft();
             _menu.OnClose += Close;
             _menu.FlashLightToggleButton.OnToggled += _ =>
             {
                 SendMessage(new PDAToggleFlashlightMessage());
             };
-
-            if (_configManager.GetCVar(CCVars.CrewManifestUnsecure))
-            {
-                _menu.CrewManifestButton.Visible = true;
-                _menu.CrewManifestButton.OnPressed += _ =>
-                {
-                    SendMessage(new CrewManifestOpenUiMessage());
-                };
-            }
 
             _menu.EjectIdButton.OnPressed += _ =>
             {
@@ -70,51 +52,51 @@ namespace Content.Client.PDA
                 SendMessage(new PDAShowRingtoneMessage());
             };
 
-            _menu.OnProgramItemPressed += ActivateCartridge;
-            _menu.OnInstallButtonPressed += InstallCartridge;
-            _menu.OnUninstallButtonPressed += UninstallCartridge;
-            _menu.ProgramCloseButton.OnPressed += _ => DeactivateActiveCartridge();
-
-            var borderColorComponent = GetBorderColorComponent();
-            if (borderColorComponent == null)
-                return;
-
-            _menu.BorderColor = borderColorComponent.BorderColor;
-            _menu.AccentHColor = borderColorComponent.AccentHColor;
-            _menu.AccentVColor = borderColorComponent.AccentVColor;
         }
 
         protected override void UpdateState(BoundUserInterfaceState state)
         {
             base.UpdateState(state);
 
-            if (state is not PDAUpdateState updateState)
+            if (_menu == null)
+            {
                 return;
+            }
 
-            _menu?.UpdateState(updateState);
+            switch (state)
+            {
+                case PDAUpdateState msg:
+                {
+                    _menu.FlashLightToggleButton.Pressed = msg.FlashlightEnabled;
+
+                    if (msg.PDAOwnerInfo.ActualOwnerName != null)
+                    {
+                        _menu.PdaOwnerLabel.SetMarkup(Loc.GetString("comp-pda-ui-owner",
+                            ("ActualOwnerName", msg.PDAOwnerInfo.ActualOwnerName)));
+                    }
+
+
+                    if (msg.PDAOwnerInfo.IdOwner != null || msg.PDAOwnerInfo.JobTitle != null)
+                    {
+                        _menu.IdInfoLabel.SetMarkup(Loc.GetString("comp-pda-ui",
+                            ("Owner",msg.PDAOwnerInfo.IdOwner ?? "Unknown"),
+                            ("JobTitle",msg.PDAOwnerInfo.JobTitle ?? "Unassigned")));
+                    }
+                    else
+                    {
+                        _menu.IdInfoLabel.SetMarkup(Loc.GetString("comp-pda-ui-blank"));
+                    }
+
+                    _menu.EjectIdButton.Visible = msg.PDAOwnerInfo.IdOwner != null || msg.PDAOwnerInfo.JobTitle != null;
+                    _menu.EjectPenButton.Visible = msg.HasPen;
+                    _menu.ActivateUplinkButton.Visible = msg.HasUplink;
+                    _menu.ActivateMusicButton.Visible = msg.CanPlayMusic;
+
+                    break;
+                }
+            }
         }
 
-
-        protected override void AttachCartridgeUI(Control cartridgeUIFragment, string? title)
-        {
-            _menu?.ProgramView.AddChild(cartridgeUIFragment);
-            _menu?.ToProgramView(title ?? Loc.GetString("comp-pda-io-program-fallback-title"));
-        }
-
-        protected override void DetachCartridgeUI(Control cartridgeUIFragment)
-        {
-            if (_menu is null)
-                return;
-
-            _menu.ToHomeScreen();
-            _menu.HideProgramHeader();
-            _menu.ProgramView.RemoveChild(cartridgeUIFragment);
-        }
-
-        protected override void UpdateAvailablePrograms(List<(EntityUid, CartridgeComponent)> programs)
-        {
-            _menu?.UpdateAvailablePrograms(programs);
-        }
 
         protected override void Dispose(bool disposing)
         {
@@ -123,11 +105,6 @@ namespace Content.Client.PDA
                 return;
 
             _menu?.Dispose();
-        }
-
-        private PDABorderColorComponent? GetBorderColorComponent()
-        {
-            return _entityManager?.GetComponentOrNull<PDABorderColorComponent>(Owner.Owner);
         }
     }
 }

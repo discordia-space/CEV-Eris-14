@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Content.Client.Clickable;
 using NUnit.Framework;
-using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
+using Robust.Server.GameObjects;
 using Robust.Shared.GameObjects;
+using Robust.Shared.Map;
 
 namespace Content.IntegrationTests.Tests
 {
@@ -53,15 +54,13 @@ namespace Content.IntegrationTests.Tests
             var clientEntManager = client.ResolveDependency<IEntityManager>();
             var serverEntManager = server.ResolveDependency<IEntityManager>();
             var eyeManager = client.ResolveDependency<IEyeManager>();
-            var spriteQuery = clientEntManager.GetEntityQuery<SpriteComponent>();
-            var xformQuery = clientEntManager.GetEntityQuery<TransformComponent>();
-            var eye = client.ResolveDependency<IEyeManager>().CurrentEye;
 
             var testMap = await PoolManager.CreateTestMap(pairTracker);
             await server.WaitPost(() =>
             {
                 var ent = serverEntManager.SpawnEntity(prototype, testMap.GridCoords);
                 serverEntManager.GetComponent<TransformComponent>(ent).WorldRotation = angle;
+                serverEntManager.GetComponent<SpriteComponent>(ent).Scale = (scale, scale);
                 entity = ent;
             });
 
@@ -72,16 +71,13 @@ namespace Content.IntegrationTests.Tests
 
             await client.WaitPost(() =>
             {
-                var sprite = spriteQuery.GetComponent(entity);
-                sprite.Scale = (scale, scale);
-
                 // these tests currently all assume player eye is 0
                 eyeManager.CurrentEye.Rotation = 0;
 
                 var pos = clientEntManager.GetComponent<TransformComponent>(entity).WorldPosition;
                 var clickable = clientEntManager.GetComponent<ClickableComponent>(entity);
 
-                hit = clickable.CheckClick(sprite, xformQuery.GetComponent(entity), xformQuery, (clickPosX, clickPosY) + pos, eye, out _, out _, out _);
+                hit = clickable.CheckClick((clickPosX, clickPosY) + pos, out _, out _);
             });
 
             await server.WaitPost(() =>

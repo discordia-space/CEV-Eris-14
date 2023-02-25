@@ -29,21 +29,6 @@
       - state: pillbox
 
 - type: entity
-  name: bottle box
-  parent: BoxCardboard
-  id: BoxBottle
-  description: A box full of bottles.
-  components:
-  - type: StorageFill
-    contents:
-      - id: ChemistryEmptyBottle01
-        amount: 6
-  - type: Sprite
-    layers:
-      - state: box
-      - state: bottle
-
-- type: entity
   name: sterile mask box
   parent: BoxCardboard
   id: BoxSterileMask
@@ -52,7 +37,7 @@
   - type: StorageFill
     contents:
       - id: ClothingMaskSterile
-        amount: 6
+        amount: 4
   - type: Sprite
     layers:
       - state: box
@@ -89,7 +74,7 @@
       - state: nitrile
 
 - type: entity
-  name: sterile swab box
+  name: mouth swab box
   parent: BoxCardboard
   id: BoxMouthSwab
   components:

@@ -1,7 +1,6 @@
 using Robust.Shared.Serialization;
 using Robust.Shared.Utility;
 using Content.Shared.Database;
-using Content.Shared.Interaction.Events;
 
 namespace Content.Shared.Verbs
 {
@@ -132,9 +131,7 @@ namespace Content.Shared.Verbs
         ///     Setting this to false may be useful for repeatable actions, like rotating an object or maybe knocking on
         ///     a window.
         /// </remarks>
-        public bool? CloseMenu;
-
-        public virtual bool CloseMenuDefault => true;
+        public bool CloseMenu = true;
 
         /// <summary>
         ///     How important is this verb, for the purposes of admin logging?
@@ -148,15 +145,6 @@ namespace Content.Shared.Verbs
         ///     Whether this verb requires confirmation before being executed.
         /// </summary>
         public bool ConfirmationPopup = false;
-
-        /// <summary>
-        ///     If true, this verb will raise <see cref="ContactInteractionEvent"/>s when executed. If not explicitly
-        ///     specified, this will just default to raising the event if <see cref="DefaultDoContactInteraction"/> is
-        ///     true and the user is in range.
-        /// </summary>
-        public bool? DoContactInteraction;
-
-        public virtual bool DefaultDoContactInteraction => false;
 
         /// <summary>
         ///     Compares two verbs based on their <see cref="Priority"/>, <see cref="Category"/>, <see cref="Text"/>,
@@ -247,7 +235,6 @@ namespace Content.Shared.Verbs
     {
         public new static string DefaultTextStyleClass = "InteractionVerb";
         public override int TypePriority => 4;
-        public override bool DefaultDoContactInteraction => true;
 
         public InteractionVerb() : base()
         {
@@ -269,7 +256,6 @@ namespace Content.Shared.Verbs
     public sealed class UtilityVerb : Verb
     {
         public override int TypePriority => 3;
-        public override bool DefaultDoContactInteraction => true;
 
         public UtilityVerb() : base()
         {
@@ -284,7 +270,7 @@ namespace Content.Shared.Verbs
     /// <remarks>
     ///     Add a component to the user's entity and sub to the get verbs event
     ///     and it'll appear in the verbs menu on any target.
-    /// </remarks>
+    /// </summary>
     [Serializable, NetSerializable]
     public sealed class InnateVerb : Verb
     {
@@ -307,7 +293,6 @@ namespace Content.Shared.Verbs
     {
         public override int TypePriority => 2;
         public new static string DefaultTextStyleClass = "AlternativeVerb";
-        public override bool DefaultDoContactInteraction => true;
 
         public AlternativeVerb() : base()
         {
@@ -329,7 +314,6 @@ namespace Content.Shared.Verbs
     {
         public override int TypePriority => 1;
         public new static string DefaultTextStyleClass = "ActivationVerb";
-        public override bool DefaultDoContactInteraction => true;
 
         public ActivationVerb() : base()
         {
@@ -341,7 +325,6 @@ namespace Content.Shared.Verbs
     public sealed class ExamineVerb : Verb
     {
         public override int TypePriority => 0;
-        public override bool CloseMenuDefault => false; // for examine verbs, this will close the examine tooltip.
 
         public bool ShowOnExamineTooltip = true;
     }

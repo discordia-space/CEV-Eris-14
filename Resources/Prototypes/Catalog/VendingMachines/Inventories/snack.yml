@@ -1,5 +1,8 @@
 - type: vendingMachineInventory
   id: GetmoreChocolateCorpInventory
+  name: Getmore Chocolate Corp
+  animationDuration: 0.5
+  spriteName: snack
   startingInventory:
     FoodSnackRaisins: 3
     FoodSnackChocolate: 3

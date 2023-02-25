@@ -6,11 +6,11 @@ namespace Content.Shared.Construction.Steps
     public sealed class TagConstructionGraphStep : ArbitraryInsertConstructionGraphStep
     {
         [DataField("tag")]
-        private string? _tag;
+        private string? _tag = null;
 
-        public override bool EntityValid(EntityUid uid, IEntityManager entityManager, IComponentFactory compFactory)
+        public override bool EntityValid(EntityUid uid, IEntityManager entityManager)
         {
-            var tagSystem = entityManager.EntitySysManager.GetEntitySystem<TagSystem>();
+            var tagSystem = EntitySystem.Get<TagSystem>();
             return !string.IsNullOrEmpty(_tag) && tagSystem.HasTag(uid, _tag);
         }
     }

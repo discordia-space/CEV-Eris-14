@@ -21,7 +21,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.45,-0.1,0.45,0.1"
-      density: 550
+      mass: 100
       mask:
       - MachineMask
       layer:
@@ -43,7 +43,6 @@
   id: SolarPanel
   parent: SolarPanelBasePhysSprite
   name: solar panel
-  description: A solar panel that generates power.
   components:
   - type: PowerSupplier
     supplyRampTolerance: 500
@@ -73,7 +72,6 @@
   id: SolarPanelBroken
   parent: SolarPanelBasePhysSprite
   name: solar panel
-  description: A broken solar panel.
   suffix: Broken
   components:
   - type: Sprite
@@ -117,7 +115,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.25
-      density: 375
+      mass: 75
       mask:
       - MachineMask
       layer:
@@ -148,7 +146,6 @@
 - type: entity
   id: SolarTracker
   name: solar tracker
-  description: A solar tracker. Tracks the nearest star.
   placement:
     mode: SnapgridCenter
   components:
@@ -160,7 +157,7 @@
     fixtures:
     - shape:
         !type:PhysShapeAabb {}
-      density: 100
+      mass: 100
       mask:
       - MachineMask
       layer:

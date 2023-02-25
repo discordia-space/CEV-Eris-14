@@ -5,6 +5,6 @@ namespace Content.Shared.Chemistry.Reaction;
 [Prototype("reactiveGroup")]
 public sealed class ReactiveGroupPrototype : IPrototype
 {
-    [IdDataField]
+    [IdDataFieldAttribute]
     public string ID { get; } = default!;
 }

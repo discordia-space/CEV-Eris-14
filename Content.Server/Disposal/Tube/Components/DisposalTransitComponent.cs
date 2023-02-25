@@ -1,4 +1,4 @@
-using Content.Server.Disposal.Unit.Components;
+﻿using Content.Server.Disposal.Unit.Components;
 
 namespace Content.Server.Disposal.Tube.Components
 {
@@ -9,8 +9,6 @@ namespace Content.Server.Disposal.Tube.Components
     [ComponentReference(typeof(DisposalTubeComponent))]
     public class DisposalTransitComponent : DisposalTubeComponent
     {
-        public override string ContainerId => "DisposalTransit";
-
         protected override Direction[] ConnectableDirections()
         {
             var rotation = IoCManager.Resolve<IEntityManager>().GetComponent<TransformComponent>(Owner).LocalRotation;

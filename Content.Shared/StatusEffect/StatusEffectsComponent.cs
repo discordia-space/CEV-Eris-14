@@ -1,4 +1,4 @@
-using Robust.Shared.GameStates;
+﻿using Robust.Shared.GameStates;
 using Robust.Shared.Serialization;
 
 namespace Content.Shared.StatusEffect
@@ -52,13 +52,6 @@ namespace Content.Shared.StatusEffect
             Cooldown = cooldown;
             CooldownRefresh = refresh;
             RelevantComponent = relevantComponent;
-        }
-
-        public StatusEffectState(StatusEffectState toCopy)
-        {
-            Cooldown = (toCopy.Cooldown.Item1, toCopy.Cooldown.Item2);
-            CooldownRefresh = toCopy.CooldownRefresh;
-            RelevantComponent = toCopy.RelevantComponent;
         }
     }
 

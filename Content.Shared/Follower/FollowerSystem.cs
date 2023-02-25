@@ -9,14 +9,12 @@ namespace Content.Shared.Follower;
 
 public sealed class FollowerSystem : EntitySystem
 {
-    [Dependency] private readonly SharedTransformSystem _transform = default!;
-
     public override void Initialize()
     {
         base.Initialize();
 
         SubscribeLocalEvent<GetVerbsEvent<AlternativeVerb>>(OnGetAlternativeVerbs);
-        SubscribeLocalEvent<FollowerComponent, MoveInputEvent>(OnFollowerMove);
+        SubscribeLocalEvent<FollowerComponent, RelayMoveInputEvent>(OnFollowerMove);
         SubscribeLocalEvent<FollowedComponent, EntityTerminatingEvent>(OnFollowedTerminating);
     }
 
@@ -25,7 +23,7 @@ public sealed class FollowerSystem : EntitySystem
         if (!HasComp<SharedGhostComponent>(ev.User))
             return;
 
-        if (ev.User == ev.Target || ev.Target.IsClientSide())
+        if (ev.User == ev.Target)
             return;
 
         var verb = new AlternativeVerb
@@ -43,7 +41,7 @@ public sealed class FollowerSystem : EntitySystem
         ev.Verbs.Add(verb);
     }
 
-    private void OnFollowerMove(EntityUid uid, FollowerComponent component, ref MoveInputEvent args)
+    private void OnFollowerMove(EntityUid uid, FollowerComponent component, RelayMoveInputEvent args)
     {
         StopFollowingEntity(uid, component.Following);
     }
@@ -73,7 +71,7 @@ public sealed class FollowerSystem : EntitySystem
         followedComp.Following.Add(follower);
 
         var xform = Transform(follower);
-        _transform.SetParent(follower, xform, entity);
+        xform.AttachParent(entity);
         xform.LocalPosition = Vector2.Zero;
         xform.LocalRotation = Angle.Zero;
 

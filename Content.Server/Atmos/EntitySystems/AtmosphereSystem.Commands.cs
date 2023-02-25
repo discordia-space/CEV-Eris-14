@@ -6,7 +6,6 @@ using Content.Shared.Atmos;
 using Content.Shared.Maps;
 using Robust.Shared.Console;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 
 namespace Content.Server.Atmos.EntitySystems;
 
@@ -73,7 +72,7 @@ public sealed partial class AtmosphereSystem
                return;
            }
 
-           if (!TryComp(euid, out MapGridComponent? gridComp))
+           if (!TryComp(euid, out IMapGridComponent? gridComp))
            {
                shell.WriteError($"Euid '{euid}' does not exist or is not a grid.");
                return;
@@ -101,7 +100,7 @@ public sealed partial class AtmosphereSystem
 
                tile.Clear();
                var mixtureId = 0;
-               foreach (var entUid in gridComp.GetAnchoredEntities(indices))
+               foreach (var entUid in gridComp.Grid.GetAnchoredEntities(indices))
                {
                    if (!TryComp(entUid, out AtmosFixMarkerComponent? afm))
                        continue;
@@ -123,18 +122,11 @@ public sealed partial class AtmosphereSystem
         if (shell.Player is { AttachedEntity: { } playerEnt })
             playerMap = Transform(playerEnt).MapID;
 
-        var options = new List<CompletionOption>();
-
-        if (playerMap == null)
-            return CompletionResult.FromOptions(options);
-
-        foreach (var grid in _mapManager.GetAllMapGrids(playerMap.Value).OrderBy(o => o.Owner))
-        {
-            if (!TryComp<TransformComponent>(grid.Owner, out var gridXform))
-                continue;
-
-            options.Add(new CompletionOption(grid.Owner.ToString(), $"{MetaData(grid.Owner).EntityName} - Map {gridXform.MapID}"));
-        }
+        var options = _mapManager.GetAllGrids()
+            .OrderByDescending(e => playerMap != null && e.ParentMapId == playerMap)
+            .ThenBy(e => (int) e.ParentMapId)
+            .ThenBy(e => (int) e.GridEntityId)
+            .Select(e => new CompletionOption(e.GridEntityId.ToString(), $"{MetaData(e.GridEntityId).EntityName} - Map {e.ParentMapId}"));
 
         return CompletionResult.FromOptions(options);
     }

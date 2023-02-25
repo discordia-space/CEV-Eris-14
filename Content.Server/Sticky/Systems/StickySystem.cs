@@ -1,4 +1,4 @@
-using Content.Server.DoAfter;
+﻿using Content.Server.DoAfter;
 using Content.Server.Popups;
 using Content.Server.Sticky.Components;
 using Content.Server.Sticky.Events;
@@ -6,7 +6,6 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Sticky.Components;
 using Content.Shared.Verbs;
-using Robust.Server.GameObjects;
 using Robust.Shared.Containers;
 using Robust.Shared.Player;
 
@@ -19,7 +18,6 @@ public sealed class StickySystem : EntitySystem
     [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
     [Dependency] private readonly SharedHandsSystem _handsSystem = default!;
     [Dependency] private readonly SharedInteractionSystem _interactionSystem = default!;
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
     private const string StickerSlotId = "stickers_container";
 
@@ -55,7 +53,6 @@ public sealed class StickySystem : EntitySystem
 
         args.Verbs.Add(new Verb
         {
-            DoContactInteraction = true,
             Text = Loc.GetString("comp-sticky-unstick-verb-text"),
             IconTexture = "/Textures/Interface/VerbIcons/eject.svg.192dpi.png",
             Act = () => StartUnsticking(uid, args.User, component)
@@ -81,7 +78,7 @@ public sealed class StickySystem : EntitySystem
             if (component.StickPopupStart != null)
             {
                 var msg = Loc.GetString(component.StickPopupStart);
-                _popupSystem.PopupEntity(msg, user, user);
+                _popupSystem.PopupEntity(msg, user, Filter.Entities(user));
             }
 
             // start sticking object to target
@@ -124,7 +121,7 @@ public sealed class StickySystem : EntitySystem
             if (component.UnstickPopupStart != null)
             {
                 var msg = Loc.GetString(component.UnstickPopupStart);
-                _popupSystem.PopupEntity(msg, user, user);
+                _popupSystem.PopupEntity(msg, user, Filter.Entities(user));
             }
 
             // start unsticking object
@@ -168,13 +165,13 @@ public sealed class StickySystem : EntitySystem
         if (component.StickPopupSuccess != null)
         {
             var msg = Loc.GetString(component.StickPopupSuccess);
-            _popupSystem.PopupEntity(msg, user, user);
+            _popupSystem.PopupEntity(msg, user, Filter.Entities(user));
         }
 
         // send information to appearance that entity is stuck
         if (TryComp(uid, out AppearanceComponent? appearance))
         {
-            _appearance.SetData(uid, StickyVisuals.IsStuck, true, appearance);
+            appearance.SetData(StickyVisuals.IsStuck, true);
         }
 
         component.StuckTo = target;
@@ -202,14 +199,14 @@ public sealed class StickySystem : EntitySystem
         // send information to appearance that entity isn't stuck
         if (TryComp(uid, out AppearanceComponent? appearance))
         {
-            _appearance.SetData(uid, StickyVisuals.IsStuck, false, appearance);
+            appearance.SetData(StickyVisuals.IsStuck, false);
         }
 
         // show message to user
         if (component.UnstickPopupSuccess != null)
         {
             var msg = Loc.GetString(component.UnstickPopupSuccess);
-            _popupSystem.PopupEntity(msg, user, user);
+            _popupSystem.PopupEntity(msg, user, Filter.Entities(user));
         }
 
         component.StuckTo = null;

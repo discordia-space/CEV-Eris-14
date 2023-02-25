@@ -1,36 +1,64 @@
-using Content.Server.Doors.Systems;
+using Content.Server.Doors.Components;
 using Content.Server.Wires;
 using Content.Shared.Doors;
-using Content.Shared.Doors.Components;
 using Content.Shared.Wires;
 
 namespace Content.Server.Doors;
 
-public sealed class DoorBoltLightWireAction : ComponentWireAction<AirlockComponent>
+[DataDefinition]
+public sealed class DoorBoltLightWireAction : BaseWireAction
 {
-    public override Color Color { get; set; } = Color.Lime;
-    public override string Name { get; set; } = "wire-name-bolt-light";
+    [DataField("color")]
+    private Color _statusColor = Color.Lime;
 
-    public override StatusLightState? GetLightState(Wire wire, AirlockComponent comp)
-        => comp.BoltLightsEnabled ? StatusLightState.On : StatusLightState.Off;
+    [DataField("name")]
+    private string _text = "BLIT";
+
+    public override StatusLightData? GetStatusLightData(Wire wire)
+    {
+        StatusLightState lightState = StatusLightState.Off;
+        if (IsPowered(wire.Owner) && EntityManager.TryGetComponent<AirlockComponent>(wire.Owner, out var door))
+        {
+            lightState = door.BoltLightsEnabled
+                ? StatusLightState.On
+                : StatusLightState.Off;
+        }
+
+        return new StatusLightData(
+            _statusColor,
+            lightState,
+            _text);
+    }
 
     public override object StatusKey { get; } = AirlockWireStatus.BoltLightIndicator;
 
-    public override bool Cut(EntityUid user, Wire wire, AirlockComponent door)
+    public override bool Cut(EntityUid user, Wire wire)
     {
-        EntityManager.System<AirlockSystem>().SetBoltLightsEnabled(wire.Owner, door, false);
+        if (EntityManager.TryGetComponent<AirlockComponent>(wire.Owner, out var door))
+        {
+            door.BoltLightsVisible = false;
+        }
+
         return true;
     }
 
-    public override bool Mend(EntityUid user, Wire wire, AirlockComponent door)
+    public override bool Mend(EntityUid user, Wire wire)
     {
+        if (EntityManager.TryGetComponent<AirlockComponent>(wire.Owner, out var door))
+        {
+            door.BoltLightsVisible = true;
+        }
 
-        EntityManager.System<AirlockSystem>().SetBoltLightsEnabled(wire.Owner, door, true);
         return true;
     }
 
-    public override void Pulse(EntityUid user, Wire wire, AirlockComponent door)
+    public override bool Pulse(EntityUid user, Wire wire)
     {
-        EntityManager.System<AirlockSystem>().SetBoltLightsEnabled(wire.Owner, door, !door.BoltLightsEnabled);
+        if (EntityManager.TryGetComponent<AirlockComponent>(wire.Owner, out var door))
+        {
+            door.BoltLightsVisible = !door.BoltLightsEnabled;
+        }
+
+        return true;
     }
 }

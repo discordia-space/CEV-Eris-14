@@ -24,14 +24,13 @@ namespace Content.Server.Singularity
             }
 
             var entityManager = IoCManager.Resolve<IEntityManager>();
-            var entitySystemManager = IoCManager.Resolve<IEntitySystemManager>();
             foreach (var comp in entityManager.EntityQuery<EmitterComponent>())
             {
-                entitySystemManager.GetEntitySystem<EmitterSystem>().SwitchOn(comp);
+                EntitySystem.Get<EmitterSystem>().SwitchOn(comp);
             }
             foreach (var comp in entityManager.EntityQuery<RadiationCollectorComponent>())
             {
-                entitySystemManager.GetEntitySystem<RadiationCollectorSystem>().SetCollectorEnabled(comp.Owner, true, null, comp);
+                EntitySystem.Get<RadiationCollectorSystem>().SetCollectorEnabled(comp.Owner, true, null, comp);
             }
             foreach (var comp in entityManager.EntityQuery<ParticleAcceleratorControlBoxComponent>())
             {

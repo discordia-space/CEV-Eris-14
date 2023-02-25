@@ -1,13 +1,11 @@
 using BenchmarkDotNet.Attributes;
-using Robust.Shared.Analyzers;
 using Robust.Shared.Maths;
 using Robust.Shared.Physics;
 
 namespace Content.Benchmarks
 {
     [SimpleJob, MemoryDiagnoser]
-    [Virtual]
-    public class DynamicTreeBenchmark
+    public sealed class DynamicTreeBenchmark
     {
         private static readonly Box2[] _aabbs1 =
         {

@@ -60,10 +60,6 @@
         },
         {
             "name": "inhand-right-4"
-        },
-		{
-			"name": "equipped-BELT",
-			"directions": 4
-		}
+        }
     ]
 }

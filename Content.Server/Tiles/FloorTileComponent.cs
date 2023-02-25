@@ -1,5 +1,5 @@
 using Content.Shared.Maps;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.List;
 
 namespace Content.Server.Tiles

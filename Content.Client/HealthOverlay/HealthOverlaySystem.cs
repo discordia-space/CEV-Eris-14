@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Content.Client.HealthOverlay.UI;
 using Content.Shared.Damage;
 using Content.Shared.GameTicking;
-using Content.Shared.Mobs.Components;
+using Content.Shared.MobState.Components;
 using JetBrains.Annotations;
 using Robust.Client.GameObjects;
 using Robust.Client.Graphics;

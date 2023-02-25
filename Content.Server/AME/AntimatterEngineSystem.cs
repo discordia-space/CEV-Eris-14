@@ -1,11 +1,9 @@
 using System.Linq;
-using Content.Server.Administration.Logs;
 using Content.Server.AME.Components;
 using Content.Server.Power.Components;
 using Content.Server.Hands.Components;
 using Content.Server.Popups;
 using Content.Server.Tools;
-using Content.Shared.Database;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
 using Robust.Shared.Map;
@@ -21,7 +19,6 @@ namespace Content.Server.AME
         [Dependency] private readonly IMapManager _mapManager = default!;
         [Dependency] private readonly PopupSystem _popupSystem = default!;
         [Dependency] private readonly ToolSystem _toolSystem = default!;
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
         private float _accumulatedFrameTime;
 
         private const float UpdateCooldown = 10f;
@@ -50,7 +47,7 @@ namespace Content.Server.AME
             }
         }
 
-        private static void OnAMEPowerChange(EntityUid uid, AMEControllerComponent component, ref PowerChangedEvent args)
+        private static void OnAMEPowerChange(EntityUid uid, AMEControllerComponent component, PowerChangedEvent args)
         {
             component.UpdateUserInterface();
         }
@@ -59,7 +56,7 @@ namespace Content.Server.AME
         {
             if (!TryComp(args.User, out HandsComponent? hands))
             {
-                _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-no-hands-text"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-no-hands-text"), uid, Filter.Entities(args.User));
                 return;
             }
 
@@ -67,20 +64,20 @@ namespace Content.Server.AME
             {
                 if (component.HasJar)
                 {
-                    _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-already-has-jar"), uid, args.User);
+                    _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-already-has-jar"), uid, Filter.Entities(args.User));
                 }
 
                 else
                 {
                     component.JarSlot.Insert(args.Used);
                     _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-success"), uid,
-                        args.User, PopupType.Medium);
+                        Filter.Entities(args.User), PopupType.Medium);
                     component.UpdateUserInterface();
                 }
             }
             else
             {
-                 _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-fail"), uid, args.User);
+                 _popupSystem.PopupEntity(Loc.GetString("ame-controller-component-interact-using-fail"), uid, Filter.Entities(args.User));
             }
         }
 
@@ -88,7 +85,7 @@ namespace Content.Server.AME
         {
             if (!HasComp<HandsComponent>(args.User))
             {
-                _popupSystem.PopupEntity(Loc.GetString("ame-part-component-interact-using-no-hands"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("ame-part-component-interact-using-no-hands"), uid, Filter.Entities(args.User));
                 return;
             }
 
@@ -101,13 +98,11 @@ namespace Content.Server.AME
             var snapPos = mapGrid.TileIndicesFor(args.ClickLocation);
             if (mapGrid.GetAnchoredEntities(snapPos).Any(sc => HasComp<AMEShieldComponent>(sc)))
             {
-                _popupSystem.PopupEntity(Loc.GetString("ame-part-component-shielding-already-present"), uid, args.User);
+                _popupSystem.PopupEntity(Loc.GetString("ame-part-component-shielding-already-present"), uid, Filter.Entities(args.User));
                 return;
             }
 
             var ent = EntityManager.SpawnEntity("AMEShielding", mapGrid.GridTileToLocal(snapPos));
-
-            _adminLogger.Add(LogType.Construction, LogImpact.Low, $"{ToPrettyString(args.User):player} unpacked {ToPrettyString(ent)} at {Transform(ent).Coordinates} from {ToPrettyString(uid)}");
 
             SoundSystem.Play(component.UnwrapSound.GetSound(), Filter.Pvs(uid), uid);
 

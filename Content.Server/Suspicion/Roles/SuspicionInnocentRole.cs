@@ -10,12 +10,12 @@ namespace Content.Server.Suspicion.Roles
         public SuspicionInnocentRole(Mind.Mind mind, AntagPrototype antagPrototype) : base(mind)
         {
             Prototype = antagPrototype;
-            Name = Loc.GetString(antagPrototype.Name);
+            Name = antagPrototype.Name;
             Antagonist = antagPrototype.Antagonist;
         }
 
         public override string Name { get; }
-        public string Objective => Loc.GetString(Prototype.Objective);
+        public string Objective => Prototype.Objective;
         public override bool Antagonist { get; }
 
         public override void Greet()

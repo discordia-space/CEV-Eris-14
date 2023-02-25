@@ -1,4 +1,4 @@
-using Content.Shared.Tag;
+﻿using Content.Shared.Tag;
 using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.List;
 
@@ -26,7 +26,6 @@ namespace Content.Shared.Whitelist
         ///     Component names that are allowed in the whitelist.
         /// </summary>
         [DataField("components")] public string[]? Components = null;
-        // TODO yaml validation
 
         [NonSerialized]
         private List<ComponentRegistration>? _registrations = null;
@@ -73,7 +72,7 @@ namespace Content.Shared.Whitelist
             if (Components != null && _registrations == null)
                 UpdateRegistrations();
 
-            IoCManager.Resolve(ref entityManager);
+            entityManager ??= IoCManager.Resolve<IEntityManager>();
             if (_registrations != null)
             {
                 foreach (var reg in _registrations)
@@ -90,7 +89,7 @@ namespace Content.Shared.Whitelist
 
             if (Tags != null && entityManager.TryGetComponent(uid, out TagComponent? tags))
             {
-                var tagSystem = entityManager.System<TagSystem>();
+                var tagSystem = EntitySystem.Get<TagSystem>();
                 return RequireAll ? tagSystem.HasAllTags(tags, Tags) : tagSystem.HasAnyTag(tags, Tags);
             }
 

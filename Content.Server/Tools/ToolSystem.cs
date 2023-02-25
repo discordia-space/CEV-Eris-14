@@ -1,39 +1,39 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Chemistry.EntitySystems;
 using Content.Server.DoAfter;
 using Content.Server.Popups;
 using Content.Shared.Audio;
-using Content.Shared.Item;
-using Content.Shared.Tools;
 using Content.Shared.Tools.Components;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Map;
 using Robust.Shared.Player;
-using System.Threading;
-using System.Threading.Tasks;
+using Robust.Shared.Prototypes;
 
 namespace Content.Server.Tools
 {
     // TODO move tool system to shared, and make it a friend of Tool Component.
-    public sealed partial class ToolSystem : SharedToolSystem
+    public sealed partial class ToolSystem : EntitySystem
     {
         [Dependency] private readonly ITileDefinitionManager _tileDefinitionManager = default!;
         [Dependency] private readonly IMapManager _mapManager = default!;
+        [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
         [Dependency] private readonly DoAfterSystem _doAfterSystem = default!;
         [Dependency] private readonly SolutionContainerSystem _solutionContainerSystem = default!;
         [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
         [Dependency] private readonly PopupSystem _popupSystem = default!;
         [Dependency] private readonly TransformSystem _transformSystem = default!;
-        [Dependency] private readonly SharedItemSystem _itemSystem = default!;
+
 
         public override void Initialize()
         {
             base.Initialize();
 
             InitializeTilePrying();
-            InitializeLatticeCutting();
             InitializeWelders();
+            InitializeMultipleTools();
 
             SubscribeLocalEvent<ToolDoAfterComplete>(OnDoAfterComplete);
             SubscribeLocalEvent<ToolDoAfterCancelled>(OnDoAfterCancelled);
@@ -101,7 +101,7 @@ namespace Content.Server.Tools
         ///          the <see cref="doAfterCompleteEvent"/> and <see cref="doAfterCancelledEvent"/> being broadcast
         ///          to see whether using the tool succeeded or not. If the <see cref="doAfterDelay"/> is zero,
         ///          this simply returns whether using the tool succeeded or not.</returns>
-        public override bool UseTool(
+        public bool UseTool(
             EntityUid tool,
             EntityUid user,
             EntityUid? target,
@@ -117,11 +117,6 @@ namespace Content.Server.Tools
         {
             // No logging here, after all that'd mean the caller would need to check if the component is there or not.
             if (!Resolve(tool, ref toolComponent, false))
-                return false;
-
-            var ev = new ToolUserAttemptUseEvent(user, target);
-            RaiseLocalEvent(user, ref ev);
-            if (ev.Cancelled)
                 return false;
 
             if (!ToolStartUse(tool, user, fuel, toolQualitiesNeeded, toolComponent))
@@ -148,6 +143,16 @@ namespace Content.Server.Tools
             return ToolFinishUse(tool, user, fuel, toolComponent);
         }
 
+        // This is hilariously long.
+        /// <inheritdoc cref="UseTool(Robust.Shared.GameObjects.EntityUid,Robust.Shared.GameObjects.EntityUid,System.Nullable{Robust.Shared.GameObjects.EntityUid},float,float,System.Collections.Generic.IEnumerable{string},Robust.Shared.GameObjects.EntityUid,object,object,System.Func{bool}?,Content.Shared.Tools.Components.ToolComponent?)"/>
+        public bool UseTool(EntityUid tool, EntityUid user, EntityUid? target, float fuel,
+            float doAfterDelay, string toolQualityNeeded, object doAfterCompleteEvent, object doAfterCancelledEvent, EntityUid? doAfterEventTarget = null,
+            Func<bool>? doAfterCheck = null, ToolComponent? toolComponent = null)
+        {
+            return UseTool(tool, user, target, fuel, doAfterDelay, new[] { toolQualityNeeded },
+                doAfterCompleteEvent, doAfterCancelledEvent, doAfterEventTarget, doAfterCheck, toolComponent);
+        }
+
         /// <summary>
         ///     Async version of UseTool.
         /// </summary>
@@ -166,11 +171,6 @@ namespace Content.Server.Tools
         {
             // No logging here, after all that'd mean the caller would need to check if the component is there or not.
             if (!Resolve(tool, ref toolComponent, false))
-                return false;
-
-            var ev = new ToolUserAttemptUseEvent(user, target);
-            RaiseLocalEvent(user, ref ev);
-            if (ev.Cancelled)
                 return false;
 
             if (!ToolStartUse(tool, user, fuel, toolQualitiesNeeded, toolComponent))
@@ -303,23 +303,6 @@ namespace Content.Server.Tools
         {
             Fuel = fuel;
             User = user;
-        }
-    }
-
-    /// <summary>
-    /// Event raised on the user of a tool to see if they can actually use it.
-    /// </summary>
-    [ByRefEvent]
-    public struct ToolUserAttemptUseEvent
-    {
-        public EntityUid User;
-        public EntityUid? Target;
-        public bool Cancelled = false;
-
-        public ToolUserAttemptUseEvent(EntityUid user, EntityUid? target)
-        {
-            User = user;
-            Target = target;
         }
     }
 

@@ -1,45 +1,64 @@
-using Content.Client.Inventory;
+﻿using System;
+using Content.Client.Stylesheets;
+using Robust.Client.UserInterface;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.UserInterface.CustomControls;
-using Robust.Shared.Timing;
 using static Robust.Client.UserInterface.Controls.BoxContainer;
 
 namespace Content.Client.Strip
 {
     public sealed class StrippingMenu : DefaultWindow
     {
-        public LayoutContainer InventoryContainer = new();
-        public BoxContainer HandsContainer = new() { Orientation = LayoutOrientation.Horizontal };
-        public BoxContainer SnareContainer = new();
-        private StrippableBoundUserInterface _bui;
-        public bool Dirty = true;
+        private readonly BoxContainer _vboxContainer;
 
-        public StrippingMenu(string title, StrippableBoundUserInterface bui)
+        public StrippingMenu(string title)
         {
+            MinSize = SetSize = (400, 600);
             Title = title;
-            _bui = bui;
 
-            var box = new BoxContainer() { Orientation = LayoutOrientation.Vertical, Margin = new Thickness(0, 8) };
-            Contents.AddChild(box);
-            box.AddChild(SnareContainer);
-            box.AddChild(HandsContainer);
-            box.AddChild(InventoryContainer);
+            _vboxContainer = new BoxContainer
+            {
+                Orientation = LayoutOrientation.Vertical,
+                VerticalExpand = true,
+                SeparationOverride = 5,
+            };
+
+            Contents.AddChild(_vboxContainer);
         }
 
         public void ClearButtons()
         {
-            InventoryContainer.DisposeAllChildren();
-            HandsContainer.DisposeAllChildren();
-            SnareContainer.DisposeAllChildren();
+            _vboxContainer.DisposeAllChildren();
         }
 
-        protected override void FrameUpdate(FrameEventArgs args)
+        public void AddButton(string title, string name, Action<BaseButton.ButtonEventArgs> onPressed)
         {
-            if (!Dirty)
-                return;
+            var button = new Button()
+            {
+                Text = name,
+                StyleClasses = { StyleBase.ButtonOpenRight }
+            };
 
-            Dirty = false;
-            _bui.UpdateMenu();
+            button.OnPressed += onPressed;
+
+            _vboxContainer.AddChild(new BoxContainer
+            {
+                Orientation = LayoutOrientation.Horizontal,
+                HorizontalExpand = true,
+                SeparationOverride = 5,
+                Children =
+                {
+                    new Label()
+                    {
+                        Text = $"{title}:"
+                    },
+                    new Control()
+                    {
+                        HorizontalExpand = true
+                    },
+                    button,
+                }
+            });
         }
     }
 }

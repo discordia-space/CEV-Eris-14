@@ -6,21 +6,19 @@
     - type: Sprite
       layers:
         - state: red
-        - sprite: Objects/Specific/Xenoarchaeology/xeno_artifacts.rsi
-          state: ano01
+        - texture: Objects/Specific/Xenoarchaeology/xeno_artifacts.rsi/ano01.png
     - type: RandomSpawner
       prototypes:
-        - SimpleXenoArtifact
-        - MediumXenoArtifact
-        - MediumXenoArtifact
-        - MediumXenoArtifact
-        - MediumXenoArtifact
-        - ComplexXenoArtifact
-        - ComplexXenoArtifact
-        - ComplexXenoArtifact
-        - SimpleXenoArtifactItem
-        - MediumXenoArtifactItem
-        - ComplexXenoArtifactItem
+        - BadfeelingArtifact
+        - GoodfeelingArtifact
+        - AngryMobsSpawnArtifact
+        - JunkSpawnArtifact
+        - BananaSpawnArtifact
+        - HeatArtifact
+        - ColdArtifact
+        - RadiateArtifact
+        - GasArtifact
+        - DiseaseArtifact
       chance: 1
 
 - type: entity

@@ -12,30 +12,21 @@ public sealed class PanicBunkerCommand : IConsoleCommand
 
     public string Command => "panicbunker";
     public string Description => "Enables or disables the panic bunker functionality.";
-    public string Help => "panicbunker";
+    public string Help => "panicbunker <enabled>";
     public void Execute(IConsoleShell shell, string argStr, string[] args)
     {
-        if (args.Length > 1)
+        if (args.Length != 1)
         {
-            shell.WriteError(Loc.GetString("shell-need-between-arguments",("lower", 0), ("upper", 1)));
+            shell.WriteError(Loc.GetString("shell-wrong-arguments-number"));
             return;
         }
 
-        var enabled = _cfg.GetCVar(CCVars.PanicBunkerEnabled);
-        
-        if (args.Length == 0)
+        if (!bool.TryParse(args[0], out var enabled))
         {
-            enabled = !enabled;
-        }
-        
-        if (args.Length == 1 && !bool.TryParse(args[0], out enabled))
-        {
-            shell.WriteError(Loc.GetString("shell-argument-must-be-boolean"));
+            shell.WriteError(Loc.GetString("shell-invalid-bool"));
             return;
         }
 
         _cfg.SetCVar(CCVars.PanicBunkerEnabled, enabled);
-        
-        shell.WriteLine(Loc.GetString(enabled ? "panicbunker-command-enabled" : "panicbunker-command-disabled"));
     }
 }

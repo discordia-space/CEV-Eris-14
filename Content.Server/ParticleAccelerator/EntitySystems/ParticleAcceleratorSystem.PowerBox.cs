@@ -13,7 +13,7 @@ namespace Content.Server.ParticleAccelerator.EntitySystems
         private static void PowerBoxReceivedChanged(
             EntityUid uid,
             ParticleAcceleratorPowerBoxComponent component,
-            ref PowerConsumerReceivedChanged args)
+            PowerConsumerReceivedChanged args)
         {
             component.Master?.PowerBoxReceivedChanged(args);
         }

@@ -4,7 +4,7 @@ using Content.Server.Disposal.Unit.EntitySystems;
 using Content.Shared.Construction.Components;
 using Content.Shared.Disposal.Components;
 using Content.Shared.Popups;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.Containers;
 using Robust.Shared.Physics;
 
@@ -12,8 +12,6 @@ namespace Content.Server.Disposal.Tube.Components
 {
     public abstract class DisposalTubeComponent : Component, IDisposalTubeComponent
     {
-        public virtual string ContainerId => "DisposalTube";
-
         [Dependency] private readonly IEntityManager _entMan = default!;
 
         public static readonly TimeSpan ClangDelay = TimeSpan.FromSeconds(0.5);
@@ -28,6 +26,11 @@ namespace Content.Server.Disposal.Tube.Components
         [ViewVariables]
         public Container Contents { get; private set; } = default!;
 
+        [ViewVariables]
+        private bool Anchored =>
+            !_entMan.TryGetComponent(Owner, out PhysicsComponent? physics) ||
+            physics.BodyType == BodyType.Static;
+
         /// <summary>
         ///     The directions that this tube can connect to others from
         /// </summary>
@@ -37,8 +40,7 @@ namespace Content.Server.Disposal.Tube.Components
         public abstract Direction NextDirection(DisposalHolderComponent holder);
 
         // TODO: Make disposal pipes extend the grid
-        // ???
-        public void Connect()
+        private void Connect()
         {
             if (_connected)
             {
@@ -90,12 +92,69 @@ namespace Content.Server.Disposal.Tube.Components
             Owner.PopupMessage(entity, Loc.GetString("disposal-tube-component-popup-directions-text", ("directions", directions)));
         }
 
+        private void UpdateVisualState()
+        {
+            if (!_entMan.TryGetComponent(Owner, out AppearanceComponent? appearance))
+            {
+                return;
+            }
+
+            var state = Anchored
+                ? DisposalTubeVisualState.Anchored
+                : DisposalTubeVisualState.Free;
+
+            appearance.SetData(DisposalTubeVisuals.VisualState, state);
+        }
+
+        public void AnchoredChanged()
+        {
+            if (!_entMan.TryGetComponent(Owner, out PhysicsComponent? physics))
+            {
+                return;
+            }
+
+            if (physics.BodyType == BodyType.Static)
+            {
+                OnAnchor();
+            }
+            else
+            {
+                OnUnAnchor();
+            }
+        }
+
+        private void OnAnchor()
+        {
+            Connect();
+            UpdateVisualState();
+        }
+
+        private void OnUnAnchor()
+        {
+            Disconnect();
+            UpdateVisualState();
+        }
+
         protected override void Initialize()
         {
             base.Initialize();
 
-            Contents = ContainerHelpers.EnsureContainer<Container>(Owner, ContainerId);
+            Contents = ContainerHelpers.EnsureContainer<Container>(Owner, Name);
             Owner.EnsureComponent<AnchorableComponent>();
+        }
+
+        protected override void Startup()
+        {
+            base.Startup();
+
+            Owner.EnsureComponent<PhysicsComponent>(out var physicsComponent);
+            if (physicsComponent.BodyType != BodyType.Static)
+            {
+                return;
+            }
+
+            Connect();
+            UpdateVisualState();
         }
 
         protected override void OnRemove()

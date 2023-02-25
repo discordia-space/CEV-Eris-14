@@ -1,5 +1,4 @@
 using Content.Server.Administration;
-using Content.Server.Body.Systems;
 using Content.Shared.Administration;
 using Content.Shared.Body.Components;
 using Robust.Server.Player;
@@ -36,10 +35,7 @@ namespace Content.Server.Body.Commands
                 return;
             }
 
-            var entityManager = IoCManager.Resolve<IEntityManager>();
-            var fac = IoCManager.Resolve<IComponentFactory>();
-
-            if (!entityManager.TryGetComponent(attached, out BodyComponent? body))
+            if (!IoCManager.Resolve<IEntityManager>().TryGetComponent(attached, out SharedBodyComponent? body))
             {
                 var random = IoCManager.Resolve<IRobustRandom>();
                 var text = $"You have no body{(random.Prob(0.2f) ? " and you must scream." : ".")}";
@@ -49,13 +45,13 @@ namespace Content.Server.Body.Commands
             }
 
             var mechanismName = string.Join(" ", args).ToLowerInvariant();
-            var bodySystem = entityManager.System<BodySystem>();
 
-            foreach (var organ in bodySystem.GetBodyOrgans(body.Owner, body))
+            foreach (var (part, _) in body.Parts)
+            foreach (var mechanism in part.Mechanisms)
             {
-                if (fac.GetComponentName(organ.Component.GetType()).ToLowerInvariant() == mechanismName)
+                if (mechanism.Name.ToLowerInvariant() == mechanismName)
                 {
-                    bodySystem.DeleteOrgan(organ.Id, organ.Component);
+                    part.DeleteMechanism(mechanism);
                     shell.WriteLine($"Mechanism with name {mechanismName} has been destroyed.");
                     return;
                 }

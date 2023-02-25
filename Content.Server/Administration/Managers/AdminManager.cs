@@ -87,11 +87,6 @@ namespace Content.Server.Administration.Managers
                 throw new ArgumentException($"Player {session} is not an admin");
             }
 
-            if (reg.Data.Active)
-            {
-                return;
-            }
-
             _chat.DispatchServerMessage(session, Loc.GetString("admin-manager-became-admin-message"));
 
             var plyData = session.ContentData()!;
@@ -169,7 +164,7 @@ namespace Content.Server.Administration.Managers
             _netMgr.RegisterNetMessage<MsgUpdateAdminStatus>();
 
             // Cache permissions for loaded console commands with the requisite attributes.
-            foreach (var (cmdName, cmd) in _consoleHost.AvailableCommands)
+            foreach (var (cmdName, cmd) in _consoleHost.RegisteredCommands)
             {
                 var (isAvail, flagsReq) = GetRequiredFlag(cmd);
 

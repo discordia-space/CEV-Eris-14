@@ -78,14 +78,15 @@
     graph: Window
     node: window
   - type: Appearance
-  - type: DamageVisuals
-    thresholds: [4, 8, 12]
-    damageDivisor: 2
-    trackAllDamage: true
-    damageOverlay:
-      sprite: Structures/Windows/cracks.rsi
+    visuals:
+    - type: DamageVisualizer
+      thresholds: [4, 8, 12]
+      damageDivisor: 2
+      trackAllDamage: true
+      damageOverlay:
+        sprite: Structures/Windows/cracks.rsi
   - type: StaticPrice
-    price: 100
+    price: 0.5
 
 - type: entity
   id: WindowDirectional
@@ -104,11 +105,6 @@
   - type: Tag
     tags:
       - Window
-  - type: MeleeSound
-    soundGroups:
-      Brute:
-        path:
-          "/Audio/Effects/glass_hit.ogg"
   - type: Sprite
     drawdepth: Mobs
     netsync: false
@@ -127,8 +123,8 @@
     fixtures:
     - shape:
         !type:PhysShapeAabb
-        bounds: "-0.49,-0.39,0.49,-0.36"
-      density: 1500
+        bounds: "-0.49,-0.49,0.49,-0.3"
+      mass: 50
       mask:
       - FullTileMask
       layer:
@@ -169,7 +165,7 @@
     graph: WindowDirectional
     node: windowDirectional
   - type: StaticPrice
-    price: 5
+    price: 0.5
 
 - type: entity
   id: WindowTintedDirectional
@@ -194,7 +190,7 @@
   - type: Occluder
     boundingBox: "-0.5,-0.5,0.5,-0.3"
   - type: StaticPrice
-    price: 5
+    price: 0.5
 
 - type: entity
   id: WindowFrostedDirectional
@@ -214,4 +210,4 @@
     sprite: Structures/Windows/directional.rsi
     state: frosted_window
   - type: StaticPrice
-    price: 5
+    price: 0.5

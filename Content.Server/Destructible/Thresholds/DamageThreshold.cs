@@ -19,6 +19,7 @@ namespace Content.Server.Destructible.Thresholds
         /// <summary>
         ///     Whether or not this threshold has already been triggered.
         /// </summary>
+        [ViewVariables]
         [DataField("triggered")]
         public bool Triggered { get; private set; }
 
@@ -28,12 +29,14 @@ namespace Content.Server.Destructible.Thresholds
         ///     and then damaged to reach this threshold once again.
         ///     It will not repeatedly trigger as damage rises beyond that.
         /// </summary>
+        [ViewVariables]
         [DataField("triggersOnce")]
         public bool TriggersOnce { get; set; }
 
         /// <summary>
         ///     The trigger that decides if this threshold has been reached.
         /// </summary>
+        [ViewVariables]
         [DataField("trigger")]
         public IThresholdTrigger? Trigger { get; set; }
 
@@ -77,9 +80,7 @@ namespace Content.Server.Destructible.Thresholds
         ///     An instance of <see cref="DestructibleSystem"/> to get dependency and
         ///     system references from, if relevant.
         /// </param>
-        /// <param name="entityManager"></param>
-        /// <param name="cause"></param>
-        public void Execute(EntityUid owner, DestructibleSystem system, IEntityManager entityManager, EntityUid? cause)
+        public void Execute(EntityUid owner, DestructibleSystem system, IEntityManager entityManager)
         {
             Triggered = true;
 
@@ -89,7 +90,7 @@ namespace Content.Server.Destructible.Thresholds
                 if (!entityManager.EntityExists(owner))
                     return;
 
-                behavior.Execute(owner, system, cause);
+                behavior.Execute(owner, system);
             }
         }
     }

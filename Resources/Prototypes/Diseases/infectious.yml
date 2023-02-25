@@ -1,6 +1,6 @@
 - type: disease
   id: SpaceCold
-  name: disease-proto-space-cold
+  name: space cold
   cureResist: 0
   effects:
     - !type:DiseaseAdjustReagent
@@ -25,7 +25,7 @@
 
 - type: disease
   id: VentCough
-  name: disease-proto-vent-cough
+  name: vent cough
   effects:
     - !type:DiseasePopUp
       probability: 0.025
@@ -51,7 +51,7 @@
 
 - type: disease
   id: SpaceFlu
-  name: disease-proto-space-flu
+  name: space flu
   cureResist: 0.08
   effects:
     - !type:DiseaseVomit
@@ -73,7 +73,7 @@
 
 - type: disease
   id: BirdFlew
-  name: disease-proto-bird-flew
+  name: bird flew
   cureResist: 0.08
   effects:
     - !type:DiseaseVomit
@@ -96,7 +96,7 @@
 
 - type: disease
   id: VanAusdallsRobovirus
-  name: disease-proto-robovirus
+  name: Van Ausdall's Robovirus
   cureResist: 0.1
   effects:
     - !type:DiseaseAdjustReagent
@@ -116,117 +116,41 @@
 
 - type: disease
   id: AMIV
-  name: disease-proto-amiv
+  name: AMIV
   cureResist: 0.10
-  stages:
-    - 0
-    - 120
-    - 780
   effects:
-    # compulsion pop ups
     - !type:DiseasePopUp
       probability: 0.015
       type: Pvs
       message: disease-beat-chest-compulsion
       visualType: Medium
-      stages:
-        - 0
-        - 1
-        - 2
     - !type:DiseasePopUp
       probability: 0.03
       message: disease-banana-compulsion
       visualType: Medium
-      stages:
-        - 0
-        - 1
-        - 2
-    # Screeches - spreads disease
-    - !type:DiseaseSnough
-      probability: 0.01
-      snoughMessage: disease-screech
-      snoughSound:
-        collection: MonkeyScreeches
-      stages:
-        - 0
     - !type:DiseaseSnough
       probability: 0.02
       snoughMessage: disease-screech
       snoughSound:
         collection: MonkeyScreeches
-      stages:
-        - 1
-    - !type:DiseaseSnough
-      probability: 0.04
-      snoughMessage: disease-screech
-      snoughSound:
-        collection: MonkeyScreeches
-      stages:
-        - 2
-    # monkey accent chance when speaking
     - !type:DiseaseGenericStatusEffect
-      probability: 0.2
+      probability: 0.3
       key: Stutter
       component: MonkeyAccent
-      stages:
-        - 1
-    - !type:DiseaseGenericStatusEffect
-      probability: 0.5
-      key: Stutter
-      component: MonkeyAccent
-      stages:
-        - 2
-    # asphyxiation damage, probably from all the screeching
     - !type:DiseaseHealthChange
       probability: 0.53
       damage:
         types:
           Asphyxiation: 1
-      stages:
-        - 1
-        - 2
-    # possible monkefication if ignored too long
-    - !type:DiseasePolymorph
-      probability: 0.000427 ## ~5% chance over 120 secs
-      polymorphId: AMIVMorph
-      polymorphMessage: disease-polymorph
-      polymorphSound:
-        path: /Audio/Animals/monkey_scream.ogg
-      stages:
-        - 2
   cures:
     - !type:DiseaseJustWaitCure
-      maxLength: 900
-      stages:
-        - 0
-        - 1
-        - 2
+      maxLength: 1600
     - !type:DiseaseReagentCure
       reagent: BananaHonk
-      stages:
-        - 0
-        - 1
-        - 2
-
-- type: disease
-  id: MemeticAmirmir
-  name: disease-proto-amirmir
-  effects:
-    - !type:DiseaseGenericStatusEffect
-      probability: 0.015
-      key: ForcedSleep
-      component: ForcedSleeping
-      time: 3
-      type: Add
-    - !type:DiseaseSnough
-      probability: 0.025
-      snoughMessage: disease-yawn
-      snoughSound:
-        collection: Yawns
 
 - type: disease
   id: BleedersBite
-  name: disease-proto-bleeders
+  name: Bleeder's Bite
   effects:
     - !type:DiseaseAdjustReagent
       reagent: TranexamicAcid
@@ -250,7 +174,7 @@
 
 - type: disease
   id: Plague
-  name: disease-proto-plague
+  name: plague
   cureResist: 0.1
   effects:
     - !type:DiseaseVomit
@@ -275,7 +199,7 @@
 
 - type: disease
   id: OwOnavirus
-  name: disease-proto-owonavirus
+  name: OwOnavirus
   cureResist: 0.25
   effects:
     - !type:DiseaseGenericStatusEffect
@@ -300,11 +224,10 @@
       min: 420 ## Reachable with a flamer
     - !type:DiseaseReagentCure
       reagent: Theobromine
-      min: 4
 
 - type: disease
   id: TongueTwister
-  name: disease-proto-tongue-twister
+  name: Tongue Twister
   cureResist: 0.1
   effects:
     - !type:DiseaseGenericStatusEffect

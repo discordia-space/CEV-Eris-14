@@ -11,10 +11,13 @@
       "name": "icon"
     },
     {
-      "name": "base_dead"
+      "name": "dead"
     },
     {
-      "name": "base",
+      "name": "crit"
+    },
+    {
+      "name": "alive",
       "directions": 4,
       "delays": [
         [

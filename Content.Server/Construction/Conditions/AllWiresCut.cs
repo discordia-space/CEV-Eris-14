@@ -35,9 +35,6 @@ namespace Content.Server.Construction.Conditions
 
         public bool DoExamine(ExaminedEvent args)
         {
-            if (Condition(args.Examined, IoCManager.Resolve<IEntityManager>()))
-                return false;
-
             args.PushMarkup(Loc.GetString(Value
                 ? "construction-examine-condition-all-wires-cut"
                 : "construction-examine-condition-all-wires-intact"));

@@ -56,7 +56,7 @@ public sealed partial class SurveillanceCameraSetupWindow : DefaultWindow
             id++;
         }
 
-        idList.Sort((a, b) => string.Compare(a.networkName, b.networkName, StringComparison.Ordinal));
+        idList.Sort((a, b) => a.networkName.CompareTo(b.networkName));
 
         foreach (var (networkId, network) in idList)
         {

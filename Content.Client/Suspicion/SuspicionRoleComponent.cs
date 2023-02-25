@@ -1,18 +1,22 @@
+using System.Collections.Generic;
+using Content.Client.HUD;
 using Content.Shared.Suspicion;
+using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
 using Robust.Client.Player;
 using Robust.Client.ResourceManagement;
-using Robust.Client.UserInterface;
-using static Robust.Client.UserInterface.Controls.LayoutContainer;
+using Robust.Shared.GameObjects;
+using Robust.Shared.IoC;
+using Robust.Shared.ViewVariables;
 
 namespace Content.Client.Suspicion
 {
     [RegisterComponent]
     public sealed class SuspicionRoleComponent : SharedSuspicionRoleComponent
     {
+        [Dependency] private readonly IGameHud _gameHud = default!;
         [Dependency] private readonly IOverlayManager _overlayManager = default!;
         [Dependency] private readonly IResourceCache _resourceCache = default!;
-        [Dependency] private readonly IUserInterfaceManager _ui = default!;
 
         private SuspicionGui? _gui;
         private string? _role;
@@ -68,8 +72,7 @@ namespace Content.Client.Suspicion
             }
 
             _overlayActive = true;
-            var entManager = IoCManager.Resolve<IEntityManager>();
-            var overlay = new TraitorOverlay(entManager, IoCManager.Resolve<IPlayerManager>(), _resourceCache, entManager.System<EntityLookupSystem>());
+            var overlay = new TraitorOverlay(IoCManager.Resolve<IEntityManager>(), IoCManager.Resolve<IPlayerManager>(), _resourceCache);
             _overlayManager.AddOverlay(overlay);
         }
 
@@ -98,18 +101,25 @@ namespace Content.Client.Suspicion
             Allies.AddRange(state.Allies);
         }
 
-        public void RemoveUI()
+        public void PlayerDetached()
         {
             _gui?.Parent?.RemoveChild(_gui);
             RemoveTraitorOverlay();
         }
 
-        public void AddUI()
+        public void PlayerAttached()
         {
-            // TODO move this out of the component
-            _gui = _ui.ActiveScreen?.GetOrAddWidget<SuspicionGui>();
-            _gui!.UpdateLabel();
-            SetAnchorAndMarginPreset(_gui, LayoutPreset.BottomLeft);
+            if (_gui == null)
+            {
+                _gui = new SuspicionGui();
+            }
+            else
+            {
+                _gui.Parent?.RemoveChild(_gui);
+            }
+
+            _gameHud.SuspicionContainer.AddChild(_gui);
+            _gui.UpdateLabel();
 
             if (_antagonist ?? false)
             {

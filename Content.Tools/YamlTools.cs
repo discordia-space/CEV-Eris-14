@@ -92,7 +92,7 @@ namespace Content.Tools
                 if (ignoreThese.Contains(kvp.Key.ToString()))
                     continue;
 
-                var localPath = path + "/" + kvp.Key;
+                var localPath = path + "/" + kvp.Key.ToString();
                 var deletedByOurs = !ours.Children.ContainsKey(kvp.Key);
                 var deletedByOther = !other.Children.ContainsKey(kvp.Key);
                 if (deletedByOther && (!deletedByOurs))
@@ -123,7 +123,7 @@ namespace Content.Tools
                 if (ignoreThese.Contains(kvp.Key.ToString()))
                     continue;
 
-                var localPath = path + "/" + kvp.Key;
+                var localPath = path + "/" + kvp.Key.ToString();
                 if (!based.Children.ContainsKey(kvp.Key))
                 {
                     if (ours.Children.ContainsKey(kvp.Key))

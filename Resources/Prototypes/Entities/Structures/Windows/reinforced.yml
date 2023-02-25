@@ -42,12 +42,15 @@
     graph: Window
     node: reinforcedWindow
   - type: Appearance
-  - type: DamageVisuals
-    thresholds: [4, 8, 12]
-    damageDivisor: 10
-    trackAllDamage: true
-    damageOverlay:
-      sprite: Structures/Windows/cracks.rsi
+    visuals:
+    - type: DamageVisualizer
+      thresholds: [4, 8, 12]
+      damageDivisor: 10
+      trackAllDamage: true
+      damageOverlay:
+        sprite: Structures/Windows/cracks.rsi
+  - type: StaticPrice
+    price: 0.75
 
 - type: entity
   parent: ReinforcedWindow
@@ -65,8 +68,10 @@
     graph: Window
     node: tintedWindow
   - type: Occluder
+    sizeX: 32
+    sizeY: 32
   - type: StaticPrice
-    price: 44
+    price: 0.75
 
 - type: entity
   id: WindowReinforcedDirectional
@@ -107,4 +112,4 @@
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
   - type: StaticPrice
-    price: 22
+    price: 0.75

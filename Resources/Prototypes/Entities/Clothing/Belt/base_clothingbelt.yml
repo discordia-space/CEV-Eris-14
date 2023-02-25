@@ -5,11 +5,12 @@
   components:
   - type: Sprite
     state: icon
-  - type: Item
-    size: 50
   - type: Clothing
-    slots: [belt]
+    Slots: [belt]
+    size: 50
     quickEquip: false
+    equipSound:
+      path: /Audio/Items/belt_equip.ogg
 
 - type: entity
   abstract: true
@@ -18,12 +19,6 @@
   components:
   - type: Storage
     capacity: 40
-    equipSound:
-      path: /Audio/Items/belt_equip.ogg
-  - type: ContainerContainer
-    containers:
-      storagebase: !type:Container
-        ents: []
   - type: UserInterface
     interfaces:
     - key: enum.StorageUiKey.Key

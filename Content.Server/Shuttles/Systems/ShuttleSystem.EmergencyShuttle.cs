@@ -11,15 +11,12 @@ using Content.Server.Station.Systems;
 using Content.Shared.CCVar;
 using Content.Shared.Database;
 using Content.Shared.Shuttles.Events;
-using Robust.Server.GameObjects;
 using Robust.Server.Maps;
 using Robust.Server.Player;
 using Robust.Shared.Audio;
 using Robust.Shared.Configuration;
 using Robust.Shared.Map;
-using Robust.Shared.Map.Components;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
 using Robust.Shared.Player;
 using Robust.Shared.Random;
 
@@ -28,21 +25,21 @@ namespace Content.Server.Shuttles.Systems;
 public sealed partial class ShuttleSystem
 {
    /*
-    * Handles the escape shuttle + CentCom.
+    * Handles the escape shuttle + Centcomm.
     */
 
    [Dependency] private readonly IAdminLogManager _logger = default!;
    [Dependency] private readonly IAdminManager _admin = default!;
    [Dependency] private readonly IConfigurationManager _configManager = default!;
+   [Dependency] private readonly IMapLoader _loader = default!;
    [Dependency] private readonly IRobustRandom _random = default!;
    [Dependency] private readonly ChatSystem _chatSystem = default!;
    [Dependency] private readonly CommunicationsConsoleSystem _commsConsole = default!;
    [Dependency] private readonly DockingSystem _dockSystem = default!;
-   [Dependency] private readonly MapLoaderSystem _map = default!;
    [Dependency] private readonly StationSystem _station = default!;
 
-   public MapId? CentComMap { get; private set; }
-   public EntityUid? CentCom { get; private set; }
+   private MapId? _centcommMap;
+   private EntityUid? _centcomm;
 
    /// <summary>
    /// Used for multiple shuttle spawn offsets.
@@ -55,6 +52,9 @@ public sealed partial class ShuttleSystem
 
    private void InitializeEscape()
    {
+#if !FULL_RELEASE
+       _configManager.OverrideDefault(CCVars.EmergencyShuttleEnabled, false);
+#endif
        _emergencyShuttleEnabled = _configManager.GetCVar(CCVars.EmergencyShuttleEnabled);
        // Don't immediately invoke as roundstart will just handle it.
        _configManager.OnValueChanged(CCVars.EmergencyShuttleEnabled, SetEmergencyShuttleEnabled);
@@ -96,7 +96,7 @@ public sealed partial class ShuttleSystem
            !TryComp<StationDataComponent>(_station.GetOwningStation(player.Value), out var stationData) ||
            !TryComp<ShuttleComponent>(stationData.EmergencyShuttle, out var shuttle)) return;
 
-       var targetGrid = _station.GetLargestGrid(stationData);
+       var targetGrid = GetLargestGrid(stationData);
        if (targetGrid == null) return;
        var config = GetDockingConfig(shuttle, targetGrid.Value);
        if (config == null) return;
@@ -111,9 +111,9 @@ public sealed partial class ShuttleSystem
    /// <summary>
    /// Checks whether the emergency shuttle can warp to the specified position.
    /// </summary>
-   private bool ValidSpawn(MapGridComponent grid, Box2 area)
+   private bool ValidSpawn(IMapGridComponent grid, Box2 area)
    {
-       return !grid.GetLocalTilesIntersecting(area).Any();
+       return !grid.Grid.GetLocalTilesIntersecting(area).Any();
    }
 
    private DockingConfig? GetDockingConfig(ShuttleComponent component, EntityUid targetGrid)
@@ -123,14 +123,16 @@ public sealed partial class ShuttleSystem
        if (gridDocks.Count <= 0) return null;
 
        var xformQuery = GetEntityQuery<TransformComponent>();
-       var targetGridGrid = Comp<MapGridComponent>(targetGrid);
+       var targetGridGrid = Comp<IMapGridComponent>(targetGrid);
        var targetGridXform = xformQuery.GetComponent(targetGrid);
        var targetGridAngle = targetGridXform.WorldRotation.Reduced();
+       var targetGridRotation = targetGridAngle.ToVec();
 
        var shuttleDocks = GetDocks(component.Owner);
-       var shuttleAABB = Comp<MapGridComponent>(component.Owner).LocalAABB;
+       var shuttleAABB = Comp<IMapGridComponent>(component.Owner).Grid.LocalAABB;
 
        var validDockConfigs = new List<DockingConfig>();
+       SetPilotable(component, false);
 
        if (shuttleDocks.Count > 0)
        {
@@ -146,7 +148,7 @@ public sealed partial class ShuttleSystem
                    if (!CanDock(
                            shuttleDock, shuttleDockXform,
                            gridDock, gridXform,
-                           targetGridAngle,
+                           targetGridRotation,
                            shuttleAABB,
                            targetGridGrid,
                            out var dockedAABB,
@@ -161,9 +163,9 @@ public sealed partial class ShuttleSystem
 
                    // Check if there's no intersecting grids (AKA oh god it's docking at cargo).
                    if (_mapManager.FindGridsIntersecting(targetGridXform.MapID,
-                           dockedBounds).Any(o => o.Owner != targetGrid))
+                           dockedBounds).Any(o => o.GridEntityId != targetGrid))
                    {
-                       continue;
+                       break;
                    }
 
                    // Alright well the spawn is valid now to check how many we can connect
@@ -190,7 +192,7 @@ public sealed partial class ShuttleSystem
                                    xformQuery.GetComponent(other.Owner),
                                    otherGrid,
                                    xformQuery.GetComponent(otherGrid.Owner),
-                                   targetGridAngle,
+                                   targetGridRotation,
                                    shuttleAABB, targetGridGrid,
                                    out var otherDockedAABB,
                                    out _,
@@ -202,12 +204,16 @@ public sealed partial class ShuttleSystem
                        }
                    }
 
+                   var spawnRotation = shuttleDockXform.LocalRotation +
+                                       gridXform.LocalRotation +
+                                       targetGridXform.LocalRotation;
+
                    validDockConfigs.Add(new DockingConfig()
                    {
                        Docks = dockedPorts,
                        Area = dockedAABB.Value,
                        Coordinates = spawnPosition,
-                       Angle = targetAngle,
+                       Angle = spawnRotation,
                    });
                }
            }
@@ -237,7 +243,7 @@ public sealed partial class ShuttleSystem
            !TryComp<TransformComponent>(stationData.EmergencyShuttle, out var xform) ||
            !TryComp<ShuttleComponent>(stationData.EmergencyShuttle, out var shuttle)) return;
 
-      var targetGrid = _station.GetLargestGrid(stationData);
+      var targetGrid = GetLargestGrid(stationData);
 
        // UHH GOOD LUCK
        if (targetGrid == null)
@@ -249,13 +255,24 @@ public sealed partial class ShuttleSystem
            return;
        }
 
-       var xformQuery = GetEntityQuery<TransformComponent>();
-
-       if (TryFTLDock(shuttle, targetGrid.Value))
+       if (TryHyperspaceDock(shuttle, targetGrid.Value))
        {
+           var xformQuery = GetEntityQuery<TransformComponent>();
+
            if (TryComp<TransformComponent>(targetGrid.Value, out var targetXform))
            {
-               var angle = GetAngle(xform, targetXform, xformQuery);
+               var (shuttlePos, shuttleRot) = xform.GetWorldPositionRotation(xformQuery);
+               var (targetPos, targetRot) = targetXform.GetWorldPositionRotation(xformQuery);
+
+               var shuttleCOM = Robust.Shared.Physics.Transform.Mul(new Transform(shuttlePos, shuttleRot),
+                   Comp<PhysicsComponent>(shuttle.Owner).LocalCenter);
+               var targetCOM = Robust.Shared.Physics.Transform.Mul(new Transform(targetPos, targetRot),
+                   Comp<PhysicsComponent>(targetGrid.Value).LocalCenter);
+
+               var mapDiff = shuttleCOM - targetCOM;
+               var targetRotation = targetRot;
+               var angle = mapDiff.ToWorldAngle();
+               angle -= targetRotation;
                _chatSystem.DispatchStationAnnouncement(stationUid.Value, Loc.GetString("emergency-shuttle-docked", ("time", $"{_consoleAccumulator:0}"), ("direction", angle.GetDir())), playDefaultSound: false);
            }
 
@@ -265,33 +282,11 @@ public sealed partial class ShuttleSystem
        }
        else
        {
-           if (TryComp<TransformComponent>(targetGrid.Value, out var targetXform))
-           {
-               var angle = GetAngle(xform, targetXform, xformQuery);
-               _chatSystem.DispatchStationAnnouncement(stationUid.Value, Loc.GetString("emergency-shuttle-nearby", ("direction", angle.GetDir())), playDefaultSound: false);
-           }
-
            _logger.Add(LogType.EmergencyShuttle, LogImpact.High, $"Emergency shuttle {ToPrettyString(stationUid.Value)} unable to find a valid docking port for {ToPrettyString(stationUid.Value)}");
+           _chatSystem.DispatchStationAnnouncement(stationUid.Value, Loc.GetString("emergency-shuttle-nearby"), playDefaultSound: false);
            // TODO: Need filter extensions or something don't blame me.
            SoundSystem.Play("/Audio/Misc/notice1.ogg", Filter.Broadcast());
        }
-   }
-
-   private Angle GetAngle(TransformComponent xform, TransformComponent targetXform, EntityQuery<TransformComponent> xformQuery)
-   {
-       var (shuttlePos, shuttleRot) = xform.GetWorldPositionRotation(xformQuery);
-       var (targetPos, targetRot) = targetXform.GetWorldPositionRotation(xformQuery);
-
-       var shuttleCOM = Robust.Shared.Physics.Transform.Mul(new Transform(shuttlePos, shuttleRot),
-           Comp<PhysicsComponent>(xform.Owner).LocalCenter);
-       var targetCOM = Robust.Shared.Physics.Transform.Mul(new Transform(targetPos, targetRot),
-           Comp<PhysicsComponent>(targetXform.Owner).LocalCenter);
-
-       var mapDiff = shuttleCOM - targetCOM;
-       var targetRotation = targetRot;
-       var angle = mapDiff.ToWorldAngle();
-       angle -= targetRotation;
-       return angle;
    }
 
    /// <summary>
@@ -299,46 +294,40 @@ public sealed partial class ShuttleSystem
    /// </summary>
    private bool CanDock(
        DockingComponent shuttleDock,
-       TransformComponent shuttleDockXform,
+       TransformComponent shuttleXform,
        DockingComponent gridDock,
-       TransformComponent gridDockXform,
-       Angle targetGridRotation,
+       TransformComponent gridXform,
+       Vector2 targetGridRotation,
        Box2 shuttleAABB,
-       MapGridComponent grid,
+       IMapGridComponent grid,
        [NotNullWhen(true)] out Box2? shuttleDockedAABB,
        out Matrix3 matty,
-       out Angle gridRotation)
+       out Vector2 gridRotation)
    {
-       gridRotation = Angle.Zero;
+       gridRotation = Vector2.Zero;
        matty = Matrix3.Identity;
        shuttleDockedAABB = null;
 
        if (shuttleDock.Docked ||
            gridDock.Docked ||
-           !shuttleDockXform.Anchored ||
-           !gridDockXform.Anchored)
+           !shuttleXform.Anchored ||
+           !gridXform.Anchored)
        {
            return false;
        }
 
        // First, get the station dock's position relative to the shuttle, this is where we rotate it around
-       var stationDockPos = shuttleDockXform.LocalPosition +
-                            shuttleDockXform.LocalRotation.RotateVec(new Vector2(0f, -1f));
+       var stationDockPos = shuttleXform.LocalPosition +
+                            shuttleXform.LocalRotation.RotateVec(new Vector2(0f, -1f));
 
-       // Need to invert the grid's angle.
-       var shuttleDockAngle = shuttleDockXform.LocalRotation;
-       var gridDockAngle = gridDockXform.LocalRotation.Opposite();
-
-       var stationDockMatrix = Matrix3.CreateInverseTransform(stationDockPos, shuttleDockAngle);
-       var gridXformMatrix = Matrix3.CreateTransform(gridDockXform.LocalPosition, gridDockAngle);
+       var stationDockMatrix = Matrix3.CreateInverseTransform(stationDockPos, -shuttleXform.LocalRotation);
+       var gridXformMatrix = Matrix3.CreateTransform(gridXform.LocalPosition, gridXform.LocalRotation);
        Matrix3.Multiply(in stationDockMatrix, in gridXformMatrix, out matty);
        shuttleDockedAABB = matty.TransformBox(shuttleAABB);
-       // Rounding moment
-       shuttleDockedAABB = shuttleDockedAABB.Value.Enlarged(-0.01f);
 
        if (!ValidSpawn(grid, shuttleDockedAABB.Value)) return false;
 
-       gridRotation = targetGridRotation + gridDockAngle - shuttleDockAngle;
+       gridRotation = matty.Transform(targetGridRotation);
        return true;
    }
 
@@ -368,8 +357,8 @@ public sealed partial class ShuttleSystem
        _consoleAccumulator = _configManager.GetCVar(CCVars.EmergencyShuttleDockTime);
        EmergencyShuttleArrived = true;
 
-       if (CentComMap != null)
-         _mapManager.SetMapPaused(CentComMap.Value, false);
+       if (_centcommMap != null)
+         _mapManager.SetMapPaused(_centcommMap.Value, false);
 
        foreach (var comp in EntityQuery<StationDataComponent>(true))
        {
@@ -379,7 +368,28 @@ public sealed partial class ShuttleSystem
        _commsConsole.UpdateCommsConsoleInterface();
    }
 
-   public List<DockingComponent> GetDocks(EntityUid uid)
+   /// <summary>
+   /// Gets the largest member grid from a station.
+   /// </summary>
+   private EntityUid? GetLargestGrid(StationDataComponent component)
+   {
+       EntityUid? largestGrid = null;
+       Box2 largestBounds = new Box2();
+
+       foreach (var gridUid in component.Grids)
+       {
+           if (!TryComp<IMapGridComponent>(gridUid, out var grid)) continue;
+
+           if (grid.Grid.LocalAABB.Size.LengthSquared < largestBounds.Size.LengthSquared) continue;
+
+           largestBounds = grid.Grid.LocalAABB;
+           largestGrid = gridUid;
+       }
+
+       return largestGrid;
+   }
+
+   private List<DockingComponent> GetDocks(EntityUid uid)
    {
        var result = new List<DockingComponent>();
 
@@ -395,25 +405,22 @@ public sealed partial class ShuttleSystem
 
    private void SetupEmergencyShuttle()
    {
-       if (!_emergencyShuttleEnabled || CentComMap != null && _mapManager.MapExists(CentComMap.Value)) return;
+       if (!_emergencyShuttleEnabled || _centcommMap != null && _mapManager.MapExists(_centcommMap.Value)) return;
 
-       CentComMap = _mapManager.CreateMap();
-       _mapManager.SetMapPaused(CentComMap.Value, true);
+       _centcommMap = _mapManager.CreateMap();
+       _mapManager.SetMapPaused(_centcommMap.Value, true);
 
-       // Load CentCom
-       var centComPath = _configManager.GetCVar(CCVars.CentcommMap);
+       // Load Centcomm
+       var centcommPath = _configManager.GetCVar(CCVars.CentcommMap);
 
-       if (!string.IsNullOrEmpty(centComPath))
+       if (!string.IsNullOrEmpty(centcommPath))
        {
-           var centcomm = _map.LoadGrid(CentComMap.Value, "/Maps/centcomm.yml");
-           CentCom = centcomm;
-
-           if (CentCom != null)
-               AddFTLDestination(CentCom.Value, false);
+           var (_, centcomm) = _loader.LoadBlueprint(_centcommMap.Value, "/Maps/centcomm.yml");
+           _centcomm = centcomm;
        }
        else
        {
-           _sawmill.Info("No CentCom map found, skipping setup.");
+           _sawmill.Info("No centcomm map found, skipping setup.");
        }
 
        foreach (var comp in EntityQuery<StationDataComponent>(true))
@@ -424,25 +431,18 @@ public sealed partial class ShuttleSystem
 
    private void AddEmergencyShuttle(StationDataComponent component)
    {
-       if (!_emergencyShuttleEnabled
-           || CentComMap == null
-           || component.EmergencyShuttle != null
-           || component.StationConfig == null)
-       {
-           return;
-       }
+       if (!_emergencyShuttleEnabled || _centcommMap == null || component.EmergencyShuttle != null) return;
 
        // Load escape shuttle
-       var shuttlePath = component.StationConfig.EmergencyShuttlePath;
-       var shuttle = _map.LoadGrid(CentComMap.Value, shuttlePath.ToString(), new MapLoadOptions()
+       var (_, shuttle) = _loader.LoadBlueprint(_centcommMap.Value, component.EmergencyShuttlePath.ToString(), new MapLoadOptions()
        {
-           // Should be far enough... right? I'm too lazy to bounds check CentCom rn.
+           // Should be far enough... right? I'm too lazy to bounds check centcomm rn.
            Offset = new Vector2(500f + _shuttleIndex, 0f)
        });
 
        if (shuttle == null)
        {
-           _sawmill.Error($"Unable to spawn emergency shuttle {shuttlePath} for {ToPrettyString(component.Owner)}");
+           _sawmill.Error($"Unable to spawn emergency shuttle {component.EmergencyShuttlePath} for {ToPrettyString(component.Owner)}");
            return;
        }
 
@@ -460,13 +460,13 @@ public sealed partial class ShuttleSystem
 
        _shuttleIndex = 0f;
 
-       if (CentComMap == null || !_mapManager.MapExists(CentComMap.Value))
+       if (_centcommMap == null || !_mapManager.MapExists(_centcommMap.Value))
        {
-           CentComMap = null;
+           _centcommMap = null;
            return;
        }
 
-       _mapManager.DeleteMap(CentComMap.Value);
+       _mapManager.DeleteMap(_centcommMap.Value);
    }
 
    /// <summary>

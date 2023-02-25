@@ -1,10 +1,8 @@
-using Content.Server.Administration.Logs;
 using Content.Server.DoAfter;
 using Content.Server.Popups;
 using Content.Server.UserInterface;
 using Content.Shared.AirlockPainter;
 using Content.Shared.AirlockPainter.Prototypes;
-using Content.Shared.Database;
 using Content.Shared.Doors.Components;
 using Content.Shared.Interaction;
 using JetBrains.Annotations;
@@ -20,11 +18,9 @@ namespace Content.Server.AirlockPainter
     [UsedImplicitly]
     public sealed class AirlockPainterSystem : SharedAirlockPainterSystem
     {
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
         [Dependency] private readonly UserInterfaceSystem _userInterfaceSystem = default!;
         [Dependency] private readonly DoAfterSystem _doAfterSystem = default!;
         [Dependency] private readonly PopupSystem _popupSystem = default!;
-        [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
         public override void Initialize()
         {
@@ -41,13 +37,10 @@ namespace Content.Server.AirlockPainter
         {
             ev.Component.IsSpraying = false;
             if (TryComp<AppearanceComponent>(ev.Target, out var appearance) &&
-                TryComp(ev.Target, out PaintableAirlockComponent? _))
+                TryComp<PaintableAirlockComponent>(ev.Target, out PaintableAirlockComponent? airlock))
             {
-                SoundSystem.Play(ev.Component.SpraySound.GetSound(), Filter.Pvs(ev.UsedTool, entityManager:EntityManager), ev.UsedTool);
-                _appearance.SetData(ev.Target, DoorVisuals.BaseRSI, ev.Sprite, appearance);
-
-                // Log success
-                _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(ev.User):user} painted {ToPrettyString(ev.Target):target}");
+                SoundSystem.Play(ev.Component.SpraySound.GetSound(), Filter.Pvs(ev.User, entityManager:EntityManager), ev.User);
+                appearance.SetData(DoorVisuals.BaseRSI, ev.Sprite);
             }
         }
 
@@ -83,7 +76,7 @@ namespace Content.Server.AirlockPainter
             if (!grp.StylePaths.TryGetValue(style, out var sprite))
             {
                 string msg = Loc.GetString("airlock-painter-style-not-available");
-                _popupSystem.PopupEntity(msg, args.User, args.User);
+                _popupSystem.PopupEntity(msg, args.User, Filter.Entities(args.User));
                 return;
             }
             component.IsSpraying = true;
@@ -94,28 +87,22 @@ namespace Content.Server.AirlockPainter
                 BreakOnDamage = true,
                 BreakOnStun = true,
                 NeedHand = true,
-                BroadcastFinishedEvent = new AirlockPainterDoAfterComplete(uid, target, sprite, component, args.User),
+                BroadcastFinishedEvent = new AirlockPainterDoAfterComplete(uid, target, sprite, component),
                 BroadcastCancelledEvent = new AirlockPainterDoAfterCancelled(component),
             };
             _doAfterSystem.DoAfter(doAfterEventArgs);
-
-            // Log attempt
-            _adminLogger.Add(LogType.Action, LogImpact.Low, $"{ToPrettyString(args.User):user} is painting {ToPrettyString(uid):target} to '{style}' at {Transform(uid).Coordinates:targetlocation}");
         }
 
         private sealed class AirlockPainterDoAfterComplete : EntityEventArgs
         {
             public readonly EntityUid User;
-            public readonly EntityUid UsedTool;
             public readonly EntityUid Target;
             public readonly string Sprite;
             public readonly AirlockPainterComponent Component;
 
-            public AirlockPainterDoAfterComplete(EntityUid usedTool, EntityUid target, string sprite,
-                AirlockPainterComponent component, EntityUid user)
+            public AirlockPainterDoAfterComplete(EntityUid user, EntityUid target, string sprite, AirlockPainterComponent component)
             {
                 User = user;
-                UsedTool = usedTool;
                 Target = target;
                 Sprite = sprite;
                 Component = component;

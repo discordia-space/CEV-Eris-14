@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Content.Server.Storage.Components;
-using Content.Server.Storage.EntitySystems;
 using NUnit.Framework;
 using Robust.Client.GameObjects;
 using Robust.Shared.GameObjects;
@@ -50,11 +49,10 @@ namespace Content.IntegrationTests.Tests
                 var mapId = ent2.GetAllMapIds().Last();
                 var pos = new MapCoordinates(Vector2.Zero, mapId);
                 var ent = IoCManager.Resolve<IEntityManager>();
-                var entStorage = ent.EntitySysManager.GetEntitySystem<EntityStorageSystem>();
                 var container = ent.SpawnEntity("ContainerOcclusionA", pos);
                 dummy = ent.SpawnEntity("ContainerOcclusionDummy", pos);
 
-                entStorage.Insert(dummy, container);
+                ent.GetComponent<EntityStorageComponent>(container).Insert(dummy);
             });
 
             await PoolManager.RunTicksSync(pairTracker.Pair, 5);
@@ -86,11 +84,10 @@ namespace Content.IntegrationTests.Tests
                 var mapId = ent2.GetAllMapIds().Last();
                 var pos = new MapCoordinates(Vector2.Zero, mapId);
                 var ent = IoCManager.Resolve<IEntityManager>();
-                var entStorage = ent.EntitySysManager.GetEntitySystem<EntityStorageSystem>();
                 var container = ent.SpawnEntity("ContainerOcclusionB", pos);
                 dummy = ent.SpawnEntity("ContainerOcclusionDummy", pos);
 
-                entStorage.Insert(dummy, container);
+                ent.GetComponent<EntityStorageComponent>(container).Insert(dummy);
             });
 
             await PoolManager.RunTicksSync(pairTracker.Pair, 5);
@@ -122,13 +119,12 @@ namespace Content.IntegrationTests.Tests
                 var mapId = ent2.GetAllMapIds().Last();
                 var pos = new MapCoordinates(Vector2.Zero, mapId);
                 var ent = IoCManager.Resolve<IEntityManager>();
-                var entStorage = ent.EntitySysManager.GetEntitySystem<EntityStorageSystem>();
                 var containerA = ent.SpawnEntity("ContainerOcclusionA", pos);
                 var containerB = ent.SpawnEntity("ContainerOcclusionB", pos);
                 dummy = ent.SpawnEntity("ContainerOcclusionDummy", pos);
 
-                entStorage.Insert(containerB, containerA);
-                entStorage.Insert(dummy, containerB);
+                ent.GetComponent<EntityStorageComponent>(containerA).Insert(containerB);
+                ent.GetComponent<EntityStorageComponent>(containerB).Insert(dummy);
             });
 
             await PoolManager.RunTicksSync(pairTracker.Pair, 5);

@@ -1,10 +1,8 @@
-using System.Globalization;
 using System.Linq;
 using Content.Server.Actions;
 using Content.Server.Chat.Managers;
 using Content.Server.Disease;
-using Content.Server.Disease.Components;
-using Content.Server.Humanoid;
+using Content.Server.GameTicking.Rules.Configurations;
 using Content.Server.Mind.Components;
 using Content.Server.Players;
 using Content.Server.Popups;
@@ -14,15 +12,16 @@ using Content.Server.Traitor;
 using Content.Server.Zombies;
 using Content.Shared.Actions.ActionTypes;
 using Content.Shared.CCVar;
-using Content.Shared.Humanoid;
-using Content.Shared.Mobs;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.CharacterAppearance.Components;
+using Content.Shared.FixedPoint;
+using Content.Shared.MobState;
+using Content.Shared.MobState.Components;
 using Content.Shared.Preferences;
 using Content.Shared.Roles;
 using Content.Shared.Zombies;
 using Robust.Server.Player;
 using Robust.Shared.Configuration;
+using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Utility;
@@ -41,7 +40,6 @@ public sealed class ZombieRuleSystem : GameRuleSystem
     [Dependency] private readonly DiseaseSystem _diseaseSystem = default!;
     [Dependency] private readonly PopupSystem _popup = default!;
     [Dependency] private readonly ActionsSystem _action = default!;
-    [Dependency] private readonly MobStateSystem _mobState = default!;
     [Dependency] private readonly ZombifyOnDeathSystem _zombify = default!;
 
     private Dictionary<string, string> _initialInfectedNames = new();
@@ -67,20 +65,20 @@ public sealed class ZombieRuleSystem : GameRuleSystem
 
     private void OnRoundEndText(RoundEndTextAppendEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         //this is just the general condition thing used for determining the win/lose text
-        var percent = GetInfectedPercentage(out var livingHumans);
+        var percent = Math.Round(GetInfectedPercentage(out var livingHumans), 2);
 
         if (percent <= 0)
             ev.AddLine(Loc.GetString("zombie-round-end-amount-none"));
         else if (percent <= 0.25)
             ev.AddLine(Loc.GetString("zombie-round-end-amount-low"));
         else if (percent <= 0.5)
-            ev.AddLine(Loc.GetString("zombie-round-end-amount-medium", ("percent", Math.Round((percent * 100), 2).ToString(CultureInfo.InvariantCulture))));
+            ev.AddLine(Loc.GetString("zombie-round-end-amount-medium", ("percent", (percent * 100).ToString())));
         else if (percent < 1)
-            ev.AddLine(Loc.GetString("zombie-round-end-amount-high", ("percent", Math.Round((percent * 100), 2).ToString(CultureInfo.InvariantCulture))));
+            ev.AddLine(Loc.GetString("zombie-round-end-amount-high", ("percent", (percent * 100).ToString())));
         else
             ev.AddLine(Loc.GetString("zombie-round-end-amount-all"));
 
@@ -92,8 +90,8 @@ public sealed class ZombieRuleSystem : GameRuleSystem
                 ("username", player.Value)));
         }
 
-        //Gets a bunch of the living players and displays them if they're under a threshold.
-        //InitialInfected is used for the threshold because it scales with the player count well.
+        ///Gets a bunch of the living players and displays them if they're under a threshold.
+        ///InitialInfected is used for the threshold because it scales with the player count well.
         if (livingHumans.Count > 0 && livingHumans.Count <= _initialInfectedNames.Count)
         {
             ev.AddLine("");
@@ -115,7 +113,7 @@ public sealed class ZombieRuleSystem : GameRuleSystem
 
     private void OnJobAssigned(RulePlayerJobsAssignedEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         _initialInfectedNames = new();
@@ -129,14 +127,14 @@ public sealed class ZombieRuleSystem : GameRuleSystem
     /// </remarks>
     private void OnMobStateChanged(MobStateChangedEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
-        CheckRoundEnd(ev.Target);
+        CheckRoundEnd(ev.Entity);
     }
 
     private void OnEntityZombified(EntityZombifiedEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
         CheckRoundEnd(ev.Target);
     }
@@ -153,14 +151,14 @@ public sealed class ZombieRuleSystem : GameRuleSystem
 
         var percent = GetInfectedPercentage(out var num);
         if (num.Count == 1) //only one human left. spooky
-           _popup.PopupEntity(Loc.GetString("zombie-alone"), num[0], num[0]);
+           _popup.PopupEntity(Loc.GetString("zombie-alone"), num[0], Filter.Entities(num[0]));
         if (percent >= 1) //oops, all zombies
             _roundEndSystem.EndRound();
     }
 
     private void OnStartAttempt(RoundStartAttemptEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         var minPlayers = _cfg.GetCVar(CCVars.ZombieMinPlayers);
@@ -175,16 +173,17 @@ public sealed class ZombieRuleSystem : GameRuleSystem
         {
             _chatManager.DispatchServerAnnouncement(Loc.GetString("zombie-no-one-ready"));
             ev.Cancel();
+            return;
         }
     }
 
-    public override void Started()
+    public override void Started(GameRuleConfiguration configuration)
     {
         //this technically will run twice with zombies on roundstart, but it doesn't matter because it fails instantly
         InfectInitialPlayers();
     }
 
-    public override void Ended() { }
+    public override void Ended(GameRuleConfiguration configuration) { }
 
     private void OnZombifySelf(EntityUid uid, ZombifyOnDeathComponent component, ZombifySelfActionEvent args)
     {
@@ -204,19 +203,19 @@ public sealed class ZombieRuleSystem : GameRuleSystem
 
         livingHumans = new();
 
-        foreach (var (_, mob) in allPlayers)
+        foreach (var ent in allPlayers)
         {
-            if (_mobState.IsAlive(mob.Owner, mob))
+            if (ent.Item2.IsAlive())
             {
-                totalPlayers.Add(mob.Owner);
+                totalPlayers.Add(ent.Item2.Owner);
 
-                if (allZombers.HasComponent(mob.Owner))
-                    livingZombies.Add(mob.Owner);
+                if (allZombers.HasComponent(ent.Item1.Owner))
+                    livingZombies.Add(ent.Item2.Owner);
                 else
-                    livingHumans.Add(mob.Owner);
+                    livingHumans.Add(ent.Item2.Owner);
             }
         }
-        return livingZombies.Count / (float) totalPlayers.Count;
+        return ((float) livingZombies.Count) / (float) totalPlayers.Count;
     }
 
     /// <summary>
@@ -235,7 +234,7 @@ public sealed class ZombieRuleSystem : GameRuleSystem
         var prefList = new List<IPlayerSession>();
         foreach (var player in allPlayers)
         {
-            if (player.AttachedEntity != null && HasComp<DiseaseCarrierComponent>(player.AttachedEntity))
+            if (player.AttachedEntity != null)
             {
                 playerList.Add(player);
 
@@ -298,17 +297,15 @@ public sealed class ZombieRuleSystem : GameRuleSystem
 
             if (mind.Session != null)
             {
-                var message = Loc.GetString("zombie-patientzero-role-greeting");
-                var wrappedMessage = Loc.GetString("chat-manager-server-wrap-message", ("message", message));
+                var messageWrapper = Loc.GetString("chat-manager-server-wrap-message");
 
                 //gets the names now in case the players leave.
-                //this gets unhappy if people with the same name get chose. Probably shouldn't happen.
-                _initialInfectedNames.Add(inCharacterName, mind.Session.Name);
+                if (inCharacterName != null)
+                    _initialInfectedNames.Add(inCharacterName, mind.Session.Name);
 
                 // I went all the way to ChatManager.cs and all i got was this lousy T-shirt
-                // You got a free T-shirt!?!?
-                _chatManager.ChatMessageToOne(Shared.Chat.ChatChannel.Server, message,
-                   wrappedMessage, default, false, mind.Session.ConnectedClient, Color.Plum);
+                _chatManager.ChatMessageToOne(Shared.Chat.ChatChannel.Server, Loc.GetString("zombie-patientzero-role-greeting"),
+                   messageWrapper, default, false, mind.Session.ConnectedClient, Color.Plum);
             }
         }
     }

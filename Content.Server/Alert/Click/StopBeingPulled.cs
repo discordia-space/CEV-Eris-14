@@ -15,14 +15,12 @@ namespace Content.Server.Alert.Click
     {
         public void AlertClicked(EntityUid player)
         {
-            var entityManager = IoCManager.Resolve<IEntityManager>();
-
-            if (!entityManager.System<ActionBlockerSystem>().CanInteract(player, null))
+            if (!EntitySystem.Get<ActionBlockerSystem>().CanInteract(player, null))
                 return;
 
-            if (entityManager.TryGetComponent<SharedPullableComponent?>(player, out var playerPullable))
+            if (IoCManager.Resolve<IEntityManager>().TryGetComponent<SharedPullableComponent?>(player, out var playerPullable))
             {
-                entityManager.System<SharedPullingSystem>().TryStopPull(playerPullable);
+                EntitySystem.Get<SharedPullingSystem>().TryStopPull(playerPullable);
             }
         }
     }

@@ -17,13 +17,12 @@ namespace Content.Client.Recycling
         [DataField("state_off")]
         private string _stateOff = "grinder-o0";
 
-        [Obsolete("Subscribe to your component being initialised instead.")]
         public override void InitializeEntity(EntityUid entity)
         {
             base.InitializeEntity(entity);
 
             var entMan = IoCManager.Resolve<IEntityManager>();
-            if (!entMan.TryGetComponent(entity, out SpriteComponent? sprite) ||
+            if (!entMan.TryGetComponent(entity, out ISpriteComponent? sprite) ||
                 !entMan.TryGetComponent(entity, out AppearanceComponent? appearance))
             {
                 return;
@@ -32,13 +31,12 @@ namespace Content.Client.Recycling
             UpdateAppearance(appearance, sprite);
         }
 
-        [Obsolete("Subscribe to AppearanceChangeEvent instead.")]
         public override void OnChangeData(AppearanceComponent component)
         {
             base.OnChangeData(component);
 
             var entities = IoCManager.Resolve<IEntityManager>();
-            if (!entities.TryGetComponent(component.Owner, out SpriteComponent? sprite))
+            if (!entities.TryGetComponent(component.Owner, out ISpriteComponent? sprite))
             {
                 return;
             }
@@ -46,7 +44,7 @@ namespace Content.Client.Recycling
             UpdateAppearance(component, sprite);
         }
 
-        private void UpdateAppearance(AppearanceComponent component, SpriteComponent sprite)
+        private void UpdateAppearance(AppearanceComponent component, ISpriteComponent sprite)
         {
             var state = _stateOff;
             if (component.TryGetData(ConveyorVisuals.State, out ConveyorState conveyorState) && conveyorState != ConveyorState.Off)

@@ -124,18 +124,25 @@ namespace Content.IntegrationTests.Tests
         {
             await using var pairTracker = await PoolManager.GetServerClient();
             var server = pairTracker.Pair.Server;
-            var testMap = await PoolManager.CreateTestMap(pairTracker);
-            var coordinates = testMap.GridCoords;
 
             EntityUid playerEnt = default;
             Mind mind = null;
+            MapId map = default;
             await server.WaitAssertion(() =>
             {
                 var player = IoCManager.Resolve<IPlayerManager>().ServerSessions.Single();
 
                 var mapMan = IoCManager.Resolve<IMapManager>();
+
+                map = mapMan.CreateMap();
+                var grid = mapMan.CreateGrid(map);
+
                 var entMgr = IoCManager.Resolve<IServerEntityManager>();
-                playerEnt = entMgr.SpawnEntity(null, coordinates);
+
+                mapMan.CreateNewMapEntity(MapId.Nullspace);
+
+                playerEnt = entMgr.SpawnEntity(null, grid.ToCoordinates());
+
                 mind = new Mind(player.UserId);
                 mind.ChangeOwningPlayer(player.UserId);
 
@@ -149,7 +156,8 @@ namespace Content.IntegrationTests.Tests
             await server.WaitPost(() =>
             {
                 var mapMan = IoCManager.Resolve<IMapManager>();
-                mapMan.DeleteMap(testMap.MapId);
+
+                mapMan.DeleteMap(map);
             });
 
             await PoolManager.RunTicksSync(pairTracker.Pair, 5);

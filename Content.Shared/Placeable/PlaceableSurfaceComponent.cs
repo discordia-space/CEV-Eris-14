@@ -7,12 +7,15 @@ namespace Content.Shared.Placeable
     [Access(typeof(PlaceableSurfaceSystem))]
     public sealed class PlaceableSurfaceComponent : Component
     {
+        [ViewVariables]
         [DataField("isPlaceable")]
         public bool IsPlaceable { get; set; } = true;
 
+        [ViewVariables]
         [DataField("placeCentered")]
         public bool PlaceCentered { get; set; }
 
+        [ViewVariables]
         [DataField("positionOffset")]
         public Vector2 PositionOffset { get; set; }
     }

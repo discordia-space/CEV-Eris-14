@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Threading.Tasks;
 using Content.Shared.Preferences;
 using Robust.Server.Player;
@@ -11,10 +9,12 @@ namespace Content.Server.Preferences.Managers
     {
         void Init();
 
-        Task LoadData(IPlayerSession session, CancellationToken cancel);
+        void OnClientConnected(IPlayerSession session);
         void OnClientDisconnected(IPlayerSession session);
 
-        bool TryGetCachedPreferences(NetUserId userId, [NotNullWhen(true)] out PlayerPreferences? playerPreferences);
+        bool HavePreferencesLoaded(IPlayerSession session);
+        Task WaitPreferencesLoaded(IPlayerSession session);
+
         PlayerPreferences GetPreferences(NetUserId userId);
         IEnumerable<KeyValuePair<NetUserId, ICharacterProfile>> GetSelectedProfilesForPlayers(List<NetUserId> userIds);
     }

@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace Content.Shared.Localizations
 {
@@ -52,9 +51,9 @@ namespace Content.Shared.Localizations
             public string Format(double val)
             {
                 if (TryGetUnit(val, out var w))
-                    return (val * w.Factor) + " " + Loc.GetString("units-" + w.Unit);
+                    return (val * w.Factor).ToString() + " " + Loc.GetString("units-" + w.Unit);
 
-                return val.ToString(CultureInfo.InvariantCulture);
+                return val.ToString();
             }
 
             public string Format(double val, string fmt)
@@ -131,11 +130,11 @@ namespace Content.Shared.Localizations
 
         public readonly static Dictionary<string, TypeTable> Types = new Dictionary<string, TypeTable>
         {
-            ["generic"] = Generic,
-            ["pressure"] = Pressure,
-            ["power"] = Power,
-            ["energy"] = Energy,
-            ["temperature"] = Temperature,
+            ["generic"] = Generic!,
+            ["pressure"] = Pressure!,
+            ["power"] = Power!,
+            ["energy"] = Energy!,
+            ["temperature"] = Temperature!
         };
     }
 }

@@ -1,10 +1,10 @@
-using Content.Client.Actions;
-using Content.Shared.Actions;
-using Content.Shared.Actions.ActionTypes;
-using Content.Shared.Maps;
+using Robust.Shared.Utility;
 using Robust.Client.Placement;
 using Robust.Shared.Map;
-using Robust.Shared.Utility;
+using Content.Shared.Actions.ActionTypes;
+using Content.Shared.Actions;
+using Content.Client.Actions;
+using Content.Shared.Maps;
 
 namespace Content.Client.Mapping;
 
@@ -80,13 +80,13 @@ public sealed partial class MappingSystem : EntitySystem
 
             var tileIcon = contentTileDef.IsSpace
                 ? _spaceIcon
-                : new SpriteSpecifier.Texture(contentTileDef.Sprite!);
+                : new SpriteSpecifier.Texture(new ResourcePath(tileDef.Path) / $"{tileDef.SpriteName}.png");
 
             ev.Action = new InstantAction()
             {
                 CheckCanInteract = false,
                 Event = actionEvent,
-                DisplayName = Loc.GetString(tileDef.Name),
+                Name = tileDef.Name,
                 Icon = tileIcon
             };
 
@@ -99,7 +99,7 @@ public sealed partial class MappingSystem : EntitySystem
             {
                 CheckCanInteract = false,
                 Event = actionEvent,
-                DisplayName = "action-name-mapping-erase",
+                Name = "action-name-mapping-erase",
                 Icon = _deleteIcon,
             };
 
@@ -113,7 +113,7 @@ public sealed partial class MappingSystem : EntitySystem
         {
             CheckCanInteract = false,
             Event = actionEvent,
-            DisplayName = actionEvent.EntityType,
+            Name = actionEvent.EntityType,
             Icon = new SpriteSpecifier.EntityPrototype(actionEvent.EntityType),
         };
     }

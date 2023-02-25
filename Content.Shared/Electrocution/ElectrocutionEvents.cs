@@ -4,16 +4,15 @@ namespace Content.Shared.Electrocution
 {
     public sealed class ElectrocutionAttemptEvent : CancellableEntityEventArgs, IInventoryRelayEvent
     {
-        public SlotFlags TargetSlots { get; }
+        public SlotFlags TargetSlots { get; } = ~SlotFlags.POCKET;
 
         public readonly EntityUid TargetUid;
         public readonly EntityUid? SourceUid;
         public float SiemensCoefficient = 1f;
 
-        public ElectrocutionAttemptEvent(EntityUid targetUid, EntityUid? sourceUid, float siemensCoefficient, SlotFlags targetSlots)
+        public ElectrocutionAttemptEvent(EntityUid targetUid, EntityUid? sourceUid, float siemensCoefficient)
         {
             TargetUid = targetUid;
-            TargetSlots = targetSlots;
             SourceUid = sourceUid;
             SiemensCoefficient = siemensCoefficient;
         }

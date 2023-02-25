@@ -1,4 +1,4 @@
-namespace Content.Shared.Alert
+﻿namespace Content.Shared.Alert
 {
     /// <summary>
     /// Every kind of alert. Corresponds to alertType field in alert prototypes defined in YML
@@ -17,27 +17,25 @@ namespace Content.Shared.Alert
         Weightless,
         Stun,
         Handcuffed,
-        Ensnared,
         Buckled,
         HumanCrit,
         HumanDead,
         HumanHealth,
         PilotingShuttle,
+        Overfed,
         Peckish,
         Starving,
+        Overhydrated,
         Thirsty,
         Parched,
         Stamina,
         Pulled,
         Pulling,
         Magboots,
-        Internals,
         Toxins,
         Muted,
         VowOfSilence,
         VowBroken,
-        Essence,
-        Corporeal,
         Debug1,
         Debug2,
         Debug3,

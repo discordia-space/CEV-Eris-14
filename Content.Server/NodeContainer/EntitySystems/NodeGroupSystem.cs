@@ -45,14 +45,7 @@ namespace Content.Server.NodeContainer.EntitySystems
         private int _gen = 1;
         private int _groupNetIdCounter = 1;
 
-        /// <summary>
-        ///     If true, UpdateGrid() will not process grids.
-        /// </summary>
-        /// <remarks>
-        ///     Useful if something like a large explosion is in the process of shredding the grid, as it avoids uneccesary
-        ///     updating.
-        /// </remarks>
-        public bool PauseUpdating = false;
+        public bool Snoozing = false;
 
         public override void Initialize()
         {
@@ -142,7 +135,7 @@ namespace Content.Server.NodeContainer.EntitySystems
         {
             base.Update(frameTime);
 
-            if (!PauseUpdating)
+            if (!Snoozing)
             {
                 DoGroupUpdates();
                 VisDoUpdate(frameTime);
@@ -403,7 +396,7 @@ namespace Content.Server.NodeContainer.EntitySystems
 
             foreach (var network in _nodeGroups)
             {
-                msg.Groups.Add(VisMakeGroupState(network));
+                msg.Groups.Add(VisMakeGroupState(network!));
             }
 
             RaiseNetworkEvent(msg, player.ConnectedClient);

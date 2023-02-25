@@ -1,3 +1,4 @@
+#nullable enable
 using System.Threading.Tasks;
 using Content.Server.Shuttles.Components;
 using NUnit.Framework;
@@ -5,8 +6,6 @@ using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
 using Robust.Shared.Maths;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics.Systems;
 
 namespace Content.IntegrationTests.Tests
 {
@@ -18,11 +17,9 @@ namespace Content.IntegrationTests.Tests
         {
             await using var pairTracker = await PoolManager.GetServerClient(new PoolSettings{NoClient = true});
             var server = pairTracker.Pair.Server;
-            await server.WaitIdleAsync();
 
             var mapMan = server.ResolveDependency<IMapManager>();
-            var entManager = server.ResolveDependency<IEntityManager>();
-            var physicsSystem = entManager.System<SharedPhysicsSystem>();
+            var sEntities = server.ResolveDependency<IEntityManager>();
 
             EntityUid gridEnt = default;
 
@@ -30,20 +27,20 @@ namespace Content.IntegrationTests.Tests
             {
                 var mapId = mapMan.CreateMap();
                 var grid = mapMan.CreateGrid(mapId);
-                gridEnt = grid.Owner;
+                gridEnt = grid.GridEntityId;
 
-                Assert.That(entManager.HasComponent<ShuttleComponent>(gridEnt));
-                Assert.That(entManager.TryGetComponent<PhysicsComponent>(gridEnt, out var physicsComponent));
+                Assert.That(sEntities.TryGetComponent(gridEnt, out ShuttleComponent? shuttleComponent));
+                Assert.That(sEntities.TryGetComponent(gridEnt, out PhysicsComponent? physicsComponent));
                 Assert.That(physicsComponent!.BodyType, Is.EqualTo(BodyType.Dynamic));
-                Assert.That(entManager.GetComponent<TransformComponent>(gridEnt).LocalPosition, Is.EqualTo(Vector2.Zero));
-                physicsSystem.ApplyLinearImpulse(gridEnt, Vector2.One, body: physicsComponent);
+                Assert.That(sEntities.GetComponent<TransformComponent>(gridEnt).LocalPosition, Is.EqualTo(Vector2.Zero));
+                physicsComponent.ApplyLinearImpulse(Vector2.One);
             });
 
             await server.WaitRunTicks(1);
 
             await server.WaitAssertion(() =>
             {
-                Assert.That(entManager.GetComponent<TransformComponent>(gridEnt).LocalPosition, Is.Not.EqualTo(Vector2.Zero));
+                Assert.That<Vector2?>(sEntities.GetComponent<TransformComponent>(gridEnt).LocalPosition, Is.Not.EqualTo(Vector2.Zero));
             });
             await pairTracker.CleanReturnAsync();
         }

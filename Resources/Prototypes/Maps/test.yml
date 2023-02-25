@@ -1,10 +1,11 @@
 - type: gameMap
-  id: Empty
+  id: empty
   mapName: Empty
   mapPath: /Maps/Test/empty.yml
   minPlayers: 0
+  votable: false
   stations:
-    Empty:
+    Station: #TODO: Add a BecomesStation to empty.yml
       mapNameTemplate: "Empty"
       overflowJobs:
         - Passenger

@@ -1,8 +1,8 @@
 using Content.Server.Explosion.Components;
 using Content.Server.Sticky.Events;
 using Content.Shared.Examine;
-using Content.Shared.Interaction.Events;
 using Content.Shared.Popups;
+using Content.Shared.Interaction.Events;
 using Content.Shared.Verbs;
 using Robust.Shared.Player;
 
@@ -83,17 +83,8 @@ public sealed partial class TriggerSystem
                 Act = () =>
                 {
                     component.Delay = option;
-                    _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", option)), args.User, args.User);
+                    _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", option)), args.User, Filter.Entities(args.User));
                 },
-            });
-        }
-
-        if (component.AllowToggleStartOnStick)
-        {
-            args.Verbs.Add(new AlternativeVerb()
-            {
-                Text = Loc.GetString("verb-toggle-start-on-stick"),
-                Act = () => ToggleStartOnStick(uid, args.User, component)
             });
         }
     }
@@ -110,7 +101,7 @@ public sealed partial class TriggerSystem
         if (component.DelayOptions[^1] <= component.Delay)
         {
             component.Delay = component.DelayOptions[0];
-            _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", component.Delay)), user, user);
+            _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", component.Delay)), user, Filter.Entities(user));
             return;
         }
 
@@ -119,30 +110,15 @@ public sealed partial class TriggerSystem
             if (option > component.Delay)
             {
                 component.Delay = option;
-                _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", option)), user, user);
+                _popupSystem.PopupEntity(Loc.GetString("popup-trigger-timer-set", ("time", option)), user, Filter.Entities(user));
                 return;
             }
         }
     }
 
-    private void ToggleStartOnStick(EntityUid grenade, EntityUid user, OnUseTimerTriggerComponent comp)
-    {
-        if (comp.StartOnStick)
-        {
-            comp.StartOnStick = false;
-            _popupSystem.PopupEntity(Loc.GetString("popup-start-on-stick-off"), grenade, user);
-        }
-        else
-        {
-            comp.StartOnStick = true;
-            _popupSystem.PopupEntity(Loc.GetString("popup-start-on-stick-on"), grenade, user);
-        }
-    }
-
     private void OnTimerUse(EntityUid uid, OnUseTimerTriggerComponent component, UseInHandEvent args)
     {
-        if (args.Handled)
-            return;
+        if (args.Handled) return;
 
         HandleTimerTrigger(
             uid,

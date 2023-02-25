@@ -5,9 +5,6 @@
   - rmcomp
   - rmcompc
   - vv
-  - vvread
-  - vvwrite
-  - vvinvoke
   - scale
   - spin
 
@@ -69,16 +66,15 @@
 - Flags: MAPPING
   Commands:
   - addmap
-  - loadgrid
+  - loadbp
   - loadmap
   - pausemap
   - querymappaused
   - rmgrid
   - rmmap
   - mapinit
-  - savegrid
+  - savebp
   - savemap
-  - setambientlight
   - tpgrid
   - gridtc
   - togglespritenetsync

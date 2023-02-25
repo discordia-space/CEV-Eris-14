@@ -6,9 +6,7 @@ namespace Content.Shared.Cargo
     [NetSerializable, Serializable]
     public sealed class CargoOrderData
     {
-        public int OrderIndex;
-        /// The human-readable number, when displaying this order
-        public int PrintableOrderNumber { get { return OrderIndex + 1; } }
+        public int OrderNumber;
         public string ProductId;
         public int Amount;
         public string Requester;
@@ -18,9 +16,9 @@ namespace Content.Shared.Cargo
         public bool Approved => Approver is not null;
         public string? Approver;
 
-        public CargoOrderData(int orderIndex, string productId, int amount, string requester, string reason)
+        public CargoOrderData(int orderNumber, string productId, int amount, string requester, string reason)
         {
-            OrderIndex = orderIndex;
+            OrderNumber = orderNumber;
             ProductId = productId;
             Amount = amount;
             Requester = requester;
@@ -38,7 +36,11 @@ namespace Content.Shared.Cargo
             {
                 sb.Append($"({idCard.JobTitle})");
             }
-            Approver = sb.ToString();
+
+            if (sb.Length > 0)
+            {
+                Approver = sb.ToString();
+            }
         }
     }
 }

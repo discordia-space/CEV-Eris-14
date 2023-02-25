@@ -6,7 +6,7 @@
   - type: StorageFill
     contents:
       - id: FlashlightSeclite
-      - id: WeaponDisabler
+      - id: WeaponTaser
         prob: 0.3
       - id: ClothingHeadHatWarden
       - id: ClothingHeadHatBeretWarden
@@ -19,7 +19,6 @@
       - id: ClothingOuterCoatWarden
       - id: ClothingOuterWinterWarden
       - id: RubberStampWarden
-      - id: DoorRemoteArmory
 
 - type: entity
   id: LockerSecurityFilled
@@ -57,8 +56,6 @@
       - id: ForensicScanner
       - id: BoxForensicPad
       - id: WeaponRevolverInspector
-      - id: DrinkDetFlask
-      - id: SpeedLoaderMagnum
 
 - type: entity
   id: ClosetBombFilled

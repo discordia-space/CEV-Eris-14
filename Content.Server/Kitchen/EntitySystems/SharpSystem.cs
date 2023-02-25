@@ -1,16 +1,12 @@
-﻿using Content.Server.Body.Systems;
-using Content.Server.DoAfter;
+﻿using Content.Server.DoAfter;
 using Content.Server.Kitchen.Components;
 using Content.Shared.Body.Components;
 using Content.Shared.Interaction;
+using Content.Shared.MobState.Components;
 using Content.Shared.Nutrition.Components;
 using Content.Shared.Popups;
 using Content.Shared.Storage;
 using Content.Shared.Verbs;
-using Content.Shared.Destructible;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
-using Robust.Server.Containers;
 using Robust.Shared.Player;
 using Robust.Shared.Random;
 
@@ -18,12 +14,8 @@ namespace Content.Server.Kitchen.EntitySystems;
 
 public sealed class SharpSystem : EntitySystem
 {
-    [Dependency] private readonly BodySystem _bodySystem = default!;
-    [Dependency] private readonly SharedDestructibleSystem _destructibleSystem = default!;
     [Dependency] private readonly DoAfterSystem _doAfterSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
-    [Dependency] private readonly ContainerSystem _containerSystem = default!;
-    [Dependency] private readonly MobStateSystem _mobStateSystem = default!;
     [Dependency] private readonly IRobustRandom _robustRandom = default!;
 
     public override void Initialize()
@@ -34,7 +26,7 @@ public sealed class SharpSystem : EntitySystem
         SubscribeLocalEvent<SharpButcherDoafterComplete>(OnDoafterComplete);
         SubscribeLocalEvent<SharpButcherDoafterCancelled>(OnDoafterCancelled);
 
-        SubscribeLocalEvent<ButcherableComponent, GetVerbsEvent<InteractionVerb>>(OnGetInteractionVerbs);
+        SubscribeLocalEvent<SharedButcherableComponent, GetVerbsEvent<InteractionVerb>>(OnGetInteractionVerbs);
     }
 
     private void OnAfterInteract(EntityUid uid, SharpComponent component, AfterInteractEvent args)
@@ -47,7 +39,7 @@ public sealed class SharpSystem : EntitySystem
 
     private void TryStartButcherDoafter(EntityUid knife, EntityUid target, EntityUid user)
     {
-        if (!TryComp<ButcherableComponent>(target, out var butcher))
+        if (!TryComp<SharedButcherableComponent>(target, out var butcher))
             return;
 
         if (!TryComp<SharpComponent>(knife, out var sharp))
@@ -56,7 +48,7 @@ public sealed class SharpSystem : EntitySystem
         if (butcher.Type != ButcheringType.Knife)
             return;
 
-        if (TryComp<MobStateComponent>(target, out var mobState) && !_mobStateSystem.IsDead(target, mobState))
+        if (TryComp<MobStateComponent>(target, out var mobState) && !mobState.IsDead())
             return;
 
         if (!sharp.Butchering.Add(target))
@@ -79,7 +71,7 @@ public sealed class SharpSystem : EntitySystem
 
     private void OnDoafterComplete(SharpButcherDoafterComplete ev)
     {
-        if (!TryComp<ButcherableComponent>(ev.Entity, out var butcher))
+        if (!TryComp<SharedButcherableComponent>(ev.Entity, out var butcher))
             return;
 
         if (!TryComp<SharpComponent>(ev.Sharp, out var sharp))
@@ -87,32 +79,25 @@ public sealed class SharpSystem : EntitySystem
 
         sharp.Butchering.Remove(ev.Entity);
 
-        if (_containerSystem.IsEntityInContainer(ev.Entity))
-            return;
-
         var spawnEntities = EntitySpawnCollection.GetSpawns(butcher.SpawnedEntities, _robustRandom);
-        var coords = Transform(ev.Entity).MapPosition;
+        var coords = Transform(ev.Entity).Coordinates;
         EntityUid popupEnt = default;
         foreach (var proto in spawnEntities)
         {
-            // distribute the spawned items randomly in a small radius around the origin
-            popupEnt = Spawn(proto, coords.Offset(_robustRandom.NextVector2(0.25f)));
+            popupEnt = Spawn(proto, coords);
         }
 
-        var hasBody = TryComp<BodyComponent>(ev.Entity, out var body);
-
-        // only show a big popup when butchering living things.
-        var popupType = PopupType.Small;
-        if (hasBody)
-            popupType = PopupType.LargeCaution;
-
         _popupSystem.PopupEntity(Loc.GetString("butcherable-knife-butchered-success", ("target", ev.Entity), ("knife", ev.Sharp)),
-            popupEnt, ev.User, popupType);
+            popupEnt, Filter.Entities(ev.User), PopupType.LargeCaution);
 
-        if (hasBody)
-            _bodySystem.GibBody(body!.Owner, body: body);
-
-        _destructibleSystem.DestroyEntity(ev.Entity);
+        if (TryComp<SharedBodyComponent>(ev.Entity, out var body))
+        {
+            body.Gib();
+        }
+        else
+        {
+            QueueDel(ev.Entity);
+        }
     }
 
     private void OnDoafterCancelled(SharpButcherDoafterCancelled ev)
@@ -123,7 +108,7 @@ public sealed class SharpSystem : EntitySystem
         sharp.Butchering.Remove(ev.Entity);
     }
 
-    private void OnGetInteractionVerbs(EntityUid uid, ButcherableComponent component, GetVerbsEvent<InteractionVerb> args)
+    private void OnGetInteractionVerbs(EntityUid uid, SharedButcherableComponent component, GetVerbsEvent<InteractionVerb> args)
     {
         if (component.Type != ButcheringType.Knife || args.Hands == null)
             return;
@@ -131,22 +116,16 @@ public sealed class SharpSystem : EntitySystem
         bool disabled = false;
         string? message = null;
 
-        if (args.Using is null || !HasComp<SharpComponent>(args.Using))
-        {
-            disabled = true;
-            message = Loc.GetString("butcherable-need-knife",
-                ("target", uid));
-        }
-        else if (_containerSystem.IsEntityInContainer(uid))
-        {
-            message = Loc.GetString("butcherable-not-in-container",
-                ("target", uid));
-            disabled = true;
-        }
-        else if (TryComp<MobStateComponent>(uid, out var state) && !_mobStateSystem.IsDead(uid, state))
+        if (TryComp<MobStateComponent>(uid, out var state) && !state.IsDead())
         {
             disabled = true;
             message = Loc.GetString("butcherable-mob-isnt-dead");
+        }
+
+        if (args.Using is null || !HasComp<SharpComponent>(args.Using))
+        {
+            disabled = true;
+            message = Loc.GetString("butcherable-need-knife");
         }
 
         InteractionVerb verb = new()

@@ -15,12 +15,6 @@
   - type: Tag
     tags:
     - Handcuffs
-  - type: MeleeWeapon
-    resetOnHandSelected: false
-    animation: WeaponArcDisarm
-    damage:
-      types:
-        Blunt: 0
 
 - type: entity
   name: makeshift handcuffs
@@ -36,7 +30,9 @@
     bodyIconState: body-overlay
     color: red
     breakOnRemove: true
-    brokenPrototype: CablecuffsBroken
+    brokenIconState: cuff-broken
+    brokenName: broken cables
+    brokenDesc: These cables are broken in several places and don't seem very useful.
     startCuffSound:
       path: /Audio/Items/Handcuffs/rope_start.ogg
     endCuffSound:
@@ -68,7 +64,9 @@
     cuffedRSI: Objects/Misc/cablecuffs.rsi  # cablecuffs will look fine
     bodyIconState: body-overlay
     breakOnRemove: true
-    brokenPrototype: ZiptiesBroken
+    brokenIconState: cuff-broken
+    brokenName: broken zipties
+    brokenDesc: These zipties look like they tried to manage the wrong cables.
     startCuffSound:
       path: /Audio/Items/Handcuffs/ziptie_start.ogg
     endCuffSound:
@@ -82,30 +80,3 @@
   - type: Sprite
     sprite: Objects/Misc/zipties.rsi
     state: cuff
-
-- type: entity
-  name: broken zipties
-  description: These zipties look like they tried to manage the wrong cables.
-  id: ZiptiesBroken
-  parent: BaseItem
-  components:
-  - type: Sprite
-    sprite: Objects/Misc/zipties.rsi
-    state: cuff-broken
-  - type: Item
-    size: 2
-  - type: Recyclable
-
-- type: entity
-  name: broken cables
-  description: These cables are broken in several places and don't seem very useful.
-  id: CablecuffsBroken
-  parent: BaseItem
-  components:
-  - type: Sprite
-    sprite: Objects/Misc/cablecuffs.rsi
-    state: cuff-broken
-    color: red
-  - type: Item
-    size: 2
-  - type: Recyclable

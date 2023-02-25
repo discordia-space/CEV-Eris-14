@@ -4,8 +4,6 @@
   name: PA end cap board
   description: A machine board for a particle accelerator end cap
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorEndCapUnfinished
       materialRequirements:
@@ -18,8 +16,6 @@
   name: PA fuel chamber board
   description: A machine board for a particle accelerator fuel chamber
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorFuelChamberUnfinished
       componentRequirements:
@@ -37,8 +33,6 @@
   name: PA power box board
   description: A machine board for a particle accelerator power box
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorPowerBoxUnfinished
       materialRequirements:
@@ -53,8 +47,6 @@
   name: PA emitter left board
   description: A machine board for a particle accelerator left emitter
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorEmitterLeftUnfinished
       materialRequirements:
@@ -67,8 +59,6 @@
   name: PA emitter center board
   description: A machine board for a particle accelerator center emitter
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorEmitterCenterUnfinished
       materialRequirements:
@@ -81,8 +71,6 @@
   name: PA emitter right board
   description: A machine board for a particle accelerator right emitter
   components:
-    - type: Sprite
-      state: engineering
     - type: MachineBoard
       prototype: ParticleAcceleratorEmitterRightUnfinished
       materialRequirements:

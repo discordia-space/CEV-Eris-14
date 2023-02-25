@@ -3,10 +3,4 @@
   noSpawn: true
   components:
   - type: Physics
-    bodyType: Dynamic
   - type: Fixtures
-    fixtures:
-      - shape:
-          !type:PhysShapeCircle
-          radius: 0.35
-        id: tether

@@ -20,8 +20,7 @@
     sprite: Markers/jobs.rsi
     layers:
       - state: green
-      - sprite: Mobs/Ghosts/ghost_human.rsi
-        state: icon
+      - texture: Mobs/Ghosts/ghost_human.rsi/icon.png
     state: observer
   - type: SpawnPoint
     spawn_type: Observer
@@ -112,14 +111,6 @@
   components:
   - type: SpawnPoint
     job_id: SecurityCadet
-
-- type: entity
-  id: SpawnPointResearchAssistant
-  parent: SpawnPointAssistant
-  name: research assistant
-  components:
-  - type: SpawnPoint
-    job_id: ResearchAssistant
 
 - type: entity
   id: SpawnPointServiceWorker
@@ -440,7 +431,7 @@
     layers:
       - state: green
       - state: ertleader
-
+      
 - type: entity
   id: SpawnPointERTEngineer
   parent: SpawnPointJobBase
@@ -452,7 +443,7 @@
     layers:
       - state: green
       - state: ertengineer
-
+      
 - type: entity
   id: SpawnPointERTMedical
   parent: SpawnPointJobBase
@@ -464,7 +455,7 @@
     layers:
       - state: green
       - state: ertmedical
-
+      
 - type: entity
   id: SpawnPointERTSecurity
   parent: SpawnPointJobBase
@@ -476,7 +467,7 @@
     layers:
       - state: green
       - state: ertsecurity
-
+      
 - type: entity
   id: SpawnPointERTJanitor
   parent: SpawnPointJobBase
@@ -514,15 +505,3 @@
     layers:
       - state: green
       - state: psychologist
-
-- type: entity
-  id: SpawnPointZookeeper
-  parent: SpawnPointJobBase
-  name: zookeeper
-  components:
-  - type: SpawnPoint
-    job_id: Zookeeper
-  - type: Sprite
-    layers:
-      - state: green
-      - state: zookeeper

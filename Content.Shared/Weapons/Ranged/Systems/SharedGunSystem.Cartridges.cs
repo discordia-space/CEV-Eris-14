@@ -6,7 +6,7 @@ namespace Content.Shared.Weapons.Ranged.Systems;
 
 public abstract partial class SharedGunSystem
 {
-    protected virtual void InitializeCartridge()
+    private void InitializeCartridge()
     {
         SubscribeLocalEvent<CartridgeAmmoComponent, ComponentGetState>(OnCartridgeGetState);
         SubscribeLocalEvent<CartridgeAmmoComponent, ComponentHandleState>(OnCartridgeHandleState);

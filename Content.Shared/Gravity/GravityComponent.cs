@@ -1,4 +1,4 @@
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 using Robust.Shared.GameStates;
 using Robust.Shared.Serialization;
 
@@ -12,20 +12,48 @@ namespace Content.Shared.Gravity
         public SoundSpecifier GravityShakeSound { get; set; } = new SoundPathSpecifier("/Audio/Effects/alert.ogg");
 
         [ViewVariables(VVAccess.ReadWrite)]
-        public bool EnabledVV
+        public bool Enabled
         {
-            get => Enabled;
+            get => _enabled;
             set
             {
-                if (Enabled == value) return;
-                Enabled = value;
-                var ev = new GravityChangedEvent(Owner, value);
-                IoCManager.Resolve<IEntityManager>().EventBus.RaiseLocalEvent(Owner, ref ev);
+                if (_enabled == value) return;
+                _enabled = value;
+                if (_enabled)
+                {
+                    Logger.Info($"Enabled gravity for {Owner}");
+                }
+                else
+                {
+                    Logger.Info($"Disabled gravity for {Owner}");
+                }
                 Dirty();
             }
         }
 
-        [DataField("enabled")]
-        public bool Enabled;
+        private bool _enabled;
+
+        public override ComponentState GetComponentState()
+        {
+            return new GravityComponentState(_enabled);
+        }
+
+        public override void HandleComponentState(ComponentState? curState, ComponentState? nextState)
+        {
+            base.HandleComponentState(curState, nextState);
+            if (curState is not GravityComponentState state) return;
+            Enabled = state.Enabled;
+        }
+
+        [Serializable, NetSerializable]
+        private sealed class GravityComponentState : ComponentState
+        {
+            public bool Enabled { get; }
+
+            public GravityComponentState(bool enabled)
+            {
+                Enabled = enabled;
+            }
+        }
     }
 }

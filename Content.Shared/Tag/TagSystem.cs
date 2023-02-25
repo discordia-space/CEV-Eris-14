@@ -69,8 +69,9 @@ public sealed class TagSystem : EntitySystem
     ///     Thrown if no <see cref="TagPrototype"/> exists with the given id.
     /// </exception>
     public bool AddTag(EntityUid entity, string id)
-    {
-        return AddTag(EnsureComp<TagComponent>(entity), id);
+{
+    return EntityManager.EnsureComponent<TagComponent>(entity, out var component) &&
+               AddTag(component, id);
     }
 
     /// <summary>
@@ -86,7 +87,8 @@ public sealed class TagSystem : EntitySystem
     /// </exception>
     public bool AddTags(EntityUid entity, params string[] ids)
     {
-        return AddTags(EnsureComp<TagComponent>(entity), ids);
+        return EntityManager.EnsureComponent<TagComponent>(entity, out var component) &&
+               AddTags(component, ids);
     }
 
     /// <summary>
@@ -102,7 +104,8 @@ public sealed class TagSystem : EntitySystem
     /// </exception>
     public bool AddTags(EntityUid entity, IEnumerable<string> ids)
     {
-        return AddTags(EnsureComp<TagComponent>(entity), ids);
+        return EntityManager.EnsureComponent<TagComponent>(entity, out var component) &&
+               AddTags(component, ids);
     }
 
     /// <summary>

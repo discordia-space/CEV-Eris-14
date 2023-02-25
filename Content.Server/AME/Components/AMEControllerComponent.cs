@@ -1,12 +1,10 @@
 using System.Linq;
-using Content.Server.Administration.Logs;
-using Content.Server.Mind.Components;
 using Content.Server.NodeContainer;
 using Content.Server.Power.Components;
 using Content.Server.UserInterface;
 using Content.Shared.AME;
-using Content.Shared.Database;
 using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Sound;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio;
 using Robust.Shared.Containers;
@@ -19,7 +17,6 @@ namespace Content.Server.AME.Components
     {
         [Dependency] private readonly IEntityManager _entities = default!;
         [Dependency] private readonly IEntitySystemManager _sysMan = default!;
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
 
         [ViewVariables] private BoundUserInterface? UserInterface => Owner.GetUIOrNull(AMEControllerUiKey.Key);
         private bool _injecting;
@@ -54,8 +51,7 @@ namespace Content.Server.AME.Components
 
             _injecting = false;
             InjectionAmount = 2;
-            // TODO: Fix this bad name. I'd update maps but then people get mad.
-            JarSlot = ContainerHelpers.EnsureContainer<ContainerSlot>(Owner, $"AMEController-fuelJarContainer");
+            JarSlot = ContainerHelpers.EnsureContainer<ContainerSlot>(Owner, $"{Name}-fuelJarContainer");
         }
 
         internal void OnUpdate(float frameTime)
@@ -170,19 +166,6 @@ namespace Content.Server.AME.Components
                 case UiButton.DecreaseFuel:
                     InjectionAmount = InjectionAmount > 0 ? InjectionAmount -= 2 : 0;
                     break;
-            }
-
-            // Logging
-            _entities.TryGetComponent(player, out MindComponent? mindComponent);
-            if (mindComponent != null)
-            {
-                var humanReadableState = _injecting ? "Inject" : "Not inject";
-
-                if (msg.Button == UiButton.IncreaseFuel || msg.Button == UiButton.DecreaseFuel)
-                    _adminLogger.Add(LogType.Action, LogImpact.Extreme, $"{_entities.ToPrettyString(mindComponent.Owner):player} has set the AME to inject {InjectionAmount} while set to {humanReadableState}");
-
-                if (msg.Button == UiButton.ToggleInjection)
-                    _adminLogger.Add(LogType.Action, LogImpact.Extreme, $"{_entities.ToPrettyString(mindComponent.Owner):player} has set the AME to {humanReadableState}");
             }
 
             GetAMENodeGroup()?.UpdateCoreVisuals();

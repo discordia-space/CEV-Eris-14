@@ -1,6 +1,5 @@
-﻿using Content.Server.Objectives.Interfaces;
-using Content.Shared.Random.Helpers;
-using Content.Shared.Random;
+﻿using System.Linq;
+using Content.Server.Objectives.Interfaces;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 
@@ -11,31 +10,21 @@ namespace Content.Server.Objectives
         [Dependency] private IPrototypeManager _prototypeManager = default!;
         [Dependency] private IRobustRandom _random = default!;
 
-        public ObjectivePrototype? GetRandomObjective(Mind.Mind mind, string objectiveGroupProto)
+        public IEnumerable<ObjectivePrototype> GetAllPossibleObjectives(Mind.Mind mind)
         {
-            if (!_prototypeManager.TryIndex<WeightedRandomPrototype>(objectiveGroupProto, out var groups))
+            return _prototypeManager.EnumeratePrototypes<ObjectivePrototype>().Where(objectivePrototype => objectivePrototype.CanBeAssigned(mind));
+        }
+
+        public ObjectivePrototype? GetRandomObjective(Mind.Mind mind)
+        {
+            var objectives = GetAllPossibleObjectives(mind).ToList();
+            _random.Shuffle(objectives);
+
+            //to prevent endless loops
+            foreach (var objective in objectives)
             {
-                Logger.Error("Tried to get a random objective, but can't index WeightedRandomPrototype " + objectiveGroupProto);
-                return null;
-            }
-
-            // yeah the old 'preventing infinite loops' thing wasn't super elegant either and it mislead people on what exactly it did
-            var tries = 0;
-            while (tries < 20)
-            {
-                var groupName = groups.Pick(_random);
-
-                if (!_prototypeManager.TryIndex<WeightedRandomPrototype>(groupName, out var group))
-                {
-                    Logger.Error("Couldn't index objective group prototype" + groupName);
-                    return null;
-                }
-
-                if (_prototypeManager.TryIndex<ObjectivePrototype>(group.Pick(_random), out var objective)
-                    && objective.CanBeAssigned(mind))
-                    return objective;
-                else
-                    tries++;
+                if (!_random.Prob(objective.Probability)) continue;
+                return objective;
             }
 
             return null;

@@ -1,5 +1,5 @@
 using Content.Shared.Damage;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.Damage.Components
 {

@@ -174,7 +174,7 @@ namespace Content.Server.CPUJob.JobQueues
                 // Maybe?
                 _taskTcs.TrySetResult(Result);
             }
-            catch (OperationCanceledException)
+            catch (TaskCanceledException)
             {
                 _taskTcs.TrySetCanceled();
             }

@@ -25,8 +25,6 @@
     - type: AirlockVisualizer
       simpleVisuals: true
       animationTime: 1.0
-  - type: RadiationBlocker
-    resistance: 8
 
 - type: entity
   id: BlastDoorOpen
@@ -35,11 +33,3 @@
   components:
   - type: Door
     state: Open
-  - type: Occluder
-    enabled: false
-  - type: Physics
-    canCollide: false
-  - type: Airtight
-    airBlocked: false
-  - type: RadiationBlocker
-    enabled: false

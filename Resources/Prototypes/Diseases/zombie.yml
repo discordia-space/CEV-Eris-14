@@ -1,6 +1,6 @@
 - type: disease
   id: ActiveZombieVirus
-  name: disease-proto-zombie
+  name: Zombie Virus
   infectious: false
   cureResist: 0.2
   effects:
@@ -27,7 +27,7 @@
 
 - type: disease
   id: PassiveZombieVirus
-  name: disease-proto-zombie-passive
+  name: Zombie Virus
   infectious: false
   cureResist: 1 #no cure. Death is your cure.
   effects:

@@ -14,12 +14,10 @@ namespace Content.Server.Alert.Click
     {
         public void AlertClicked(EntityUid player)
         {
-            var entManager = IoCManager.Resolve<IEntityManager>();
-
-            if (entManager.TryGetComponent(player, out PilotComponent? pilotComponent) &&
+            if (IoCManager.Resolve<IEntityManager>().TryGetComponent(player, out PilotComponent? pilotComponent) &&
                 pilotComponent.Console != null)
             {
-                entManager.System<ShuttleConsoleSystem>().RemovePilot(pilotComponent);
+                EntitySystem.Get<ShuttleConsoleSystem>().RemovePilot(pilotComponent);
             }
         }
     }

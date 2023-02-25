@@ -1,24 +1,31 @@
+using System.Threading;
 using Content.Server.Power.Components;
+using Content.Shared.Sound;
 using JetBrains.Annotations;
 using Robust.Shared.Audio;
 using Robust.Shared.Player;
-using Robust.Shared.Utility;
-using System.Threading;
-using Content.Server.Power.EntitySystems;
-using Timer = Robust.Shared.Timing.Timer;
-using System.Linq;
 using Robust.Shared.Random;
-using Content.Server.Station.Components;
+using Robust.Shared.Utility;
+using Timer = Robust.Shared.Timing.Timer;
 
 namespace Content.Server.StationEvents.Events
 {
     [UsedImplicitly]
-    public sealed class PowerGridCheck : StationEventSystem
+    public sealed class PowerGridCheck : StationEvent
     {
-        [Dependency] private readonly ApcSystem _apcSystem = default!;
-        [Dependency] private readonly SharedAudioSystem _audioSystem = default!;
+        [Dependency] private readonly IEntityManager _entityManager = default!;
+        [Dependency] private readonly IRobustRandom _random = default!;
 
-        public override string Prototype => "PowerGridCheck";
+        public override string Name => "PowerGridCheck";
+        public override float Weight => WeightNormal;
+        public override int? MaxOccurrences => 3;
+        public override string StartAnnouncement => Loc.GetString("station-event-power-grid-check-start-announcement");
+        protected override string EndAnnouncement => Loc.GetString("station-event-power-grid-check-end-announcement");
+        public override SoundSpecifier? StartAudio => new SoundPathSpecifier("/Audio/Announcements/power_off.ogg");
+
+        // If you need EndAudio it's down below. Not set here because we can't play it at the normal time without spamming sounds.
+
+        protected override float StartAfter => 12.0f;
 
         private CancellationTokenSource? _announceCancelToken;
 
@@ -30,48 +37,34 @@ namespace Content.Server.StationEvents.Events
         private int _numberPerSecond = 0;
         private float UpdateRate => 1.0f / _numberPerSecond;
         private float _frameTimeAccumulator = 0.0f;
-        private float _endAfter = 0.0f;
 
-        public override void Added()
+        public override void Announce()
         {
-            base.Added();
-            _endAfter = RobustRandom.Next(60, 120);
+            base.Announce();
+            EndAfter = IoCManager.Resolve<IRobustRandom>().Next(60, 120);
         }
 
-        public override void Started()
+        public override void Startup()
         {
-            if (StationSystem.Stations.Count == 0)
-                return;
-            var chosenStation = RobustRandom.Pick(StationSystem.Stations.ToList());
-
-            foreach (var (apc, transform) in EntityQuery<ApcComponent, TransformComponent>(true))
+            foreach (var component in _entityManager.EntityQuery<ApcPowerReceiverComponent>(true))
             {
-                if (apc.MainBreakerEnabled && CompOrNull<StationMemberComponent>(transform.GridUid)?.Station == chosenStation)
-                    _powered.Add(apc.Owner);
+                if (!component.PowerDisabled)
+                    _powered.Add(component.Owner);
             }
 
-            RobustRandom.Shuffle(_powered);
+            _random.Shuffle(_powered);
 
             _numberPerSecond = Math.Max(1, (int)(_powered.Count / SecondsUntilOff)); // Number of APCs to turn off every second. At least one.
 
-            base.Started();
+            base.Startup();
         }
 
         public override void Update(float frameTime)
         {
             base.Update(frameTime);
-
-            if (!RuleStarted)
-                return;
-
-            if (Elapsed > _endAfter)
-            {
-                ForceEndSelf();
-                return;
-            }
+            _frameTimeAccumulator += frameTime;
 
             var updates = 0;
-            _frameTimeAccumulator += frameTime;
             if (_frameTimeAccumulator > UpdateRate)
             {
                 updates = (int) (_frameTimeAccumulator / UpdateRate);
@@ -84,26 +77,24 @@ namespace Content.Server.StationEvents.Events
                     break;
 
                 var selected = _powered.Pop();
-                if (EntityManager.Deleted(selected)) continue;
-                if (EntityManager.TryGetComponent<ApcComponent>(selected, out var apcComponent))
+                if (_entityManager.Deleted(selected)) continue;
+                if (_entityManager.TryGetComponent<ApcPowerReceiverComponent>(selected, out var powerReceiverComponent))
                 {
-                    if (apcComponent.MainBreakerEnabled)
-                        _apcSystem.ApcToggleBreaker(selected, apcComponent);
+                    powerReceiverComponent.PowerDisabled = true;
                 }
                 _unpowered.Add(selected);
             }
         }
 
-        public override void Ended()
+        public override void Shutdown()
         {
             foreach (var entity in _unpowered)
             {
-                if (EntityManager.Deleted(entity)) continue;
+                if (_entityManager.Deleted(entity)) continue;
 
-                if (EntityManager.TryGetComponent(entity, out ApcComponent? apcComponent))
+                if (_entityManager.TryGetComponent(entity, out ApcPowerReceiverComponent? powerReceiverComponent))
                 {
-                    if(!apcComponent.MainBreakerEnabled)
-                        _apcSystem.ApcToggleBreaker(entity, apcComponent);
+                    powerReceiverComponent.PowerDisabled = false;
                 }
             }
 
@@ -112,11 +103,11 @@ namespace Content.Server.StationEvents.Events
             _announceCancelToken = new CancellationTokenSource();
             Timer.Spawn(3000, () =>
             {
-                _audioSystem.PlayGlobal("/Audio/Announcements/power_on.ogg", Filter.Broadcast(), true, AudioParams.Default.WithVolume(-4f));
+                SoundSystem.Play("/Audio/Announcements/power_on.ogg", Filter.Broadcast(), AudioParams);
             }, _announceCancelToken.Token);
             _unpowered.Clear();
 
-            base.Ended();
+            base.Shutdown();
         }
     }
 }

@@ -9,9 +9,9 @@ namespace Content.Shared.Alert;
 /// falls back to the id.
 /// </summary>
 [Serializable, NetSerializable]
-public struct AlertKey
+public struct AlertKey :IPopulateDefaultValues
 {
-    public AlertType? AlertType { get; private set; } = Alert.AlertType.Error;
+    public AlertType? AlertType { get; private set; }
     public readonly AlertCategory? AlertCategory;
 
     /// NOTE: if the alert has a category you must pass the category for this to work
@@ -44,6 +44,11 @@ public struct AlertKey
         // use only alert category if we have one
         if (AlertCategory.HasValue) return AlertCategory.GetHashCode();
         return AlertType.GetHashCode();
+    }
+
+    public void PopulateDefaultValues()
+    {
+        AlertType = Alert.AlertType.Error;
     }
 
     /// <param name="category">alert category, must not be null</param>

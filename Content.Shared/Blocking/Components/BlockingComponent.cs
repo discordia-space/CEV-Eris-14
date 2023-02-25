@@ -1,5 +1,5 @@
-using Content.Shared.Actions.ActionTypes;
-using Robust.Shared.Audio;
+﻿using Content.Shared.Actions.ActionTypes;
+using Content.Shared.Sound;
 using Robust.Shared.Physics.Collision.Shapes;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
@@ -31,8 +31,9 @@ public sealed class BlockingComponent : Component
     /// <summary>
     /// The shape of the blocking fixture that will be dynamically spawned
     /// </summary>
-    [ViewVariables(VVAccess.ReadWrite)] [DataField("shape")]
-    public IPhysShape Shape = new PhysShapeCircle(0.5f);
+    [ViewVariables(VVAccess.ReadWrite)]
+    [DataField("shape")]
+    public IPhysShape Shape = new PhysShapeCircle {Radius = 0.5F};
 
     /// <summary>
     /// The damage modifer to use while passively blocking
@@ -57,6 +58,7 @@ public sealed class BlockingComponent : Component
     /// <summary>
     /// The sound to be played when you get hit while actively blocking
     /// </summary>
+    [ViewVariables]
     [DataField("blockSound")]
     public SoundSpecifier BlockSound = new SoundPathSpecifier("/Audio/Weapons/block_metal1.ogg");
 }

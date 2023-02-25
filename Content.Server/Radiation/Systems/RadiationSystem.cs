@@ -1,62 +1,27 @@
-﻿using Content.Server.Radiation.Components;
-using Content.Shared.Radiation.Events;
-using Robust.Shared.Configuration;
+﻿using Content.Shared.Radiation.Events;
 using Robust.Shared.Map;
 
 namespace Content.Server.Radiation.Systems;
 
-public sealed partial class RadiationSystem : EntitySystem
+public sealed class RadiationSystem : EntitySystem
 {
-    [Dependency] private readonly IMapManager _mapManager = default!;
-    [Dependency] private readonly IConfigurationManager _cfg = default!;
-    [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly EntityLookupSystem _lookup = default!;
 
-    private float _accumulator;
-
-    public override void Initialize()
+    public void IrradiateRange(MapCoordinates coordinates, float range, float radsPerSecond, float time)
     {
-        base.Initialize();
-        SubscribeCvars();
-        InitRadBlocking();
-    }
+        var lookUp = _lookup.GetEntitiesInRange(coordinates, range);
+        foreach (var uid in lookUp)
+        {
+            if (Deleted(uid))
+                continue;
 
-    public override void Shutdown()
-    {
-        base.Shutdown();
-        UnsubscribeCvars();
-    }
-
-    public override void Update(float frameTime)
-    {
-        base.Update(frameTime);
-
-        _accumulator += frameTime;
-        if (_accumulator < GridcastUpdateRate)
-            return;
-
-        UpdateGridcast();
-        UpdateResistanceDebugOverlay();
-        _accumulator = 0f;
+            IrradiateEntity(uid, radsPerSecond, time);
+        }
     }
 
     public void IrradiateEntity(EntityUid uid, float radsPerSecond, float time)
     {
         var msg = new OnIrradiatedEvent(time, radsPerSecond);
-        RaiseLocalEvent(uid, msg);
-    }
-
-    /// <summary>
-    ///     Marks entity to receive/ignore radiation rays.
-    /// </summary>
-    public void SetCanReceive(EntityUid uid, bool canReceive)
-    {
-        if (canReceive)
-        {
-            EnsureComp<RadiationReceiverComponent>(uid);
-        }
-        else
-        {
-            RemComp<RadiationReceiverComponent>(uid);
-        }
+        RaiseLocalEvent(uid, msg, true);
     }
 }

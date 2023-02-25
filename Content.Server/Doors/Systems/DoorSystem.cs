@@ -2,42 +2,43 @@ using Content.Server.Access;
 using Content.Server.Atmos.Components;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Construction;
-using Content.Server.Doors.Components;
+using Content.Server.Construction.Components;
 using Content.Server.Tools;
-using Content.Server.Tools.Systems;
+using Content.Server.Doors.Components;
 using Content.Shared.Access.Components;
 using Content.Shared.Access.Systems;
-using Content.Shared.Database;
 using Content.Shared.Doors;
 using Content.Shared.Doors.Components;
 using Content.Shared.Doors.Systems;
 using Content.Shared.Emag.Systems;
 using Content.Shared.Interaction;
-using Content.Shared.Tools.Components;
-using Content.Shared.Verbs;
+using Content.Shared.Tag;
 using Robust.Shared.Audio;
 using Robust.Shared.Containers;
+using Robust.Shared.Physics.Dynamics;
 using Robust.Shared.Player;
 using System.Linq;
-using Content.Server.Power.EntitySystems;
-using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics.Events;
+using System.Threading;
+using Content.Server.Tools.Systems;
+using Content.Shared.Database;
+using Content.Shared.Sound;
+using Content.Shared.Tools.Components;
+using Content.Shared.Verbs;
 
 namespace Content.Server.Doors.Systems;
 
 public sealed class DoorSystem : SharedDoorSystem
 {
     [Dependency] private readonly AccessReaderSystem _accessReaderSystem = default!;
-    [Dependency] private readonly AirlockSystem _airlock = default!;
     [Dependency] private readonly AirtightSystem _airtightSystem = default!;
     [Dependency] private readonly ConstructionSystem _constructionSystem = default!;
     [Dependency] private readonly ToolSystem _toolSystem = default!;
-    [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
 
     public override void Initialize()
     {
         base.Initialize();
 
+        SubscribeLocalEvent<DoorComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<DoorComponent, InteractUsingEvent>(OnInteractUsing, after: new[] { typeof(ConstructionSystem) });
 
         // Mob prying doors
@@ -60,9 +61,7 @@ public sealed class DoorSystem : SharedDoorSystem
         args.Handled = true;
     }
 
-    protected override void SetCollidable(
-        EntityUid uid,
-        bool collidable,
+    protected override void SetCollidable(EntityUid uid, bool collidable,
         DoorComponent? door = null,
         PhysicsComponent? physics = null,
         OccluderComponent? occluder = null)
@@ -71,7 +70,7 @@ public sealed class DoorSystem : SharedDoorSystem
             return;
 
         if (door.ChangeAirtight && TryComp(uid, out AirtightComponent? airtight))
-            _airtightSystem.SetAirblocked(uid, airtight, collidable);
+            _airtightSystem.SetAirblocked(airtight, collidable);
 
         // Pathfinding / AI stuff.
         RaiseLocalEvent(new AccessReaderChangeEvent(uid, collidable));
@@ -98,21 +97,26 @@ public sealed class DoorSystem : SharedDoorSystem
     /// Selectively send sound to clients, taking care to not send the double-audio.
     /// </summary>
     /// <param name="uid">The audio source</param>
-    /// <param name="soundSpecifier">The sound</param>
-    /// <param name="audioParams">The audio parameters.</param>
+    /// <param name="sound">The sound</param>
     /// <param name="predictingPlayer">The user (if any) that instigated an interaction</param>
     /// <param name="predicted">Whether this interaction would have been predicted. If the predicting player is null,
     /// this assumes it would have been predicted by all players in PVS range.</param>
-    protected override void PlaySound(EntityUid uid, SoundSpecifier soundSpecifier, AudioParams audioParams, EntityUid? predictingPlayer, bool predicted)
+    protected override void PlaySound(EntityUid uid, string sound, AudioParams audioParams, EntityUid? predictingPlayer, bool predicted)
     {
         // If this sound would have been predicted by all clients, do not play any audio.
         if (predicted && predictingPlayer == null)
             return;
 
+        var filter = Filter.Pvs(uid);
+
         if (predicted)
-            Audio.PlayPredicted(soundSpecifier, uid, predictingPlayer, audioParams);
-        else
-            Audio.PlayPvs(soundSpecifier, uid, audioParams);
+        {
+            // This interaction is predicted, but only by the instigating user, who will have played their own sounds.
+            filter.RemoveWhereAttachedEntity(e => e == predictingPlayer);
+        }
+
+        // send the sound to players.
+        SoundSystem.Play(sound, filter, uid, audioParams);
     }
 
 #region DoAfters
@@ -130,6 +134,7 @@ public sealed class DoorSystem : SharedDoorSystem
         if (tool.Qualities.Contains(door.PryingQuality))
         {
             args.Handled = TryPryDoor(uid, args.Used, args.User, door);
+            return;
         }
     }
 
@@ -156,35 +161,29 @@ public sealed class DoorSystem : SharedDoorSystem
 
     private void OnDoorAltVerb(EntityUid uid, DoorComponent component, GetVerbsEvent<AlternativeVerb> args)
     {
-        if (!args.CanInteract || !args.CanAccess)
-            return;
-
-        if (!TryComp<ToolComponent>(args.User, out var tool) || !tool.Qualities.Contains(component.PryingQuality))
-            return;
+        if (!args.CanInteract || !TryComp<ToolComponent>(args.User, out var tool) || !tool.Qualities.Contains(component.PryingQuality)) return;
 
         args.Verbs.Add(new AlternativeVerb()
         {
-            Text = Loc.GetString("door-pry"),
+            Text = "Pry door",
             Impact = LogImpact.Low,
             Act = () => TryPryDoor(uid, args.User, args.User, component, true),
         });
     }
 
-
     /// <summary>
     ///     Pry open a door. This does not check if the user is holding the required tool.
     /// </summary>
-    public bool TryPryDoor(EntityUid target, EntityUid tool, EntityUid user, DoorComponent door, bool force = false)
+    private bool TryPryDoor(EntityUid target, EntityUid tool, EntityUid user, DoorComponent door, bool force = false)
     {
-        if (door.BeingPried)
-            return false;
+        if (door.BeingPried) return false;
 
         if (door.State == DoorState.Welded)
             return false;
 
         if (!force)
         {
-            var canEv = new BeforeDoorPryEvent(user, tool);
+            var canEv = new BeforeDoorPryEvent(user);
             RaiseLocalEvent(target, canEv, false);
 
             if (canEv.Cancelled)
@@ -193,7 +192,7 @@ public sealed class DoorSystem : SharedDoorSystem
                 return true;
         }
 
-        var modEv = new DoorGetPryTimeModifierEvent(user);
+        var modEv = new DoorGetPryTimeModifierEvent();
         RaiseLocalEvent(target, modEv, false);
 
         door.BeingPried = true;
@@ -231,7 +230,7 @@ public sealed class DoorSystem : SharedDoorSystem
             return true;
 
         // If the door is on emergency access we skip the checks.
-        if (TryComp<AirlockComponent>(uid, out var airlock) && airlock.EmergencyAccess)
+        if (TryComp<SharedAirlockComponent>(uid, out var airlock) && airlock.EmergencyAccess)
             return true;
 
         if (!Resolve(uid, ref access, false))
@@ -252,7 +251,7 @@ public sealed class DoorSystem : SharedDoorSystem
     ///     Open a door if a player or door-bumper (PDA, ID-card) collide with the door. Sadly, bullets no longer
     ///     generate "access denied" sounds as you fire at a door.
     /// </summary>
-    protected override void HandleCollide(EntityUid uid, DoorComponent door, ref StartCollideEvent args)
+    protected override void HandleCollide(EntityUid uid, DoorComponent door, StartCollideEvent args)
     {
         // TODO ACCESS READER move access reader to shared and predict door opening/closing
         // Then this can be moved to the shared system without mispredicting.
@@ -267,17 +266,42 @@ public sealed class DoorSystem : SharedDoorSystem
         if (Tags.HasTag(otherUid, "DoorBumpOpener"))
             TryOpen(uid, door, otherUid);
     }
-    private void OnEmagged(EntityUid uid, DoorComponent door, ref GotEmaggedEvent args)
+
+    private void OnMapInit(EntityUid uid, DoorComponent door, MapInitEvent args)
+    {
+        // Ensure that the construction component is aware of the board container.
+        if (TryComp(uid, out ConstructionComponent? construction))
+            _constructionSystem.AddContainer(uid, "board", construction);
+
+        // We don't do anything if this is null or empty.
+        if (string.IsNullOrEmpty(door.BoardPrototype))
+            return;
+
+        var container = uid.EnsureContainer<Container>("board", out var existed);
+
+        if (existed & container.ContainedEntities.Count != 0)
+        {
+            // We already contain a board. Note: We don't check if it's the right one!
+            return;
+        }
+
+        var board = EntityManager.SpawnEntity(door.BoardPrototype, Transform(uid).Coordinates);
+
+        if(!container.Insert(board))
+            Logger.Warning($"Couldn't insert board {ToPrettyString(board)} into door {ToPrettyString(uid)}!");
+    }
+
+    private void OnEmagged(EntityUid uid, DoorComponent door, GotEmaggedEvent args)
     {
         if(TryComp<AirlockComponent>(uid, out var airlockComponent))
         {
-            if (airlockComponent.BoltsDown || !this.IsPowered(uid, EntityManager))
+            if (airlockComponent.BoltsDown || !airlockComponent.IsPowered())
                 return;
 
             if (door.State == DoorState.Closed)
             {
                 SetState(uid, DoorState.Emagging, door);
-                PlaySound(uid, door.SparkSound, AudioParams.Default.WithVolume(8), args.UserUid, false);
+                PlaySound(uid, door.SparkSound.GetSound(), AudioParams.Default.WithVolume(8), args.UserUid, false);
                 args.Handled = true;
             }
         }
@@ -288,22 +312,22 @@ public sealed class DoorSystem : SharedDoorSystem
         if (!Resolve(uid, ref door))
             return;
 
-        var lastState = door.State;
+        DoorState lastState = door.State;
 
         SetState(uid, DoorState.Opening, door);
 
         if (door.OpenSound != null)
-            PlaySound(uid, door.OpenSound, AudioParams.Default.WithVolume(-5), user, predicted);
+            PlaySound(uid, door.OpenSound.GetSound(), AudioParams.Default.WithVolume(-5), user, predicted);
 
-        if(lastState == DoorState.Emagging && TryComp<AirlockComponent>(uid, out var airlockComponent))
-            _airlock.SetBoltsWithAudio(uid, airlockComponent, !airlockComponent.BoltsDown);
+        if(lastState == DoorState.Emagging && TryComp<AirlockComponent>(door.Owner, out var airlockComponent))
+            airlockComponent?.SetBoltsWithAudio(!airlockComponent.IsBolted());
     }
 
     protected override void CheckDoorBump(DoorComponent component, PhysicsComponent body)
     {
         if (component.BumpOpen)
         {
-            foreach (var other in PhysicsSystem.GetContactingEntities(body, approximate: true))
+            foreach (var other in PhysicsSystem.GetCollidingEntities(body))
             {
                 if (Tags.HasTag(other.Owner, "DoorBumpOpener") &&
                     TryOpen(component.Owner, component, other.Owner, false, quiet: true)) break;

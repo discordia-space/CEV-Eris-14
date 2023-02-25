@@ -8,7 +8,7 @@ namespace Content.Shared.Damage.Prototypes;
 [Prototype("examinableDamage")]
 public sealed class ExaminableDamagePrototype : IPrototype
 {
-    [IdDataField]
+    [IdDataFieldAttribute]
     public string ID { get; } = default!;
 
     /// <summary>

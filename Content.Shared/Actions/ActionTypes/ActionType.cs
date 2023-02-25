@@ -1,3 +1,4 @@
+using Content.Shared.Sound;
 using Robust.Shared.Audio;
 using Robust.Shared.Serialization;
 using Robust.Shared.Utility;
@@ -34,8 +35,8 @@ public abstract class ActionType : IEquatable<ActionType>, IComparable, ICloneab
     /// <summary>
     ///     Name to show in UI.
     /// </summary>
-    [DataField("name")]
-    public string DisplayName = string.Empty;
+    [DataField("name", required: true)]
+    public string Name = string.Empty;
 
     /// <summary>
     ///     Description to show in UI. Accepts formatting.
@@ -89,7 +90,7 @@ public abstract class ActionType : IEquatable<ActionType>, IComparable, ICloneab
     public EntityUid? Provider;
 
     /// <summary>
-    ///     Entity to use for the action icon. Defaults to using <see cref="Provider"/>.
+    ///     Entity to use for the action icon. Defaults to using <see cref="Provider"/>. 
     /// </summary>
     public EntityUid? EntityIcon
     {
@@ -207,8 +208,8 @@ public abstract class ActionType : IEquatable<ActionType>, IComparable, ICloneab
         if (Priority != otherAction.Priority)
             return otherAction.Priority - Priority;
 
-        var name = FormattedMessage.RemoveMarkup(Loc.GetString(DisplayName));
-        var otherName = FormattedMessage.RemoveMarkup(Loc.GetString(otherAction.DisplayName));
+        var name = FormattedMessage.RemoveMarkup(Loc.GetString(Name));
+        var otherName = FormattedMessage.RemoveMarkup(Loc.GetString(otherAction.Name));
         if (name != otherName)
             return string.Compare(name, otherName, StringComparison.CurrentCulture);
 
@@ -244,7 +245,7 @@ public abstract class ActionType : IEquatable<ActionType>, IComparable, ICloneab
         Priority = toClone.Priority;
         Icon = toClone.Icon;
         IconOn = toClone.IconOn;
-        DisplayName = toClone.DisplayName;
+        Name = toClone.Name;
         Description = toClone.Description;
         Provider = toClone.Provider;
         AttachedEntity = toClone.AttachedEntity;
@@ -278,7 +279,7 @@ public abstract class ActionType : IEquatable<ActionType>, IComparable, ICloneab
         unchecked
         {
             var hashCode = Priority.GetHashCode();
-            hashCode = (hashCode * 397) ^ DisplayName.GetHashCode();
+            hashCode = (hashCode * 397) ^ Name.GetHashCode();
             hashCode = (hashCode * 397) ^ Provider.GetHashCode();
             return hashCode;
         }

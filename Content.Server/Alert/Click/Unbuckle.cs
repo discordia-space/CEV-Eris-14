@@ -1,4 +1,4 @@
-using Content.Server.Buckle.Systems;
+using Content.Server.Buckle.Components;
 using Content.Shared.Alert;
 using JetBrains.Annotations;
 
@@ -13,7 +13,10 @@ namespace Content.Server.Alert.Click
     {
         public void AlertClicked(EntityUid player)
         {
-            IoCManager.Resolve<IEntityManager>().System<BuckleSystem>().TryUnbuckle(player, player);
+            if (IoCManager.Resolve<IEntityManager>().TryGetComponent(player, out BuckleComponent? buckle))
+            {
+                buckle.TryUnbuckle(player);
+            }
         }
     }
 }

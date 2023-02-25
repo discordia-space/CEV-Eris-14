@@ -4,7 +4,6 @@ using Content.Shared.Tag;
 using JetBrains.Annotations;
 using Robust.Shared.Map;
 using Robust.Shared.Physics;
-using Robust.Shared.Physics.Systems;
 using Robust.Shared.Utility;
 
 namespace Content.Shared.Construction.Conditions
@@ -33,11 +32,11 @@ namespace Content.Shared.Construction.Conditions
                 return false;
 
             // now we need to check that user actually tries to build wallmount on a wall
-            var physics = entManager.System<SharedPhysicsSystem>();
+            var physics = EntitySystem.Get<SharedPhysicsSystem>();
             var rUserToObj = new CollisionRay(userWorldPosition, userToObject.Normalized, (int) CollisionGroup.Impassable);
             var length = userToObject.Length;
 
-            var tagSystem = entManager.System<TagSystem>();
+            var tagSystem = EntitySystem.Get<TagSystem>();
 
             var userToObjRaycastResults = physics.IntersectRayWithPredicate(entManager.GetComponent<TransformComponent>(user).MapID, rUserToObj, maxLength: length,
                 predicate: (e) => !tagSystem.HasTag(e, "Wall"));
@@ -51,12 +50,12 @@ namespace Content.Shared.Construction.Conditions
             // check that we didn't try to build wallmount that facing another adjacent wall
             var rAdjWall = new CollisionRay(objWorldPosition, directionWithOffset.Normalized, (int) CollisionGroup.Impassable);
             var adjWallRaycastResults = physics.IntersectRayWithPredicate(entManager.GetComponent<TransformComponent>(user).MapID, rAdjWall, maxLength: 0.5f,
-               predicate: e => e == targetWall.Value.HitEntity || !tagSystem.HasTag(e, "Wall"));
+               predicate: (e) => e == targetWall.Value.HitEntity || !tagSystem.HasTag(e, "Wall"));
 
             return !adjWallRaycastResults.Any();
         }
 
-        public ConstructionGuideEntry GenerateGuideEntry()
+        public ConstructionGuideEntry? GenerateGuideEntry()
         {
             return new ConstructionGuideEntry()
             {

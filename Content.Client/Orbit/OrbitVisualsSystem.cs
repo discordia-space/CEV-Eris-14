@@ -71,7 +71,7 @@ public sealed class OrbitVisualsSystem : EntitySystem
     {
         base.FrameUpdate(frameTime);
 
-        foreach (var (orbit, sprite) in EntityManager.EntityQuery<OrbitVisualsComponent, SpriteComponent>())
+        foreach (var (orbit, sprite) in EntityManager.EntityQuery<OrbitVisualsComponent, ISpriteComponent>())
         {
             var angle = new Angle(Math.PI * 2 * orbit.Orbit);
             var vec = angle.RotateVec(new Vector2(orbit.OrbitDistance, 0));
@@ -114,7 +114,7 @@ public sealed class OrbitVisualsSystem : EntitySystem
         };
     }
 
-    private Animation GetStopAnimation(OrbitVisualsComponent component, SpriteComponent sprite)
+    private Animation GetStopAnimation(OrbitVisualsComponent component, ISpriteComponent sprite)
     {
         var length = component.OrbitStopLength;
 
@@ -125,8 +125,8 @@ public sealed class OrbitVisualsSystem : EntitySystem
             {
                 new AnimationTrackComponentProperty()
                 {
-                    ComponentType = typeof(SpriteComponent),
-                    Property = nameof(SpriteComponent.Offset),
+                    ComponentType = typeof(ISpriteComponent),
+                    Property = nameof(ISpriteComponent.Offset),
                     KeyFrames =
                     {
                         new AnimationTrackProperty.KeyFrame(sprite.Offset, 0f),
@@ -136,8 +136,8 @@ public sealed class OrbitVisualsSystem : EntitySystem
                 },
                 new AnimationTrackComponentProperty()
                 {
-                    ComponentType = typeof(SpriteComponent),
-                    Property = nameof(SpriteComponent.Rotation),
+                    ComponentType = typeof(ISpriteComponent),
+                    Property = nameof(ISpriteComponent.Rotation),
                     KeyFrames =
                     {
                         new AnimationTrackProperty.KeyFrame(sprite.Rotation.Reduced(), 0f),

@@ -4,7 +4,6 @@ using Content.Server.GameTicking.Presets;
 using Content.Server.Maps;
 using Content.Server.RoundEnd;
 using Content.Shared.CCVar;
-using Content.Shared.Database;
 using Content.Shared.Voting;
 using Robust.Server.Player;
 using Robust.Shared.Configuration;
@@ -23,11 +22,6 @@ namespace Content.Server.Voting.Managers
 
         public void CreateStandardVote(IPlayerSession? initiator, StandardVoteType voteType)
         {
-            if (initiator != null)
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"{initiator} initiated a {voteType.ToString()} vote");
-            else
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Initiated a {voteType.ToString()} vote");
-
             switch (voteType)
             {
                 case StandardVoteType.Restart:
@@ -42,7 +36,7 @@ namespace Content.Server.Voting.Managers
                 default:
                     throw new ArgumentOutOfRangeException(nameof(voteType), voteType, null);
             }
-            var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
+            var ticker = EntitySystem.Get<GameTicker>();
             ticker.UpdateInfoText();
             TimeoutStandardVote(voteType);
         }
@@ -81,14 +75,11 @@ namespace Content.Server.Voting.Managers
                 var ratioRequired = _cfg.GetCVar(CCVars.VoteRestartRequiredRatio);
                 if (total > 0 && votesYes / (float) total >= ratioRequired)
                 {
-                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Restart vote succeeded: {votesYes}/{votesNo}");
                     _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-restart-succeeded"));
-                    var roundEnd = _entityManager.EntitySysManager.GetEntitySystem<RoundEndSystem>();
-                    roundEnd.EndRound();
+                    EntitySystem.Get<RoundEndSystem>().EndRound();
                 }
                 else
                 {
-                    _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Restart vote failed: {votesYes}/{votesNo}");
                     _chatManager.DispatchServerAnnouncement(
                         Loc.GetString("ui-vote-restart-failed", ("ratio", ratioRequired)));
                 }
@@ -112,7 +103,21 @@ namespace Content.Server.Voting.Managers
 
         private void CreatePresetVote(IPlayerSession? initiator)
         {
-            var presets = GetGamePresets();
+            var presets = new Dictionary<string, string>();
+
+            foreach (var preset in _prototypeManager.EnumeratePrototypes<GamePresetPrototype>())
+            {
+                if(!preset.ShowInVote)
+                    continue;
+
+                if(_playerManager.PlayerCount < (preset.MinPlayers ?? int.MinValue))
+                    continue;
+
+                if(_playerManager.PlayerCount > (preset.MaxPlayers ?? int.MaxValue))
+                    continue;
+
+                presets[preset.ID] = preset.ModeTitle;
+            }
 
             var alone = _playerManager.PlayerCount == 1 && initiator != null;
             var options = new VoteOptions
@@ -150,9 +155,8 @@ namespace Content.Server.Voting.Managers
                     _chatManager.DispatchServerAnnouncement(
                         Loc.GetString("ui-vote-gamemode-win", ("winner", Loc.GetString(presets[picked]))));
                 }
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Preset vote finished: {picked}");
-                var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
-                ticker.SetGamePreset(picked);
+
+                EntitySystem.Get<GameTicker>().SetGamePreset(picked);
             };
         }
 
@@ -197,19 +201,7 @@ namespace Content.Server.Voting.Managers
                         Loc.GetString("ui-vote-map-win", ("winner", maps[picked])));
                 }
 
-                _adminLogger.Add(LogType.Vote, LogImpact.Medium, $"Map vote finished: {picked.MapName}");
-                var ticker = _entityManager.EntitySysManager.GetEntitySystem<GameTicker>();
-                if (ticker.RunLevel == GameRunLevel.PreRoundLobby)
-                {
-                    if (_gameMapManager.TrySelectMapIfEligible(picked.ID))
-                    {
-                        ticker.UpdateInfoText();
-                    }
-                }
-                else
-                {
-                    _chatManager.DispatchServerAnnouncement(Loc.GetString("ui-vote-map-notlobby"));
-                }
+                _gameMapManager.TrySelectMap(picked.ID);
             };
         }
 
@@ -218,26 +210,6 @@ namespace Content.Server.Voting.Managers
             var timeout = TimeSpan.FromSeconds(_cfg.GetCVar(CCVars.VoteSameTypeTimeout));
             _standardVoteTimeout[type] = _timing.RealTime + timeout;
             DirtyCanCallVoteAll();
-        }
-
-        private Dictionary<string, string> GetGamePresets()
-        {
-            var presets = new Dictionary<string, string>();
-
-            foreach (var preset in _prototypeManager.EnumeratePrototypes<GamePresetPrototype>())
-            {
-                if(!preset.ShowInVote)
-                    continue;
-
-                if(_playerManager.PlayerCount < (preset.MinPlayers ?? int.MinValue))
-                    continue;
-
-                if(_playerManager.PlayerCount > (preset.MaxPlayers ?? int.MaxValue))
-                    continue;
-
-                presets[preset.ID] = preset.ModeTitle;
-            }
-            return presets;
         }
     }
 }

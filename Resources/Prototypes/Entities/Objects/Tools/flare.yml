@@ -11,8 +11,8 @@
   - type: Recyclable
   - type: SpaceGarbage
   - type: ExpendableLight
-    spentName: expendable-light-spent-flare-name
-    spentDesc: expendable-light-spent-flare-desc
+    spentName: spent flare
+    spentDesc: It looks like this flare has burnt out. What a bummer.
     glowDuration: 225
     fadeOutDuration: 15
     iconStateOn: flare_unlit
@@ -37,7 +37,8 @@
     state: icon
   - type: Item
     sprite: Objects/Misc/flare.rsi
-    heldPrefix: unlit
+    color: "#FF0000"
+    HeldPrefix: unlit
   - type: Appearance
     visuals:
       - type: ExpendableLightVisualizer
@@ -47,8 +48,6 @@
     radius: 1.0
     energy: 9.0
     netsync: false
-  - type: IgnitionSource
-    temperature: 1000
   - type: LightBehaviour
     behaviours:
       - !type:RandomizeBehaviour # immediately make it bright and flickery

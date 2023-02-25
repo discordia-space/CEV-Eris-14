@@ -10,12 +10,11 @@ using Content.Shared.Construction;
 using Content.Shared.Construction.Prototypes;
 using Content.Shared.Construction.Steps;
 using Content.Shared.Coordinates;
-using Content.Shared.Database;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
 using Content.Shared.Inventory;
+using Content.Shared.Popups;
 using Robust.Shared.Containers;
-using Robust.Shared.Player;
 using Robust.Shared.Players;
 using Robust.Shared.Timing;
 
@@ -23,7 +22,7 @@ namespace Content.Server.Construction
 {
     public sealed partial class ConstructionSystem
     {
-        [Dependency] private readonly IComponentFactory _factory = default!;
+
         [Dependency] private readonly InventorySystem _inventorySystem = default!;
         [Dependency] private readonly SharedInteractionSystem _interactionSystem = default!;
         [Dependency] private readonly ActionBlockerSystem _actionBlocker = default!;
@@ -79,11 +78,9 @@ namespace Content.Server.Construction
 
             var pos = Transform(user).MapPosition;
 
-            foreach (var near in _lookupSystem.GetEntitiesInRange(pos, 2f, LookupFlags.Contained | LookupFlags.Dynamic | LookupFlags.Sundries | LookupFlags.Approximate))
+            foreach (var near in _lookupSystem.GetEntitiesInRange(user, 2f, LookupFlags.Approximate))
             {
-                if (near == user)
-                    continue;
-                if (_interactionSystem.InRangeUnobstructed(pos, near, 2f) && _container.IsInSameOrParentContainer(user, near))
+                if (_interactionSystem.InRangeUnobstructed(pos, near, 2f) && _containerSystem.IsInSameOrParentContainer(user, near))
                     yield return near;
             }
         }
@@ -92,11 +89,11 @@ namespace Content.Server.Construction
         private async Task<EntityUid?> Construct(EntityUid user, string materialContainer, ConstructionGraphPrototype graph, ConstructionGraphEdge edge, ConstructionGraphNode targetNode)
         {
             // We need a place to hold our construction items!
-            var container = _container.EnsureContainer<Container>(user, materialContainer, out var existed);
+            var container = ContainerHelpers.EnsureContainer<Container>(user, materialContainer, out var existed);
 
             if (existed)
             {
-                _popup.PopupEntity(Loc.GetString("construction-system-construct-cannot-start-another-construction"), user, user);
+                user.PopupMessageCursor(Loc.GetString("construction-system-construct-cannot-start-another-construction"));
                 return null;
             }
 
@@ -108,16 +105,15 @@ namespace Content.Server.Construction
             // But I'd rather do this shit than risk having collisions with other containers.
             Container GetContainer(string name)
             {
-                if (containers.ContainsKey(name))
+                if (containers!.ContainsKey(name))
                     return containers[name];
 
                 while (true)
                 {
                     var random = _robustRandom.Next();
-                    var c = _container.EnsureContainer<Container>(user, random.ToString(), out var exists);
+                    var c = ContainerHelpers.EnsureContainer<Container>(user!, random.ToString(), out var existed);
 
-                    if (exists)
-                        continue;
+                    if (existed) continue;
 
                     containers[name] = c;
                     return c;
@@ -126,12 +122,12 @@ namespace Content.Server.Construction
 
             void FailCleanup()
             {
-                foreach (var entity in container.ContainedEntities.ToArray())
+                foreach (var entity in container!.ContainedEntities.ToArray())
                 {
                     container.Remove(entity);
                 }
 
-                foreach (var cont in containers.Values)
+                foreach (var cont in containers!.Values)
                 {
                     foreach (var entity in cont.ContainedEntities.ToArray())
                     {
@@ -145,8 +141,8 @@ namespace Content.Server.Construction
 
             void ShutdownContainers()
             {
-                container.Shutdown();
-                foreach (var c in containers.Values.ToArray())
+                container!.Shutdown();
+                foreach (var c in containers!.Values.ToArray())
                 {
                     c.Shutdown();
                 }
@@ -192,7 +188,7 @@ namespace Content.Server.Construction
                     case ArbitraryInsertConstructionGraphStep arbitraryStep:
                         foreach (var entity in EnumerateNearby(user))
                         {
-                            if (!arbitraryStep.EntityValid(entity, EntityManager, _factory))
+                            if (!arbitraryStep.EntityValid(entity, EntityManager))
                                 continue;
 
                             if (string.IsNullOrEmpty(arbitraryStep.Store))
@@ -221,7 +217,7 @@ namespace Content.Server.Construction
 
             if (failed)
             {
-                _popup.PopupEntity(Loc.GetString("construction-system-construct-no-materials"), user, user);
+                user.PopupMessageCursor(Loc.GetString("construction-system-construct-no-materials"));
                 FailCleanup();
                 return null;
             }
@@ -257,7 +253,7 @@ namespace Content.Server.Construction
             // We preserve the containers...
             foreach (var (name, cont) in containers)
             {
-                var newCont = _container.EnsureContainer<Container>(newEntity, name);
+                var newCont = ContainerHelpers.EnsureContainer<Container>(newEntity, name);
 
                 foreach (var entity in cont.ContainedEntities.ToArray())
                 {
@@ -308,11 +304,10 @@ namespace Content.Server.Construction
             var targetNode = constructionGraph.Nodes[constructionPrototype.TargetNode];
             var pathFind = constructionGraph.Path(startNode.Name, targetNode.Name);
 
-            if (args.SenderSession.AttachedEntity is not {Valid: true} user || !_actionBlocker.CanInteract(user, null))
-                return;
+            if (args.SenderSession.AttachedEntity is not {Valid: true} user ||
+                !Get<ActionBlockerSystem>().CanInteract(user, null)) return;
 
-            if (!HasComp<HandsComponent>(user))
-                return;
+            if (!EntityManager.TryGetComponent(user, out HandsComponent? hands)) return;
 
             foreach (var condition in constructionPrototype.Conditions)
             {
@@ -321,18 +316,14 @@ namespace Content.Server.Construction
             }
 
             if (pathFind == null)
-            {
                 throw new InvalidDataException(
                     $"Can't find path from starting node to target node in construction! Recipe: {ev.PrototypeName}");
-            }
 
             var edge = startNode.GetEdge(pathFind[0].Name);
 
             if (edge == null)
-            {
                 throw new InvalidDataException(
                     $"Can't find edge from starting node to the next node in pathfinding! Recipe: {ev.PrototypeName}");
-            }
 
             // No support for conditions here!
 
@@ -377,9 +368,9 @@ namespace Content.Server.Construction
                 return;
             }
 
-            if (_container.IsEntityInContainer(user))
+            if (user.IsInContainer())
             {
-                _popup.PopupEntity(Loc.GetString("construction-system-inside-container"), user, user);
+                user.PopupMessageCursor(Loc.GetString("construction-system-inside-container"));
                 return;
             }
 
@@ -392,7 +383,7 @@ namespace Content.Server.Construction
             {
                 if (!set.Add(ev.Ack))
                 {
-                    _popup.PopupEntity(Loc.GetString("construction-system-already-building"), user, user);
+                    user.PopupMessageCursor(Loc.GetString("construction-system-already-building"));
                     return;
                 }
             }
@@ -455,7 +446,7 @@ namespace Content.Server.Construction
                 switch (step)
                 {
                     case EntityInsertConstructionGraphStep entityInsert:
-                        if (entityInsert.EntityValid(holding, EntityManager, _factory))
+                        if (entityInsert.EntityValid(holding, EntityManager))
                             valid = true;
                         break;
                     case ToolConstructionGraphStep _:
@@ -490,7 +481,7 @@ namespace Content.Server.Construction
             EntityManager.GetComponent<TransformComponent>(structure).Anchored = wasAnchored;
 
             RaiseNetworkEvent(new AckStructureConstructionMessage(ev.Ack));
-            _adminLogger.Add(LogType.Construction, LogImpact.Low, $"{ToPrettyString(user):player} has turned a {ev.PrototypeName} construction ghost into {ToPrettyString(structure)} at {Transform(structure).Coordinates}");
+
             Cleanup();
         }
     }

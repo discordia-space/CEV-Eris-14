@@ -8,7 +8,7 @@ namespace Content.Shared.Stacks
     public sealed class StackPrototype : IPrototype
     {
         [ViewVariables]
-        [IdDataField]
+        [IdDataFieldAttribute]
         public string ID { get; } = default!;
 
         /// <summary>
@@ -22,20 +22,12 @@ namespace Content.Shared.Stacks
         ///     An icon that will be used to represent this stack type.
         /// </summary>
         [DataField("icon")]
-        public SpriteSpecifier? Icon { get; }
+        public SpriteSpecifier? Icon { get; } = null;
 
         /// <summary>
         ///     The entity id that will be spawned by default from this stack.
         /// </summary>
         [DataField("spawn", required: true, customTypeSerializer:typeof(PrototypeIdSerializer<EntityPrototype>))]
         public string Spawn { get; } = string.Empty;
-
-        /// <summary>
-        ///     The maximum amount of things that can be in a stack.
-        ///     Can be overriden on <see cref="StackComponent"/>
-        ///     if null, simply has unlimited max count.
-        /// </summary>
-        [DataField("maxCount")]
-        public int? MaxCount { get; }
     }
 }

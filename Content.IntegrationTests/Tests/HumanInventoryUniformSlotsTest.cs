@@ -26,8 +26,7 @@ namespace Content.IntegrationTests.Tests
   id: UniformDummy
   components:
   - type: Clothing
-    slots: [innerclothing]
-  - type: Item
+    Slots: [innerclothing]
     size: 5
 
 - type: entity
@@ -35,9 +34,8 @@ namespace Content.IntegrationTests.Tests
   id: IDCardDummy
   components:
   - type: Clothing
-    slots:
+    Slots:
     - idcard
-  - type: Item
     size: 5
   - type: IdCard
 
@@ -60,8 +58,6 @@ namespace Content.IntegrationTests.Tests
         {
             await using var pairTracker = await PoolManager.GetServerClient(new PoolSettings{NoClient = true, ExtraPrototypes = Prototypes});
             var server = pairTracker.Pair.Server;
-            var testMap = await PoolManager.CreateTestMap(pairTracker);
-            var coordinates = testMap.GridCoords;
 
             EntityUid human = default;
             EntityUid uniform = default;
@@ -74,13 +70,16 @@ namespace Content.IntegrationTests.Tests
             {
                 invSystem = IoCManager.Resolve<IEntitySystemManager>().GetEntitySystem<InventorySystem>();
                 var mapMan = IoCManager.Resolve<IMapManager>();
+
+                mapMan.CreateNewMapEntity(MapId.Nullspace);
+
                 var entityMan = IoCManager.Resolve<IEntityManager>();
 
-                human = entityMan.SpawnEntity("HumanDummy", coordinates);
-                uniform = entityMan.SpawnEntity("UniformDummy", coordinates);
-                idCard = entityMan.SpawnEntity("IDCardDummy", coordinates);
-                pocketItem = entityMan.SpawnEntity("FlashlightDummy", coordinates);
-                var tooBigItem = entityMan.SpawnEntity("ToolboxDummy", coordinates);
+                human = entityMan.SpawnEntity("HumanDummy", MapCoordinates.Nullspace);
+                uniform = entityMan.SpawnEntity("UniformDummy", MapCoordinates.Nullspace);
+                idCard = entityMan.SpawnEntity("IDCardDummy", MapCoordinates.Nullspace);
+                pocketItem = entityMan.SpawnEntity("FlashlightDummy", MapCoordinates.Nullspace);
+                var tooBigItem = entityMan.SpawnEntity("ToolboxDummy", MapCoordinates.Nullspace);
 
 
                 Assert.That(invSystem.CanEquip(human, uniform, "jumpsuit", out _));
@@ -123,16 +122,15 @@ namespace Content.IntegrationTests.Tests
 
         private static bool IsDescendant(EntityUid descendant, EntityUid parent)
         {
-            var xforms = IoCManager.Resolve<IEntityManager>().GetEntityQuery<TransformComponent>();
-            var tmpParent = xforms.GetComponent(descendant).ParentUid;
-            while (tmpParent.IsValid())
+            var tmpParent = IoCManager.Resolve<IEntityManager>().GetComponent<TransformComponent>(descendant).Parent;
+            while (tmpParent != null)
             {
-                if (tmpParent == parent)
+                if (tmpParent.Owner == parent)
                 {
                     return true;
                 }
 
-                tmpParent = xforms.GetComponent(tmpParent).ParentUid;
+                tmpParent = tmpParent.Parent;
             }
 
             return false;

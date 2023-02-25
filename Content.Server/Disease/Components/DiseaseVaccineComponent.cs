@@ -13,6 +13,7 @@ namespace Content.Server.Disease.Components
         /// How long it takes to inject someone
         /// </summary>
         [DataField("injectDelay")]
+        [ViewVariables]
         public float InjectDelay = 2f;
         /// <summary>
         /// If this vaccine has been used

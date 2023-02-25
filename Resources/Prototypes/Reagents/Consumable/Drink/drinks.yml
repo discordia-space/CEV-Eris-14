@@ -4,7 +4,6 @@
   parent: BaseDrink
   desc: reagent-desc-coffee
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: coffee
   color: "#664300"
   metabolisms:
     Drink:
@@ -21,7 +20,6 @@
   group: Drinks
   desc: reagent-desc-cream
   physicalDesc: reagent-physical-desc-creamy
-  flavor: creamy
   color: "#DFD7AF"
   metabolisms:
     Drink:
@@ -35,11 +33,8 @@
   parent: BaseDrink
   desc: reagent-desc-cafe-latte
   physicalDesc: reagent-physical-desc-creamy
-  flavor: creamy
   color: "#664300"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/cafe_latte.rsi
-    state: icon
+  spritePath: cafe_latte.rsi
 
 - type: reagent
   id: GreenTea
@@ -47,11 +42,8 @@
   parent: BaseDrink
   desc: reagent-desc-green-tea
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: tea
   color: "#C33F00"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/glass_green.rsi
-    state: icon
+  spritePath: glass_green.rsi #Placeholder
 
 - type: reagent
   id: Grenadine
@@ -59,11 +51,8 @@
   parent: BaseDrink
   desc: reagent-desc-grenadine
   physicalDesc: reagent-physical-desc-dark-red
-  flavor: bitter
   color: "#EA1D26"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/grenadineglass.rsi
-    state: icon
+  spritePath: grenadineglass.rsi
 
 - type: reagent
   id: IcedCoffee
@@ -71,11 +60,8 @@
   parent: BaseDrink
   desc: reagent-desc-iced-coffee
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: coffee
   color: "#102838"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/icedcoffeeglass.rsi
-    state: icon
+  spritePath: icedcoffeeglass.rsi
 
 - type: reagent
   id: IcedGreenTea
@@ -83,11 +69,8 @@
   parent: BaseDrink
   desc: reagent-desc-iced-green-tea
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: icedtea
   color: "#CE4200"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/glass_green.rsi
-    state: icon
+  spritePath: glass_green.rsi #Placeholder
 
 - type: reagent
   id: IcedTea
@@ -95,11 +78,8 @@
   parent: BaseDrink
   desc: reagent-desc-iced-tea
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: icedtea
   color: "#104038"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/icedteaglass.rsi
-    state: icon
+  spritePath: icedteaglass.rsi
   metabolisms:
     Drink:
       effects:
@@ -115,11 +95,8 @@
   group: Drinks
   desc: reagent-desc-lemonade
   physicalDesc: reagent-physical-desc-tart
-  flavor: sweet
   color: "#FFFF00"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/lemonadeglass.rsi
-    state: icon
+  spritePath: lemonadeglass.rsi
   metabolisms:
     Drink:
       effects:
@@ -132,7 +109,6 @@
   group: Drinks
   desc: reagent-desc-milk
   physicalDesc: reagent-physical-desc-opaque
-  flavor: milk
   color: "#DFDFDF"
   plantMetabolism:
     - !type:PlantAdjustNutrition
@@ -157,7 +133,6 @@
   group: Drinks
   desc: reagent-desc-milk-oat
   physicalDesc: reagent-physical-desc-refreshing
-  flavor: oats
   color: "#302000"
   metabolisms:
     Drink:
@@ -177,7 +152,6 @@
   group: Drinks
   desc: reagent-desc-milk-spoiled
   physicalDesc: reagent-physical-desc-putrid
-  flavor: terrible
   color: "#faffba"
   metabolisms:
     Drink:
@@ -191,9 +165,7 @@
   desc: reagent-desc-nothing
   group: Drinks
   physicalDesc: reagent-physical-desc-nothing
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/nothing.rsi
-    state: icon
+  spritePath: nothing.rsi
   metabolisms:
     Drink:
       effects:
@@ -207,11 +179,8 @@
   group: Drinks
   desc: reagent-desc-nuclear-cola
   physicalDesc: reagent-physical-desc-fizzy
-  flavor: atomiccola
   color: "#100800"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/nuclear_colaglass.rsi
-    state: icon
+  spritePath: nuclear_colaglass.rsi
   metabolisms:
     Drink:
       effects:
@@ -230,7 +199,6 @@
   parent: BaseDrink
   desc: reagent-desc-soda-water
   physicalDesc: reagent-physical-desc-fizzy
-  flavor: fizzy
   color: "#619494"
 
 - type: reagent
@@ -239,11 +207,8 @@
   parent: BaseDrink
   desc: reagent-desc-soy-latte
   physicalDesc: reagent-physical-desc-strong-smelling
-  flavor: soy
   color: "#664300"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/soy_latte.rsi
-    state: icon
+  spritePath: soy_latte.rsi
 
 - type: reagent
   id: Tea
@@ -251,7 +216,6 @@
   parent: BaseDrink
   desc: reagent-desc-tea
   physicalDesc: reagent-physical-desc-aromatic
-  flavor: tea
   color: "#8a5a3a"
   metabolisms:
     Drink:
@@ -268,7 +232,6 @@
   parent: BaseDrink
   desc: reagent-desc-tonic-water
   physicalDesc: reagent-physical-desc-fizzy
-  flavor: water
   color: "#0064C8"
 
 - type: reagent
@@ -277,8 +240,7 @@
   parent: BaseDrink
   desc: reagent-desc-water
   physicalDesc: reagent-physical-desc-translucent
-  flavor: water
-  color: "#75b1f0"
+  color: "#c0e0ff20"
   boilingPoint: 100.0
   meltingPoint: 0.0
   metabolisms:
@@ -292,7 +254,6 @@
   name: reagent-name-ice
   desc: reagent-desc-ice
   physicalDesc: reagent-physical-desc-frosty
-  flavor: cold
   color: "#bed8e6"
   meltingPoint: 0.0
   boilingPoint: 100.0
@@ -306,7 +267,6 @@
   parent: BaseDrink
   desc: reagent-desc-dry-ramen
   physicalDesc: reagent-physical-desc-wormy
-  flavor: cheapnoodles
   color: "#664300"
   metabolisms:
     Food:
@@ -320,7 +280,6 @@
   parent: BaseDrink
   desc: reagent-desc-hot-ramen
   physicalDesc: reagent-physical-desc-wormy
-  flavor: cheapnoodles
   color: "#664300"
   metabolisms:
     Food:
@@ -334,7 +293,6 @@
   parent: BaseDrink
   desc: reagent-desc-pilk
   physicalDesc: reagent-physical-desc-creamy
-  flavor: pilk
   color: "#e7c69f"
   metabolisms:
     Drink:
@@ -343,49 +301,19 @@
           factor: 1
 
 - type: reagent
-  id: Posca
-  name: reagent-name-posca
-  parent: BaseDrink
-  desc: reagent-desc-posca
-  physicalDesc: reagent-physical-desc-sour
-  flavor: bitter
-  color: "#B3B599"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/glass_light_yellow.rsi
-    state: icon
-
-- type: reagent
   id: KiraSpecial
-  name: reagent-name-kira-special
+  name: kira special
   parent: BaseDrink
-  desc: reagent-desc-kira-special
+  desc: Long live the guy who everyone had mistaken for a girl. Baka!
   physicalDesc: strong-smelling
-  flavor: sweet
   color: "#CCCC99"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/kiraspecial.rsi
-    state: icon
+  spritePath: kiraspecial.rsi
 
 - type: reagent
   id: Rewriter
-  name: reagent-name-rewriter
+  name: rewriter
   parent: BaseDrink
-  desc: reagent-desc-rewriter
+  desc: The secret of the sanctuary of the Librarian...
   physicalDesc: strong-smelling
-  flavor: sweet
   color: "#485000"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/rewriter.rsi
-    state: icon
-
-- type: reagent
-  id: Kvass
-  name: reagent-name-kvass
-  parent: BaseDrink
-  desc: reagent-desc-kvass
-  physicalDesc: reagent-physical-desc-bubbly
-  flavor: bread
-  color: "#381600"
-  metamorphicSprite:
-    sprite: Objects/Consumable/Drinks/kvass.rsi
-    state: icon
+  spritePath: rewriter.rsi

@@ -25,9 +25,10 @@
         # REMEMBER IF YOU'RE SPAWNING WITH LIQUID ALREADY IN IT YOU WANT THIS TRUE
         visible: true
   - type: Appearance
-  - type: SolutionContainerVisuals
-    maxFillLevels: 6
-    fillBaseName: fill-
+    visuals:
+    - type: SolutionContainerVisualizer
+      maxFillLevels: 6
+      fillBaseName: fill-
 
 # Without (For food, non cut-out stuff)
 
@@ -52,8 +53,9 @@
         map: ["enum.SolutionContainerLayers.Fill"]
         visible: true
   - type: Appearance
-  - type: SolutionContainerVisuals
-    maxFillLevels: 6
-    fillBaseName: icon-
-    changeColor: false
-    emptySpriteName: icon
+    visuals:
+    - type: SolutionContainerVisualizer
+      maxFillLevels: 6
+      fillBaseName: icon-
+      changeColor: false
+      emptySpriteName: icon

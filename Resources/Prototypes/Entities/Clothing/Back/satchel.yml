@@ -7,31 +7,18 @@
   - type: Sprite
     sprite: Clothing/Back/Satchels/satchel.rsi
     state: icon
-  - type: Item
-    size: 9999
   - type: Clothing
+    size: 9999
     quickEquip: false
-    slots:
+    Slots:
     - back
+    sprite: Clothing/Back/Satchels/satchel.rsi
   - type: Storage
     capacity: 100
-  - type: ContainerContainer
-    containers:
-      storagebase: !type:Container
-        ents: []
   - type: UserInterface
     interfaces:
     - key: enum.StorageUiKey.Key
       type: StorageBoundUserInterface
-
-- type: entity
-  parent: ClothingBackpackSatchel
-  id: ClothingBackpackSatchelLeather
-  name: leather satchel
-  description: A trend-setting satchel from a bygone era.
-  components:
-  - type: Sprite
-    sprite: Clothing/Back/Satchels/leather.rsi
 
 - type: entity
   parent: ClothingBackpackSatchel
@@ -40,6 +27,8 @@
   description: A tough satchel with extra pockets.
   components:
   - type: Sprite
+    sprite: Clothing/Back/Satchels/engineering.rsi
+  - type: Clothing
     sprite: Clothing/Back/Satchels/engineering.rsi
 
 - type: entity
@@ -50,6 +39,8 @@
   components:
   - type: Sprite
     sprite: Clothing/Back/Satchels/medical.rsi
+  - type: Clothing
+    sprite: Clothing/Back/Satchels/medical.rsi
 
 - type: entity
   parent: ClothingBackpackSatchel
@@ -59,15 +50,8 @@
   components:
   - type: Sprite
     sprite: Clothing/Back/Satchels/chemistry.rsi
-    
-- type: entity
-  parent: ClothingBackpackSatchel
-  id: ClothingBackpackSatchelVirology
-  name: virology satchel
-  description: A satchel made of hypo-allergenic fibers. It's designed to help prevent the spread of disease. Smells like monkey.
-  components:
-  - type: Sprite
-    sprite: Clothing/Back/Satchels/virology.rsi
+  - type: Clothing
+    sprite: Clothing/Back/Satchels/chemistry.rsi
 
 - type: entity
   parent: ClothingBackpackSatchel
@@ -76,6 +60,8 @@
   description: Useful for holding research materials.
   components:
   - type: Sprite
+    sprite: Clothing/Back/Satchels/science.rsi
+  - type: Clothing
     sprite: Clothing/Back/Satchels/science.rsi
 
 - type: entity
@@ -86,6 +72,8 @@
   components:
   - type: Sprite
     sprite: Clothing/Back/Satchels/security.rsi
+  - type: Clothing
+    sprite: Clothing/Back/Satchels/security.rsi
 
 - type: entity
   parent: ClothingBackpackSatchel
@@ -94,6 +82,8 @@
   description: An exclusive satchel for Nanotrasen officers.
   components:
   - type: Sprite
+    sprite: Clothing/Back/Satchels/captain.rsi
+  - type: Clothing
     sprite: Clothing/Back/Satchels/captain.rsi
 
 - type: entity
@@ -104,15 +94,8 @@
   components:
   - type: Sprite
     sprite: Clothing/Back/Satchels/hydroponics.rsi
-
-- type: entity
-  parent: ClothingBackpackSatchel
-  id: ClothingBackpackSatchelSalvage
-  name: salvage satchel
-  description: A robust satchel for stashing your loot.
-  components:
-    - type: Sprite
-      sprite: Clothing/Back/Satchels/salvage.rsi
+  - type: Clothing
+    sprite: Clothing/Back/Satchels/hydroponics.rsi
 
 - type: entity
   parent: ClothingBackpackSatchel
@@ -127,5 +110,7 @@
     - state: icon
     - state: icon-unlit
       shader: unshaded
+  - type: Clothing
+    sprite: Clothing/Back/Satchels/holding.rsi
   - type: Storage
-    capacity: 9999
+    capacity: 10000

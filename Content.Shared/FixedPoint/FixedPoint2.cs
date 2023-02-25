@@ -8,10 +8,10 @@ namespace Content.Shared.FixedPoint
     ///     Represents a quantity of something, to a precision of 0.01.
     ///     To enforce this level of precision, floats are shifted by 2 decimal points, rounded, and converted to an int.
     /// </summary>
-    [Serializable, CopyByRef]
+    [Serializable]
     public struct FixedPoint2 : ISelfSerialize, IComparable<FixedPoint2>, IEquatable<FixedPoint2>, IFormattable
     {
-        public int Value { get; private set; }
+        private int _value;
         private const int Shift = 2;
 
         public static FixedPoint2 MaxValue { get; } = new(int.MaxValue);
@@ -20,20 +20,18 @@ namespace Content.Shared.FixedPoint
 
         private readonly double ShiftDown()
         {
-            return Value / Math.Pow(10, Shift);
+            return _value / Math.Pow(10, Shift);
         }
 
         private FixedPoint2(int value)
         {
-            Value = value;
+            _value = value;
         }
 
         public static FixedPoint2 New(int value)
         {
             return new(value * (int) Math.Pow(10, Shift));
         }
-
-        public static FixedPoint2 FromCents(int value) => new(value);
 
         public static FixedPoint2 New(float value)
         {
@@ -62,42 +60,52 @@ namespace Content.Shared.FixedPoint
 
         public static FixedPoint2 operator +(FixedPoint2 a) => a;
 
-        public static FixedPoint2 operator -(FixedPoint2 a) => new(-a.Value);
+        public static FixedPoint2 operator -(FixedPoint2 a) => new(-a._value);
 
         public static FixedPoint2 operator +(FixedPoint2 a, FixedPoint2 b)
-            => new(a.Value + b.Value);
+            => new(a._value + b._value);
 
         public static FixedPoint2 operator -(FixedPoint2 a, FixedPoint2 b)
-            => new(a.Value - b.Value);
+            => new(a._value - b._value);
 
         public static FixedPoint2 operator *(FixedPoint2 a, FixedPoint2 b)
         {
-            return new((int) MathF.Round(b.Value * a.Value / MathF.Pow(10, Shift), MidpointRounding.AwayFromZero));
+            var aD = a.ShiftDown();
+            var bD = b.ShiftDown();
+            return New(aD * bD);
         }
 
         public static FixedPoint2 operator *(FixedPoint2 a, float b)
         {
-            return new((int) MathF.Round(a.Value * b, MidpointRounding.AwayFromZero));
+            var aD = (float) a.ShiftDown();
+            return New(aD * b);
         }
 
         public static FixedPoint2 operator *(FixedPoint2 a, double b)
         {
-            return new((int) Math.Round(a.Value * b, MidpointRounding.AwayFromZero));
+            var aD = a.ShiftDown();
+            return New(aD * b);
         }
 
         public static FixedPoint2 operator *(FixedPoint2 a, int b)
         {
-            return new(a.Value * b);
+            return new(a._value * b);
         }
 
         public static FixedPoint2 operator /(FixedPoint2 a, FixedPoint2 b)
         {
-            return new((int) MathF.Round((MathF.Pow(10, Shift) * a.Value) / b.Value, MidpointRounding.AwayFromZero));
+            if (b._value == 0)
+            {
+                throw new DivideByZeroException();
+            }
+            var aD = a.ShiftDown();
+            var bD = b.ShiftDown();
+            return New(aD / bD);
         }
 
         public static FixedPoint2 operator /(FixedPoint2 a, float b)
         {
-            return new((int) MathF.Round(a.Value / b, MidpointRounding.AwayFromZero));
+            return a / FixedPoint2.New(b);
         }
 
         public static bool operator <=(FixedPoint2 a, int b)
@@ -142,22 +150,22 @@ namespace Content.Shared.FixedPoint
 
         public static bool operator <=(FixedPoint2 a, FixedPoint2 b)
         {
-            return a.Value <= b.Value;
+            return a._value <= b._value;
         }
 
         public static bool operator >=(FixedPoint2 a, FixedPoint2 b)
         {
-            return a.Value >= b.Value;
+            return a._value >= b._value;
         }
 
         public static bool operator <(FixedPoint2 a, FixedPoint2 b)
         {
-            return a.Value < b.Value;
+            return a._value < b._value;
         }
 
         public static bool operator >(FixedPoint2 a, FixedPoint2 b)
         {
-            return a.Value > b.Value;
+            return a._value > b._value;
         }
 
         public readonly float Float()
@@ -201,7 +209,7 @@ namespace Content.Shared.FixedPoint
 
         public static FixedPoint2 Abs(FixedPoint2 a)
         {
-            return FixedPoint2.New(Math.Abs(a.Value));
+            return FixedPoint2.New(Math.Abs(a._value));
         }
 
         public static FixedPoint2 Dist(FixedPoint2 a, FixedPoint2 b)
@@ -222,18 +230,18 @@ namespace Content.Shared.FixedPoint
         public override readonly bool Equals(object? obj)
         {
             return obj is FixedPoint2 unit &&
-                   Value == unit.Value;
+                   _value == unit._value;
         }
 
         public override readonly int GetHashCode()
         {
             // ReSharper disable once NonReadonlyMemberInGetHashCode
-            return HashCode.Combine(Value);
+            return HashCode.Combine(_value);
         }
 
         public void Deserialize(string value)
         {
-            Value = FromFloat(FloatFromString(value));
+            _value = FromFloat(FloatFromString(value));
         }
 
         public override readonly string ToString() => $"{ShiftDown().ToString(CultureInfo.InvariantCulture)}";
@@ -250,16 +258,16 @@ namespace Content.Shared.FixedPoint
 
         public readonly bool Equals(FixedPoint2 other)
         {
-            return Value == other.Value;
+            return _value == other._value;
         }
 
         public readonly int CompareTo(FixedPoint2 other)
         {
-            if (other.Value > Value)
+            if (other._value > _value)
             {
                 return -1;
             }
-            if (other.Value < Value)
+            if (other._value < _value)
             {
                 return 1;
             }
@@ -270,7 +278,7 @@ namespace Content.Shared.FixedPoint
 
     public static class FixedPointEnumerableExt
     {
-        public static FixedPoint2 Sum(this IEnumerable<FixedPoint2> source)
+        public static FixedPoint2 Sum(this System.Collections.Generic.IEnumerable<FixedPoint2> source)
         {
             var acc = FixedPoint2.Zero;
 

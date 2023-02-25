@@ -13,13 +13,15 @@ namespace Content.Shared.Construction.Conditions
         public List<string> TargetTiles { get; } = new();
 
         [DataField("guideText")]
-        public string? GuideText;
+        public string? GuideText = null;
 
         [DataField("guideIcon")]
-        public SpriteSpecifier? GuideIcon;
+        public SpriteSpecifier? GuideIcon = null;
 
         public bool Condition(EntityUid user, EntityCoordinates location, Direction direction)
         {
+            if (TargetTiles == null) return true;
+
             var tileFound = location.GetTileRef();
 
             if (tileFound == null)
@@ -28,8 +30,9 @@ namespace Content.Shared.Construction.Conditions
             var tile = tileFound.Value.Tile.GetContentTileDefinition();
             foreach (var targetTile in TargetTiles)
             {
-                if (tile.ID == targetTile)
+                if (tile.ID == targetTile) {
                     return true;
+                }
             }
             return false;
         }

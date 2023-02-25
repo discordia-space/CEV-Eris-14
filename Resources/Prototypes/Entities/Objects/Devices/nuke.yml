@@ -1,5 +1,5 @@
 - type: entity
-  parent: BaseStructure
+  parent: BaseStructureDynamic
   id: NuclearBomb
   name: nuclear fission explosive
   description: You probably shouldn't stick around to see if this is armed.
@@ -9,7 +9,6 @@
   - type: Sprite
     sprite: Objects/Devices/nuke.rsi
     netsync: false
-    noRot: true
     state: nuclearbomb_base
   - type: Physics
     bodyType: Dynamic
@@ -18,12 +17,11 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 80 #It has wheels and bluespace tech to make it lighter.
+      mass: 150
       mask:
       - MachineMask
       layer:
       - HalfWallLayer
-  - type: NukeLabel
   - type: Nuke
     explosionType: Default
     maxIntensity: 100
@@ -47,13 +45,8 @@
     interfaces:
     - key: enum.NukeUiKey.Key
       type: NukeBoundUserInterface
-  - type: StaticPrice
+  - type: StaticPrice # TODO: Make absolutely certain cargo cannot sell this, that'd be horrible. Presumably, add an export ban component so only the yarrs get a deal here.
     price: 50000 # YOU STOLE A NUCLEAR FISSION EXPLOSIVE?!
-  - type: CargoSellBlacklist
-  - type: ItemSlots
-  - type: ContainerContainer
-    containers:
-      Nuke: !type:ContainerSlot
 
 - type: entity
   parent: NuclearBomb
@@ -70,7 +63,6 @@
   suffix: keg
   description: You probably shouldn't stick around to see if this is armed. It has a tap on the side.
   components:
-  - type: NukeLabel
   - type: Sprite
     sprite: Objects/Devices/nuke.rsi
     netsync: false
@@ -82,7 +74,7 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.45
-      density: 80
+      mass: 150
       mask:
       - TabletopMachineMask
       layer:

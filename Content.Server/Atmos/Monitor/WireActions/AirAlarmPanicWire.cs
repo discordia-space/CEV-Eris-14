@@ -7,53 +7,69 @@ using Content.Shared.Wires;
 
 namespace Content.Server.Atmos.Monitor;
 
-public sealed class AirAlarmPanicWire : ComponentWireAction<AirAlarmComponent>
+[DataDefinition]
+public sealed class AirAlarmPanicWire : BaseWireAction
 {
-    public override string Name { get; set; } = "wire-name-air-alarm-panic";
-    public override Color Color { get; set; } = Color.Red;
+    private string _text = "PANC";
+    private Color _color = Color.Red;
 
     private AirAlarmSystem _airAlarmSystem = default!;
 
     public override object StatusKey { get; } = AirAlarmWireStatus.Panic;
 
-    public override StatusLightState? GetLightState(Wire wire, AirAlarmComponent comp)
-        => comp.CurrentMode == AirAlarmMode.Panic
+    public override StatusLightData? GetStatusLightData(Wire wire)
+    {
+        var lightState = StatusLightState.Off;
+        if (IsPowered(wire.Owner) && EntityManager.TryGetComponent<AirAlarmComponent>(wire.Owner, out var alarm))
+        {
+            lightState = alarm.CurrentMode == AirAlarmMode.Panic
                 ? StatusLightState.On
                 : StatusLightState.Off;
+        }
+
+        return new StatusLightData(
+            _color,
+            lightState,
+            _text);
+    }
 
     public override void Initialize()
     {
         base.Initialize();
 
-        _airAlarmSystem = EntityManager.System<AirAlarmSystem>();
+        _airAlarmSystem = EntitySystem.Get<AirAlarmSystem>();
     }
 
-    public override bool Cut(EntityUid user, Wire wire, AirAlarmComponent comp)
+    public override bool Cut(EntityUid user, Wire wire)
     {
         if (EntityManager.TryGetComponent<DeviceNetworkComponent>(wire.Owner, out var devNet))
         {
-            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Panic, false);
+            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Panic, true, false);
         }
 
         return true;
     }
 
-    public override bool Mend(EntityUid user, Wire wire, AirAlarmComponent alarm)
+    public override bool Mend(EntityUid user, Wire wire)
     {
         if (EntityManager.TryGetComponent<DeviceNetworkComponent>(wire.Owner, out var devNet)
+            && EntityManager.TryGetComponent<AirAlarmComponent>(wire.Owner, out var alarm)
             && alarm.CurrentMode == AirAlarmMode.Panic)
         {
-            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Filtering, false, alarm);
+            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Filtering, true, false, alarm);
         }
+
 
         return true;
     }
 
-    public override void Pulse(EntityUid user, Wire wire, AirAlarmComponent comp)
+    public override bool Pulse(EntityUid user, Wire wire)
     {
         if (EntityManager.TryGetComponent<DeviceNetworkComponent>(wire.Owner, out var devNet))
         {
-            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Panic, false);
+            _airAlarmSystem.SetMode(wire.Owner, devNet.Address, AirAlarmMode.Panic, true, false);
         }
+
+        return true;
     }
 }

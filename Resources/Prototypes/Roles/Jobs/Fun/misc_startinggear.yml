@@ -32,25 +32,6 @@
   satchel: ClothingBackpackSatchelEngineering
   duffelbag: ClothingBackpackSatchelEngineering
 
-#Skeleton Biker
-- type: startingGear
-  id: SkeletonBiker
-  equipment:
-    jumpsuit: ClothingUniformJumpsuitColorBlack
-    back: ClothingBackpackFilled
-    head: HatBandSkull
-    eyes: ClothingEyesGlassesSunglasses
-    outerClothing: ClothingOuterCoatGentle
-    gloves: ClothingHandsGlovesFingerless
-    shoes: ClothingShoesBootsJack
-    id: PassengerPDA
-    ears: ClothingHeadsetGrey
-    pocket1: VehicleSkeletonMotorcycle
-    pocket2: VehicleKeySkeletonMotorcycle
-  innerclothingskirt: ClothingUniformJumpskirtColorBlack
-  satchel: ClothingBackpackSatchelFilled
-  duffelbag: ClothingBackpackDuffelFilled
-
 #Space Ninja Outfit
 - type: startingGear
   id: SpaceNinjaGear
@@ -85,19 +66,6 @@
   satchel: ClothingBackpackDuffelSyndicateAmmo
   duffelbag: ClothingBackpackDuffelSyndicateAmmo
 
-
-# Syndicate Operative Outfit - Poverty
-- type: startingGear
-  id: SyndicateOperativeGearExtremelyBasic
-  equipment:
-    jumpsuit: ClothingUniformJumpsuitOperative
-    back: ClothingBackpackDuffelSyndicateOperative
-    shoes: ClothingShoesBootsCombatFilled
-  innerclothingskirt: ClothingUniformJumpsuitOperative
-  satchel: ClothingBackpackDuffelSyndicateOperative
-  duffelbag: ClothingBackpackDuffelSyndicateOperative
-
-
 #Syndicate Operative Outfit - Basic
 - type: startingGear
   id: SyndicateOperativeGearBasic
@@ -106,8 +74,7 @@
     back: ClothingBackpackDuffelSyndicateOperative
     ears: ClothingHeadsetAltSyndicate
     gloves: ClothingHandsGlovesCombat
-    shoes: ClothingShoesBootsCombatFilled
-    pocket1: BaseUplinkRadio40TC
+    shoes: ClothingShoesBootsCombat
     id: AgentIDCard
   innerclothingskirt: ClothingUniformJumpsuitOperative
   satchel: ClothingBackpackDuffelSyndicateOperative
@@ -125,10 +92,9 @@
     ears: ClothingHeadsetAltSyndicate
     gloves: ClothingHandsGlovesCombat
     outerClothing: ClothingOuterHardsuitSyndie
-    shoes: ClothingShoesBootsCombatFilled
+    shoes: ClothingShoesBootsCombat
     id: AgentIDCard
     pocket1: ExtendedEmergencyOxygenTankFilled
-    pocket2: BaseUplinkRadio40TC
     belt: ClothingBeltMilitaryWebbing
   innerclothingskirt: ClothingUniformJumpskirtOperative
   satchel: ClothingBackpackDuffelSyndicateOperative
@@ -145,10 +111,9 @@
     ears: ClothingHeadsetAltSyndicate
     gloves: ClothingHandsGlovesCombat
     outerClothing: ClothingOuterHardsuitSyndieCommander
-    shoes: ClothingShoesBootsCombatFilled
+    shoes: ClothingShoesBootsCombat
     id: SyndiPDA
     pocket1: ExtendedEmergencyOxygenTankFilled
-    pocket2: BaseUplinkRadio40TC
     belt: ClothingBeltMilitaryWebbing
   innerclothingskirt: ClothingUniformJumpskirtOperative
   satchel: ClothingBackpackDuffelSyndicateOperative
@@ -167,7 +132,7 @@
     shoes: ClothingShoesBootsMagSyndie
     id: SyndiPDA
     pocket1: DoubleEmergencyOxygenTankFilled
-    pocket2: BaseUplinkRadio40TC
+    pocket2: HandheldHealthAnalyzer
     belt: ClothingBeltMilitaryWebbingMedFilled
   innerclothingskirt: ClothingUniformJumpskirtOperative
   satchel: ClothingBackpackDuffelSyndicateOperativeMedic
@@ -181,11 +146,11 @@
     back: ClothingBackpackDuffelCBURN
     mask: ClothingMaskGas
     eyes: ClothingEyesGlassesSecurity
-    ears: ClothingHeadsetAltCommand
+    ears: ClothingHeadsetService
     gloves: ClothingHandsGlovesFingerless
     outerClothing: ClothingOuterHardsuitCBURN
     shoes: ClothingShoesBootsJack
-    id: CBURNPDA
+    id: CentcomPDA
     pocket1: CombatKnife
     pocket2: WeaponLaserGun
     suitstorage: YellowOxygenTankFilled

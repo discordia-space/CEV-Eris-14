@@ -8,9 +8,6 @@ using Robust.Shared.GameStates;
 using Robust.Shared.Physics;
 using Robust.Shared.Physics.Dynamics;
 using System.Linq;
-using Robust.Shared.Physics.Components;
-using Robust.Shared.Physics.Events;
-using Robust.Shared.Physics.Systems;
 
 namespace Content.Shared.Throwing
 {
@@ -19,11 +16,9 @@ namespace Content.Shared.Throwing
     /// </summary>
     public sealed class ThrownItemSystem : EntitySystem
     {
-        [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
-        [Dependency] private readonly SharedBroadphaseSystem _broadphase = default!;
         [Dependency] private readonly SharedContainerSystem _containerSystem = default!;
+        [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
         [Dependency] private readonly FixtureSystem _fixtures = default!;
-        [Dependency] private readonly SharedPhysicsSystem _physics = default!;
 
         private const string ThrowingFixture = "throw-fixture";
 
@@ -57,19 +52,22 @@ namespace Content.Shared.Throwing
 
         private void ThrowItem(EntityUid uid, ThrownItemComponent component, ThrownEvent args)
         {
-            if (!EntityManager.TryGetComponent(uid, out FixturesComponent? fixturesComponent) ||
-                fixturesComponent.Fixtures.Count != 1 ||
-                !TryComp<PhysicsComponent>(uid, out var body))
+            if (!EntityManager.TryGetComponent(component.Owner, out FixturesComponent? fixturesComponent) ||
+                fixturesComponent.Fixtures.Count != 1) return;
+            if (!EntityManager.TryGetComponent(component.Owner, out PhysicsComponent? physicsComponent)) return;
+
+            if (fixturesComponent.Fixtures.ContainsKey(ThrowingFixture))
             {
+                Logger.Error($"Found existing throwing fixture on {component.Owner}");
                 return;
             }
-
             var fixture = fixturesComponent.Fixtures.Values.First();
             var shape = fixture.Shape;
-            _fixtures.TryCreateFixture(uid, shape, ThrowingFixture, hard: false, collisionMask: (int) CollisionGroup.ThrownItem, manager: fixturesComponent, body: body);
+            var throwingFixture = new Fixture(physicsComponent, shape) { CollisionMask = (int) CollisionGroup.ThrownItem, Hard = false, ID = ThrowingFixture };
+            _fixtures.TryCreateFixture(physicsComponent, throwingFixture, manager: fixturesComponent);
         }
 
-        private void HandleCollision(EntityUid uid, ThrownItemComponent component, ref StartCollideEvent args)
+        private void HandleCollision(EntityUid uid, ThrownItemComponent component, StartCollideEvent args)
         {
             if (args.OtherFixture.Hard == false)
                 return;
@@ -81,11 +79,11 @@ namespace Content.Shared.Throwing
             ThrowCollideInteraction(thrower, args.OurFixture.Body, otherBody);
         }
 
-        private void PreventCollision(EntityUid uid, ThrownItemComponent component, ref PreventCollideEvent args)
+        private void PreventCollision(EntityUid uid, ThrownItemComponent component, PreventCollideEvent args)
         {
             if (args.BodyB.Owner == component.Thrower)
             {
-                args.Cancelled = true;
+                args.Cancel();
             }
         }
 
@@ -103,13 +101,13 @@ namespace Content.Shared.Throwing
 
         private void StopThrow(EntityUid uid, ThrownItemComponent thrownItemComponent)
         {
-            if (EntityManager.TryGetComponent(uid, out FixturesComponent? manager))
+            if (EntityManager.TryGetComponent(uid, out PhysicsComponent? physicsComponent))
             {
-                var fixture = _fixtures.GetFixtureOrNull(uid, ThrowingFixture, manager: manager);
+                var fixture = _fixtures.GetFixtureOrNull(physicsComponent, ThrowingFixture);
 
                 if (fixture != null)
                 {
-                    _fixtures.DestroyFixture(uid, fixture, manager: manager);
+                    _fixtures.DestroyFixture(physicsComponent, fixture);
                 }
             }
 
@@ -117,10 +115,8 @@ namespace Content.Shared.Throwing
             EntityManager.RemoveComponent<ThrownItemComponent>(uid);
         }
 
-        public void LandComponent(ThrownItemComponent thrownItem, PhysicsComponent physics)
+        public void LandComponent(ThrownItemComponent thrownItem)
         {
-            _physics.SetBodyStatus(physics, BodyStatus.OnGround);
-
             if (thrownItem.Deleted || Deleted(thrownItem.Owner) || _containerSystem.IsEntityInContainer(thrownItem.Owner)) return;
 
             var landing = thrownItem.Owner;
@@ -137,15 +133,14 @@ namespace Content.Shared.Throwing
             if (thrownItem.Thrower is not null)
                 _adminLogger.Add(LogType.Landed, LogImpact.Low, $"{ToPrettyString(landing):entity} thrown by {ToPrettyString(thrownItem.Thrower.Value):thrower} landed.");
 
-            _broadphase.RegenerateContacts(physics);
-            var landEvent = new LandEvent(thrownItem.Thrower);
-            RaiseLocalEvent(landing, ref landEvent);
+            var landMsg = new LandEvent {User = thrownItem.Thrower};
+            RaiseLocalEvent(landing, landMsg, false);
         }
 
         /// <summary>
         ///     Raises collision events on the thrown and target entities.
         /// </summary>
-        public void ThrowCollideInteraction(EntityUid? user, PhysicsComponent thrown, PhysicsComponent target)
+        public void ThrowCollideInteraction(EntityUid? user, IPhysBody thrown, IPhysBody target)
         {
             if (user is not null)
                 _adminLogger.Add(LogType.ThrowHit, LogImpact.Low,

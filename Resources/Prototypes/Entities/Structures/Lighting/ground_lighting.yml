@@ -9,7 +9,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "0.17,0.25,-0.17,-0.30"
-      density: 190
+      mass: 25
       mask:
       - MachineMask
       layer:
@@ -46,10 +46,9 @@
   components:
   - type: Construction
     graph: LightFixture
-    node: groundLight
+    node: tubeLight
   - type: Sprite
     sprite: Structures/Lighting/LightPosts/small_light_post.rsi
-    snapCardinals: true
     layers:
     - state: on
       map: ["enum.PoweredLightLayers.Base"]
@@ -91,20 +90,16 @@
     graph: LightFixture
     node: groundLight
   - type: Appearance
-  - type: PoweredLightVisuals
-    blinkingSound:
-      path: "/Audio/Machines/light_tube_on.ogg"
-  - type: SignalReceiver
-    inputs:
-      On: []
-      Off: []
-      Toggle: []
+    visuals:
+    - type: PoweredLightVisualizer
+      blinkingSound:
+        path: "/Audio/Machines/light_tube_on.ogg"
 
 - type: entity
   id: PoweredLightPostSmall
   name: post light
   description: "A light fixture. Draws power and produces light when equipped with a light tube."
-  suffix: ""
+  suffix:
   parent: PoweredLightPostSmallEmpty
   components:
   - type: Sprite
@@ -116,5 +111,3 @@
     damage:
       types:
         Heat: 20
-  - type: StaticPrice
-    price: 25

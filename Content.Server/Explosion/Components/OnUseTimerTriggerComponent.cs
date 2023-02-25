@@ -1,3 +1,4 @@
+using Content.Shared.Sound;
 using Robust.Shared.Audio;
 
 namespace Content.Server.Explosion.Components
@@ -38,11 +39,5 @@ namespace Content.Server.Explosion.Components
         /// </summary>
         [DataField("startOnStick")]
         public bool StartOnStick;
-
-        /// <summary>
-        ///     Allows changing the start-on-stick quality.
-        /// </summary>
-        [DataField("canToggleStartOnStick")]
-        public bool AllowToggleStartOnStick;
     }
 }

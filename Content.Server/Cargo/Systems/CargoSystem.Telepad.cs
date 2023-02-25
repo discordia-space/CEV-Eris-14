@@ -1,4 +1,3 @@
-using Content.Server.Cargo.Systems;
 using Content.Server.Cargo.Components;
 using Content.Server.Labels.Components;
 using Content.Server.Paper;
@@ -14,7 +13,6 @@ namespace Content.Server.Cargo.Systems;
 public sealed partial class CargoSystem
 {
     [Dependency] private readonly PaperSystem _paperSystem = default!;
-    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
 
     private void InitializeTelepad()
     {
@@ -34,7 +32,7 @@ public sealed partial class CargoSystem
             if (comp.CurrentState == CargoTelepadState.Unpowered)
             {
                 comp.CurrentState = CargoTelepadState.Idle;
-                _appearance.SetData(comp.Owner, CargoTelepadVisuals.State, CargoTelepadState.Idle, appearance);
+                appearance?.SetData(CargoTelepadVisuals.State, CargoTelepadState.Idle);
                 comp.Accumulator = comp.Delay;
                 continue;
             }
@@ -45,7 +43,7 @@ public sealed partial class CargoSystem
             if (comp.Accumulator > 0f)
             {
                 comp.CurrentState = CargoTelepadState.Idle;
-                _appearance.SetData(comp.Owner, CargoTelepadVisuals.State, CargoTelepadState.Idle, appearance);
+                appearance?.SetData(CargoTelepadVisuals.State, CargoTelepadState.Idle);
                 continue;
             }
 
@@ -80,12 +78,12 @@ public sealed partial class CargoSystem
             if (order.Amount <= 0)
                 orderDatabase.Orders.Remove(index);
 
-            _audio.PlayPvs(_audio.GetSound(comp.TeleportSound), comp.Owner, AudioParams.Default.WithVolume(-8f));
+            SoundSystem.Play(comp.TeleportSound.GetSound(), Filter.Pvs(comp.Owner), comp.Owner, AudioParams.Default.WithVolume(-8f));
             SpawnProduct(comp, order);
             UpdateOrders(orderDatabase);
 
             comp.CurrentState = CargoTelepadState.Teleporting;
-            _appearance.SetData(comp.Owner, CargoTelepadVisuals.State, CargoTelepadState.Teleporting, appearance);
+            appearance?.SetData(CargoTelepadVisuals.State, CargoTelepadState.Teleporting);
             comp.Accumulator += comp.Delay;
         }
     }
@@ -108,10 +106,10 @@ public sealed partial class CargoSystem
 
         TryComp<AppearanceComponent>(component.Owner, out var appearance);
         component.CurrentState = CargoTelepadState.Unpowered;
-        _appearance.SetData(component.Owner, CargoTelepadVisuals.State, CargoTelepadState.Unpowered, appearance);
+        appearance?.SetData(CargoTelepadVisuals.State, CargoTelepadState.Unpowered);
     }
 
-    private void OnTelepadPowerChange(EntityUid uid, CargoTelepadComponent component, ref PowerChangedEvent args)
+    private void OnTelepadPowerChange(EntityUid uid, CargoTelepadComponent component, PowerChangedEvent args)
     {
         SetEnabled(component);
     }
@@ -143,13 +141,13 @@ public sealed partial class CargoSystem
             return;
 
         // fill in the order data
-        var val = Loc.GetString("cargo-console-paper-print-name", ("orderNumber", data.PrintableOrderNumber));
+        var val = Loc.GetString("cargo-console-paper-print-name", ("orderNumber", data.OrderNumber));
 
         MetaData(printed).EntityName = val;
 
         _paperSystem.SetContent(printed, Loc.GetString(
             "cargo-console-paper-print-text",
-            ("orderNumber", data.PrintableOrderNumber),
+            ("orderNumber", data.OrderNumber),
             ("itemName", prototype.Name),
             ("requester", data.Requester),
             ("reason", data.Reason),

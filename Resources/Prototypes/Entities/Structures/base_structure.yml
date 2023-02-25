@@ -14,7 +14,7 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.45,-0.45,0.45,0.45"
-      density: 60
+      mass: 50
       mask:
       - MachineMask
       layer:
@@ -46,15 +46,13 @@
     - shape:
         !type:PhysShapeAabb
         bounds: "-0.45,-0.45,0.45,0.45"
-      density: 60
+      mass: 50
       mask:
       - MachineMask
       layer:
       - MidImpassable
       - LowImpassable
   - type: Anchorable
-  - type: StaticPrice
-    price: 50
 
 - type: Tag
   id: Structure

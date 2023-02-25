@@ -1,33 +1,36 @@
-﻿using System.Linq;
-using Content.Server.DeviceNetwork.Components;
-using Content.Shared.DeviceNetwork;
+﻿using Content.Server.DeviceNetwork.Components;
 using Content.Shared.Interaction;
 using JetBrains.Annotations;
 
 namespace Content.Server.DeviceNetwork.Systems;
 
 [UsedImplicitly]
-public sealed class DeviceListSystem : SharedDeviceListSystem
+public sealed class DeviceListSystem : EntitySystem
 {
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<DeviceListComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<DeviceListComponent, BeforeBroadcastAttemptEvent>(OnBeforeBroadcast);
         SubscribeLocalEvent<DeviceListComponent, BeforePacketSentEvent>(OnBeforePacketSent);
     }
 
-    public void OnInit(EntityUid uid, DeviceListComponent component, ComponentInit args)
+    /// <summary>
+    /// Replaces or merges the current device list with the given one
+    /// </summary>
+    public void UpdateDeviceList(EntityUid uid, IEnumerable<EntityUid> devices, bool merge = false, DeviceListComponent? deviceList = null)
     {
-        Dirty(component);
+        if (!Resolve(uid, ref deviceList))
+            return;
+
+        if (!merge)
+            deviceList.Devices.Clear();
+
+        deviceList.Devices.UnionWith(devices);
     }
 
     /// <summary>
     /// Gets the given device list as a dictionary
     /// </summary>
-    /// <remarks>
-    /// If any entity in the device list is pre-map init, it will show the entity UID of the device instead.
-    /// </remarks>
     public Dictionary<string, EntityUid> GetDeviceList(EntityUid uid, DeviceListComponent? deviceList = null)
     {
         if (!Resolve(uid, ref deviceList))
@@ -40,15 +43,21 @@ public sealed class DeviceListSystem : SharedDeviceListSystem
             if (!TryComp(deviceUid, out DeviceNetworkComponent? deviceNet))
                 continue;
 
-            var address = MetaData(deviceUid).EntityLifeStage == EntityLifeStage.MapInitialized
-                ? deviceNet.Address
-                : $"UID: {deviceUid.ToString()}";
-
-            devices.Add(address, deviceUid);
+            devices.Add(deviceNet.Address, deviceUid);
 
         }
 
         return devices;
+    }
+
+    /// <summary>
+    /// Toggles the given device lists connection visualisation on and off.
+    /// TODO: Implement an overlay that draws a line between the given entity and the entities in the device list
+    /// </summary>
+    public void ToggleVisualization(EntityUid uid, bool ensureOff = false, DeviceListComponent? deviceList = null)
+    {
+        if (!Resolve(uid, ref deviceList))
+            return;
     }
 
     /// <summary>

@@ -1,4 +1,6 @@
-using Content.Shared.Storage;
+using Robust.Shared.Prototypes;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
+using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.List;
 
 namespace Content.Server.Xenoarchaeology.XenoArtifacts.Effects.Components;
 
@@ -9,18 +11,21 @@ namespace Content.Server.Xenoarchaeology.XenoArtifacts.Effects.Components;
 [RegisterComponent]
 public sealed class SpawnArtifactComponent : Component
 {
-    [DataField("spawns")]
-    public List<EntitySpawnEntry>? Spawns;
+    [DataField("random")]
+    public bool RandomPrototype = true;
 
-    /// <summary>
-    /// The range around the artifact that it will spawn the entity
-    /// </summary>
+    [DataField("possiblePrototypes", customTypeSerializer:typeof(PrototypeIdListSerializer<EntityPrototype>))]
+    public List<string> PossiblePrototypes = new();
+
+    [ViewVariables(VVAccess.ReadWrite)]
+    [DataField("prototype", customTypeSerializer:typeof(PrototypeIdSerializer<EntityPrototype>))]
+    public string? Prototype;
+
     [DataField("range")]
     public float Range = 0.5f;
 
-    /// <summary>
-    /// The maximum number of times the spawn will occur
-    /// </summary>
     [DataField("maxSpawns")]
-    public int MaxSpawns = 10;
+    public int MaxSpawns = 20;
+
+    public int SpawnsCount = 0;
 }

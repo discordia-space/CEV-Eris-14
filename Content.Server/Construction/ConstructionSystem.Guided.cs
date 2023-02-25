@@ -5,14 +5,11 @@ using Content.Shared.Construction.Steps;
 using Content.Shared.Examine;
 using Content.Shared.Popups;
 using Content.Shared.Verbs;
-using Robust.Shared.Player;
 
 namespace Content.Server.Construction
 {
     public sealed partial class ConstructionSystem
     {
-        [Dependency] private readonly SharedPopupSystem _popup = default!;
-
         private readonly Dictionary<ConstructionPrototype, ConstructionGuide> _guideCache = new();
 
         private void InitializeGuided()
@@ -52,11 +49,11 @@ namespace Content.Server.Construction
                 if (component.TargetNode == null)
                 {
                     // Maybe check, but on the flip-side a better solution might be to not make it undeconstructible in the first place, no?
-                    _popup.PopupEntity(Loc.GetString("deconstructible-verb-activate-no-target-text"), uid, uid);
+                    component.Owner.PopupMessage(args.User, Loc.GetString("deconstructible-verb-activate-no-target-text"));
                 }
                 else
                 {
-                    _popup.PopupEntity(Loc.GetString("deconstructible-verb-activate-text"), args.User, args.User);
+                    component.Owner.PopupMessage(args.User, Loc.GetString("deconstructible-verb-activate-text"));
                 }
             };
 
@@ -97,6 +94,7 @@ namespace Content.Server.Construction
 
                 if (!preventStepExamine && component.StepIndex < edge.Steps.Count)
                     edge.Steps[component.StepIndex].DoExamine(args);
+                return;
             }
         }
 

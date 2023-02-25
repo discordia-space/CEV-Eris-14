@@ -14,3 +14,4 @@
   - type: Item
     size: 12
     sprite: Objects/Weapons/Melee/gohei.rsi
+    prefix: inhand

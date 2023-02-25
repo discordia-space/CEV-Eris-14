@@ -7,7 +7,6 @@ namespace Content.Client.Shuttles
 {
     public sealed class ThrusterVisualizer : AppearanceVisualizer
     {
-        [Obsolete("Subscribe to AppearanceChangeEvent instead.")]
         public override void OnChangeData(AppearanceComponent component)
         {
             base.OnChangeData(component);

@@ -17,7 +17,3 @@
 - type: typingIndicator
   id: holo
   typingState: holo0
-
-- type: typingIndicator
-  id: lawyer
-  typingState: lawyer0

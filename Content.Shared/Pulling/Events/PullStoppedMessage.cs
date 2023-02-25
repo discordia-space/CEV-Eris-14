@@ -1,10 +1,10 @@
-﻿using Robust.Shared.Physics.Components;
+﻿using Robust.Shared.Physics;
 
 namespace Content.Shared.Physics.Pull
 {
     public sealed class PullStoppedMessage : PullMessage
     {
-        public PullStoppedMessage(PhysicsComponent puller, PhysicsComponent pulled) : base(puller, pulled)
+        public PullStoppedMessage(IPhysBody puller, IPhysBody pulled) : base(puller, pulled)
         {
         }
     }

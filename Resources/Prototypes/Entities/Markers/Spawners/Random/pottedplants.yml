@@ -6,8 +6,7 @@
   - type: Sprite
     layers:
       - state: red
-      - sprite: Structures/Furniture/potted_plants.rsi
-        state: random
+      - texture: Structures/Furniture/potted_plants.rsi/random.png
   - type: RandomSpawner
     offset: 0
     prototypes:
@@ -45,8 +44,7 @@
   - type: Sprite
     layers:
       - state: red
-      - sprite: Structures/Furniture/potted_plants.rsi
-        state: plant-26
+      - texture: Structures/Furniture/potted_plants.rsi/plant-26.png
   - type: RandomSpawner
     offset: 0
     prototypes:

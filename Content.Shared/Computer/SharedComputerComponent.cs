@@ -5,6 +5,10 @@ namespace Content.Shared.Computer
     [Serializable, NetSerializable]
     public enum ComputerVisuals : byte
     {
-        Powered
+        // Bool
+        Powered,
+
+        // Bool
+        Broken
     }
 }

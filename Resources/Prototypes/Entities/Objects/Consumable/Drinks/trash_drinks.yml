@@ -19,14 +19,6 @@
     isOpen: true
   - type: Spillable
     solution: drink
-  - type: FitsInDispenser
-    solution: drink
-  - type: DrawableSolution
-    solution: drink
-  - type: RefillableSolution
-    solution: drink
-  - type: DrainableSolution
-    solution: drink
   - type: UserInterface
     interfaces:
     - key: enum.TransferAmountUiKey.Key
@@ -129,12 +121,12 @@
 
 
 - type: entity
-  name: coffee liqueur bottle
+  name: kahlua bottle
   parent: DrinkBottleBaseEmpty
-  id: DrinkBottleCoffeeLiqueur
+  id: DrinkBottleKahlua
   components:
   - type: Sprite
-    sprite: Objects/Consumable/TrashDrinks/coffeeliqueurbottle_empty.rsi
+    sprite: Objects/Consumable/TrashDrinks/kahluabottle_empty.rsi
 
 
 - type: entity

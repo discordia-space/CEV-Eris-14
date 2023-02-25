@@ -1,4 +1,4 @@
-namespace Content.Server.Disposal.Unit.EntitySystems
+﻿namespace Content.Server.Disposal.Unit.EntitySystems
 {
-    public record DoInsertDisposalUnitEvent(EntityUid? User, EntityUid ToInsert, EntityUid Unit);
+    public record DoInsertDisposalUnitEvent(EntityUid User, EntityUid ToInsert, EntityUid Unit);
 }

@@ -98,9 +98,8 @@ public sealed class PayloadSystem : EntitySystem
 
             component.Owner = uid;
 
-            var temp = (object) component;
-            _serializationManager.CopyTo(data.Component, ref temp);
-            EntityManager.AddComponent(uid, (Component)temp!);
+            if (_serializationManager.Copy(data.Component, component, null) is Component copied)
+                EntityManager.AddComponent(uid, copied);
 
             trigger.GrantedComponents.Add(registration.Type);
         }
@@ -147,8 +146,8 @@ public sealed class PayloadSystem : EntitySystem
             || !TryComp(beakerB, out FitsInDispenserComponent? compB)
             || !_solutionSystem.TryGetSolution(beakerA, compA.Solution, out var solutionA)
             || !_solutionSystem.TryGetSolution(beakerB, compB.Solution, out var solutionB)
-            || solutionA.Volume == 0
-            || solutionB.Volume == 0)
+            || solutionA.TotalVolume == 0
+            || solutionB.TotalVolume == 0)
         {
             return;
         }
@@ -161,10 +160,10 @@ public sealed class PayloadSystem : EntitySystem
 
         solutionA.MaxVolume += solutionB.MaxVolume;
         _solutionSystem.TryAddSolution(beakerA, solutionA, solutionB);
-        _solutionSystem.RemoveAllSolution(beakerB, solutionB);
+        solutionB.RemoveAllSolution();
 
         // The grenade might be a dud. Redistribute solution:
-        var tmpSol = _solutionSystem.SplitSolution(beakerA, solutionA, solutionA.Volume * solutionB.MaxVolume / solutionA.MaxVolume);
+        var tmpSol = _solutionSystem.SplitSolution(beakerA, solutionA, solutionA.CurrentVolume * solutionB.MaxVolume / solutionA.MaxVolume);
         _solutionSystem.TryAddSolution(beakerB, solutionB, tmpSol);
         solutionA.MaxVolume -= solutionB.MaxVolume;
         _solutionSystem.UpdateChemicals(beakerA, solutionA, false);

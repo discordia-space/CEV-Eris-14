@@ -1,5 +1,5 @@
 using System.Threading;
-using Robust.Shared.Audio;
+using Content.Shared.Sound;
 
 namespace Content.Server.RCD.Components
 {
@@ -31,6 +31,7 @@ namespace Content.Server.RCD.Components
         /// <summary>
         ///     What mode are we on? Can be floors, walls, deconstruct.
         /// </summary>
+        [ViewVariables]
         [DataField("mode")]
         public RcdMode Mode = RcdMode.Floors;
 

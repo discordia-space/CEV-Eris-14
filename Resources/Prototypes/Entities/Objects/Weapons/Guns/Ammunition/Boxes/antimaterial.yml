@@ -4,7 +4,6 @@
   name: ammunition box (.60 anti-material)
   components:
   - type: BallisticAmmoProvider
-    mayTransfer: true
     capacity: 30
     proto: CartridgeAntiMaterial
   - type: Sprite
@@ -20,7 +19,3 @@
     steps: 2
     zeroVisible: false
   - type: Appearance
-  - type: ContainerContainer
-    containers:
-      ballistic-ammo: !type:Container
-        ents: []

@@ -34,7 +34,7 @@ namespace Content.Client.Animations
                     },
                     new AnimationTrackComponentProperty
                     {
-                        ComponentType = typeof(SpriteComponent),
+                        ComponentType = typeof(ISpriteComponent),
                         Property = "layer/0/texture",
                         KeyFrames =
                         {

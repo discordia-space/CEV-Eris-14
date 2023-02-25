@@ -1,4 +1,3 @@
-using Content.Server.Administration.Logs;
 using Robust.Shared.Player;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
@@ -9,7 +8,6 @@ using Content.Shared.Access.Components;
 using Content.Server.Doors.Systems;
 using Content.Server.Doors.Components;
 using Content.Server.Power.EntitySystems;
-using Content.Shared.Database;
 using Content.Shared.Interaction.Events;
 using static Content.Server.Remotes.DoorRemoteComponent;
 
@@ -17,12 +15,10 @@ namespace Content.Server.Remotes
 {
     public sealed class DoorRemoteSystem : EntitySystem
     {
-        [Dependency] private readonly IAdminLogManager _adminLogger = default!;
-        [Dependency] private readonly AirlockSystem _airlock = default!;
         [Dependency] private readonly SharedPopupSystem _popupSystem = default!;
         [Dependency] private readonly DoorSystem _doorSystem = default!;
         [Dependency] private readonly SharedInteractionSystem _interactionSystem = default!;
-        // I'm so sorry [Dependency] private readonly SharedAirlockSystem _sharedAirlockSystem = default!;
+        [Dependency] private readonly SharedAirlockSystem _sharedAirlockSystem = default!;
 
         public override void Initialize()
         {
@@ -75,9 +71,9 @@ namespace Content.Server.Remotes
             }
 
             if (TryComp<AccessReaderComponent>(args.Target, out var accessComponent) &&
-                !_doorSystem.HasAccess(args.Target.Value, args.Used, accessComponent))
+                !_doorSystem.HasAccess(doorComp.Owner, args.Used, accessComponent))
             {
-                _doorSystem.Deny(args.Target.Value, doorComp, args.User);
+                _doorSystem.Deny(airlockComp.Owner, doorComp, args.User);
                 ShowPopupToUser("door-remote-denied", args.User);
                 return;
             }
@@ -85,19 +81,14 @@ namespace Content.Server.Remotes
             switch (component.Mode)
             {
                 case OperatingMode.OpenClose:
-                    if (_doorSystem.TryToggleDoor(args.Target.Value, doorComp, args.Used))
-                        _adminLogger.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(args.User):player} used {ToPrettyString(args.Used)} on {ToPrettyString(args.Target.Value)}: {doorComp.State}");
+                    _doorSystem.TryToggleDoor(doorComp.Owner, doorComp, args.Used);
                     break;
                 case OperatingMode.ToggleBolts:
-                    if (!airlockComp.BoltWireCut)
-                    {
-                        _airlock.SetBoltsWithAudio(uid, airlockComp, !airlockComp.BoltsDown);
-                        _adminLogger.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(args.User):player} used {ToPrettyString(args.Used)} on {ToPrettyString(args.Target.Value)} to {(airlockComp.BoltsDown ? "" : "un")}bolt it");
-                    }
+                    //TODO: What about cut wires...?
+                    airlockComp.SetBoltsWithAudio(!airlockComp.IsBolted());
                     break;
                 case OperatingMode.ToggleEmergencyAccess:
-                    _airlock.ToggleEmergencyAccess(uid, airlockComp);
-                    _adminLogger.Add(LogType.Action, LogImpact.Medium, $"{ToPrettyString(args.User):player} used {ToPrettyString(args.Used)} on {ToPrettyString(args.Target.Value)} to set emergency access {(airlockComp.EmergencyAccess ? "on" : "off")}");
+                    _sharedAirlockSystem.ToggleEmergencyAccess(airlockComp);
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -106,6 +97,6 @@ namespace Content.Server.Remotes
         }
 
         private void ShowPopupToUser(string messageId, EntityUid user) =>
-            _popupSystem.PopupEntity(Loc.GetString(messageId), user, user);
+            _popupSystem.PopupEntity(Loc.GetString(messageId), user, Filter.Entities(user));
     }
 }

@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Content.Server.Atmos.EntitySystems;
 using Content.Server.Chat.Managers;
 using Content.Server.GameTicking.Rules.Configurations;
@@ -6,19 +6,19 @@ using Content.Server.Hands.Components;
 using Content.Server.PDA;
 using Content.Server.Players;
 using Content.Server.Spawners.Components;
-using Content.Server.Store.Components;
 using Content.Server.Traitor;
 using Content.Server.Traitor.Uplink;
+using Content.Server.Traitor.Uplink.Account;
+using Content.Server.Traitor.Uplink.Components;
 using Content.Server.TraitorDeathMatch.Components;
 using Content.Shared.CCVar;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Prototypes;
-using Content.Shared.FixedPoint;
 using Content.Shared.Inventory;
-using Content.Shared.Mobs.Components;
-using Content.Shared.Mobs.Systems;
+using Content.Shared.MobState.Components;
 using Content.Shared.PDA;
 using Content.Shared.Roles;
+using Content.Shared.Traitor.Uplink;
 using Robust.Server.GameObjects;
 using Robust.Server.Player;
 using Robust.Shared.Configuration;
@@ -37,10 +37,8 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
     [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
     [Dependency] private readonly MaxTimeRestartRuleSystem _restarter = default!;
     [Dependency] private readonly InventorySystem _inventory = default!;
-    [Dependency] private readonly MobStateSystem _mobStateSystem = default!;
     [Dependency] private readonly AtmosphereSystem _atmosphereSystem = default!;
     [Dependency] private readonly TransformSystem _transformSystem = default!;
-    [Dependency] private readonly UplinkSystem _uplink = default!;
 
     public override string Prototype => "TraitorDeathMatch";
 
@@ -50,7 +48,7 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
 
     private bool _safeToEndRound = false;
 
-    private readonly Dictionary<EntityUid, string> _allOriginalNames = new();
+    private readonly Dictionary<UplinkAccount, string> _allOriginalNames = new();
 
     private const string TraitorPrototypeID = "Traitor";
 
@@ -65,7 +63,7 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
 
     private void OnPlayerSpawned(PlayerSpawnCompleteEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         var session = ev.Player;
@@ -110,10 +108,15 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
             newTmp = Spawn(BackpackPrototypeName, ownedCoords);
             _inventory.TryEquip(owned, newTmp, "back", true);
 
-            if (!_uplink.AddUplink(owned, startingBalance))
-                return;
+            // Like normal traitors, they need access to a traitor account.
+            var uplinkAccount = new UplinkAccount(startingBalance, owned);
+            var accounts = EntityManager.EntitySysManager.GetEntitySystem<UplinkAccountsSystem>();
+            accounts.AddNewAccount(uplinkAccount);
 
-            _allOriginalNames[owned] = Name(owned);
+            EntityManager.EntitySysManager.GetEntitySystem<UplinkSystem>()
+                .AddUplink(owned, uplinkAccount, newPDA);
+
+            _allOriginalNames[uplinkAccount] = Name(owned);
 
             // The PDA needs to be marked with the correct owner.
             var pda = Comp<PDAComponent>(newPDA);
@@ -141,7 +144,7 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
 
     private void OnGhostAttempt(GhostAttemptHandleEvent ev)
     {
-        if (!RuleAdded || ev.Handled)
+        if (!Enabled || ev.Handled)
             return;
 
         ev.Handled = true;
@@ -150,13 +153,13 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
 
         if (mind.OwnedEntity is {Valid: true} entity && TryComp(entity, out MobStateComponent? mobState))
         {
-            if (_mobStateSystem.IsCritical(entity, mobState))
+            if (mobState.IsCritical())
             {
                 // TODO BODY SYSTEM KILL
                 var damage = new DamageSpecifier(_prototypeManager.Index<DamageTypePrototype>("Asphyxiation"), 100);
                 Get<DamageableSystem>().TryChangeDamage(entity, damage, true);
             }
-            else if (!_mobStateSystem.IsDead(entity,mobState))
+            else if (!mobState.IsDead())
             {
                 if (HasComp<HandsComponent>(entity))
                 {
@@ -178,36 +181,33 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
 
     private void OnRoundEndText(RoundEndTextAppendEvent ev)
     {
-        if (!RuleAdded)
+        if (!Enabled)
             return;
 
         var lines = new List<string>();
         lines.Add(Loc.GetString("traitor-death-match-end-round-description-first-line"));
-
-        foreach (var uplink in EntityManager.EntityQuery<StoreComponent>(true))
+        foreach (var uplink in EntityManager.EntityQuery<UplinkComponent>(true))
         {
-            var owner = uplink.AccountOwner;
-            if (owner != null && _allOriginalNames.ContainsKey(owner.Value))
+            var uplinkAcc = uplink.UplinkAccount;
+            if (uplinkAcc != null && _allOriginalNames.ContainsKey(uplinkAcc))
             {
-                var tcbalance = _uplink.GetTCBalance(uplink);
-
                 lines.Add(Loc.GetString("traitor-death-match-end-round-description-entry",
-                    ("originalName", _allOriginalNames[owner.Value]),
-                    ("tcBalance", tcbalance)));
+                    ("originalName", _allOriginalNames[uplinkAcc]),
+                    ("tcBalance", uplinkAcc.Balance)));
             }
         }
 
         ev.AddLine(string.Join('\n', lines));
     }
 
-    public override void Started()
+    public override void Started(GameRuleConfiguration _)
     {
         _restarter.RoundMaxTime = TimeSpan.FromMinutes(30);
         _restarter.RestartTimer();
         _safeToEndRound = true;
     }
 
-    public override void Ended()
+    public override void Ended(GameRuleConfiguration _)
     {
     }
 
@@ -227,7 +227,7 @@ public sealed class TraitorDeathMatchRuleSystem : GameRuleSystem
             if (TryComp(avoidMeEntity.Value, out MobStateComponent? mobState))
             {
                 // Does have mob state component; if critical or dead, they don't really matter for spawn checks
-                if (_mobStateSystem.IsCritical(avoidMeEntity.Value, mobState) || _mobStateSystem.IsDead(avoidMeEntity.Value, mobState))
+                if (mobState.IsCritical() || mobState.IsDead())
                     continue;
             }
             else

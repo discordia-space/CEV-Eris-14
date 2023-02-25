@@ -85,7 +85,7 @@ namespace Content.Client.Doors
                     {
                         var flickMaintenancePanel = new AnimationTrackSpriteFlick();
                         CloseAnimation.AnimationTracks.Add(flickMaintenancePanel);
-                        flickMaintenancePanel.LayerKey = WiresVisualLayers.MaintenancePanel;
+                        flickMaintenancePanel.LayerKey = WiresVisualizer.WiresVisualLayers.MaintenancePanel;
                         flickMaintenancePanel.KeyFrames.Add(new AnimationTrackSpriteFlick.KeyFrame("panel_closing", 0f));
                     }
                 }
@@ -109,7 +109,7 @@ namespace Content.Client.Doors
                     {
                         var flickMaintenancePanel = new AnimationTrackSpriteFlick();
                         OpenAnimation.AnimationTracks.Add(flickMaintenancePanel);
-                        flickMaintenancePanel.LayerKey = WiresVisualLayers.MaintenancePanel;
+                        flickMaintenancePanel.LayerKey = WiresVisualizer.WiresVisualLayers.MaintenancePanel;
                         flickMaintenancePanel.KeyFrames.Add(new AnimationTrackSpriteFlick.KeyFrame("panel_opening", 0f));
                     }
                 }
@@ -134,7 +134,6 @@ namespace Content.Client.Doors
             }
         }
 
-        [Obsolete("Subscribe to your component being initialised instead.")]
         public override void InitializeEntity(EntityUid entity)
         {
             if (!_entMan.HasComponent<AnimationPlayerComponent>(entity))
@@ -143,7 +142,6 @@ namespace Content.Client.Doors
             }
         }
 
-        [Obsolete("Subscribe to AppearanceChangeEvent instead.")]
         public override void OnChangeData(AppearanceComponent component)
         {
             // only start playing animations once.
@@ -152,7 +150,7 @@ namespace Content.Client.Doors
 
             base.OnChangeData(component);
 
-            var sprite = _entMan.GetComponent<SpriteComponent>(component.Owner);
+            var sprite = _entMan.GetComponent<ISpriteComponent>(component.Owner);
             var animPlayer = _entMan.GetComponent<AnimationPlayerComponent>(component.Owner);
             if (!component.TryGetData(DoorVisuals.State, out DoorState state))
             {
@@ -160,6 +158,9 @@ namespace Content.Client.Doors
             }
 
             var door = _entMan.GetComponent<DoorComponent>(component.Owner);
+            var unlitVisible = true;
+            var boltedVisible = false;
+            var emergencyLightsVisible = false;
 
             if (component.TryGetData(DoorVisuals.BaseRSI, out string baseRsi))
             {
@@ -181,6 +182,7 @@ namespace Content.Client.Doors
             {
                 case DoorState.Open:
                     sprite.LayerSetState(DoorVisualLayers.Base, "open");
+                    unlitVisible = _openUnlitVisible;
                     if (_openUnlitVisible && !_simpleVisuals)
                     {
                         sprite.LayerSetState(DoorVisualLayers.BaseUnlit, "open_unlit");
@@ -215,33 +217,33 @@ namespace Content.Client.Doors
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (_simpleVisuals)
-                return;
-
-            var boltedVisible = false;
-            var emergencyLightsVisible = false;
-            var unlitVisible = false;
-
-            if (component.TryGetData(DoorVisuals.Powered, out bool powered) && powered)
+            if (component.TryGetData(DoorVisuals.Powered, out bool powered) && !powered)
             {
-                boltedVisible = component.TryGetData(DoorVisuals.BoltLights, out bool lights) && lights;
-                emergencyLightsVisible = component.TryGetData(DoorVisuals.EmergencyLights, out bool eaLights) && eaLights;
-                unlitVisible = state == DoorState.Closing
-                    || state == DoorState.Opening
-                    || state == DoorState.Denying
-                    || state == DoorState.Open && _openUnlitVisible
-                    || (component.TryGetData(DoorVisuals.ClosedLights, out bool closedLights) && closedLights);
+                unlitVisible = false;
+            }
+            if (component.TryGetData(DoorVisuals.BoltLights, out bool lights) && lights)
+            {
+                boltedVisible = true;
             }
 
-            sprite.LayerSetVisible(DoorVisualLayers.BaseUnlit, unlitVisible);
-            sprite.LayerSetVisible(DoorVisualLayers.BaseBolted, boltedVisible);
-            if (_emergencyAccessLayer)
+            if (component.TryGetData(DoorVisuals.EmergencyLights, out bool eaLights) && eaLights)
             {
-                sprite.LayerSetVisible(DoorVisualLayers.BaseEmergencyAccess,
-                        emergencyLightsVisible
-                        && state != DoorState.Open
-                        && state != DoorState.Opening
-                        && state != DoorState.Closing);
+                emergencyLightsVisible = true;
+            }
+
+            if (!_simpleVisuals)
+            {
+                sprite.LayerSetVisible(DoorVisualLayers.BaseUnlit, unlitVisible && state != DoorState.Closed && state != DoorState.Welded);
+                sprite.LayerSetVisible(DoorVisualLayers.BaseBolted, unlitVisible && boltedVisible);
+                if (_emergencyAccessLayer)
+                {
+                    sprite.LayerSetVisible(DoorVisualLayers.BaseEmergencyAccess,
+                            emergencyLightsVisible
+                            && state != DoorState.Open
+                            && state != DoorState.Opening
+                            && state != DoorState.Closing
+                            && unlitVisible);
+                }
             }
         }
     }

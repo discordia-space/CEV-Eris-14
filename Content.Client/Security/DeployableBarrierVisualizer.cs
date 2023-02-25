@@ -9,7 +9,6 @@ namespace Content.Client.Security
     [UsedImplicitly]
     public sealed class DeployableBarrierVisualizer : AppearanceVisualizer
     {
-        [Obsolete("Subscribe to AppearanceChangeEvent instead.")]
         public override void OnChangeData(AppearanceComponent component)
         {
             base.OnChangeData(component);

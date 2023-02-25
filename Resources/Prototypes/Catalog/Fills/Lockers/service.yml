@@ -5,8 +5,8 @@
   components:
   - type: StorageFill
     contents:
-      - id: ClothingOuterVestKevlar
-      - id: WeaponShotgunDoubleBarreled
+      - id: ClothingOuterArmorBulletproof
+      - id: WeaponShotgunSawn
       - id: DrinkShaker
       - id: ClothingEyesGlassesBeer
       - id: DrinkBottleBeer
@@ -15,8 +15,6 @@
         prob: 0.5
       - id: DrinkBottleBeer
         prob: 0.5
-      - id: BoxBeanbag
-        amount: 2
 
 #- type: entity
 #  id: LockerFormalFilled
@@ -38,8 +36,6 @@
       - id: ReagentContainerFlour
         amount: 2
       - id: ReagentContainerSugar
-      - id: FoodCondimentPacketSalt
-        amount: 3
       - id: FoodCondimentBottleEnzyme
       # really, milk should go in the fridge. Unfortunately saltern only has freezers.
       # yes, I'm using this as an excuse to not have to do extra work.
@@ -55,7 +51,6 @@
   - type: StorageFill
     contents:
       - id: MopItem
-        amount: 2
       - id: BoxMousetrap
         amount: 2
       - id: WetFloorSign
@@ -66,12 +61,6 @@
         amount: 1
       - id: BoxLightMixed
         amount: 1
-      - id: Holoprojector
-        amount: 1
-      - id: SoapNT
-        amount: 2
-      - id: FlashlightLantern
-        amount: 2
 
 - type: entity
   id: ClosetLegalFilled
@@ -82,7 +71,6 @@
     contents:
       - id: BriefcaseBrownFilled
         prob: 0.80
-      - id: ClothingOuterRobesJudge
 
 - type: entity
   id: LockerBotanistFilled
@@ -100,8 +88,6 @@
       - id: HydroponicsToolClippers
       - id: ClothingBeltPlant
       - id: PlantBag ##Some maps don't have nutrivend
-      - id: BoxMouthSwab
-      - id: HandLabeler
       - id: TowercapSeeds
       - id: BananaSeeds
         prob: 0.6

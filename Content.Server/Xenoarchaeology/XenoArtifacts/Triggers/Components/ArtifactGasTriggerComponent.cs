@@ -12,14 +12,13 @@ public sealed class ArtifactGasTriggerComponent : Component
     ///     List of possible activation gases to pick on startup.
     /// </summary>
     [DataField("possibleGas")]
-    public List<Gas> PossibleGases = new()
+    public Gas[] PossibleGases =
     {
         Gas.Oxygen,
         Gas.Plasma,
         Gas.Nitrogen,
         Gas.CarbonDioxide,
-        Gas.Miasma,
-        Gas.NitrousOxide
+        Gas.Miasma
     };
 
     /// <summary>

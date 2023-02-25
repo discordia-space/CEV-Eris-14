@@ -1,15 +1,22 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
-using Content.Client.UserInterface.Systems.MenuBar.Widgets;
+using Content.Client.HUD;
+using Content.Client.Resources;
 using Content.Shared.Construction.Prototypes;
-using Robust.Client.GameObjects;
+using Content.Shared.Construction.Steps;
+using Content.Shared.Tools;
+using Content.Shared.Tools.Components;
 using Robust.Client.Graphics;
 using Robust.Client.Placement;
-using Robust.Client.UserInterface;
+using Robust.Client.ResourceManagement;
 using Robust.Client.UserInterface.Controls;
 using Robust.Client.Utility;
 using Robust.Shared.Enums;
+using Robust.Shared.GameObjects;
+using Robust.Shared.IoC;
+using Robust.Shared.Localization;
 using Robust.Shared.Prototypes;
-using static Robust.Client.UserInterface.Controls.BaseButton;
 
 namespace Content.Client.Construction.UI
 {
@@ -23,8 +30,8 @@ namespace Content.Client.Construction.UI
         [Dependency] private readonly IEntitySystemManager _systemManager = default!;
         [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
         [Dependency] private readonly IPlacementManager _placementManager = default!;
-        [Dependency] private readonly IUserInterfaceManager _uiManager = default!;
 
+        private readonly IGameHud _gameHud;
         private readonly IConstructionMenuView _constructionView;
 
         private ConstructionSystem? _constructionSystem;
@@ -32,10 +39,10 @@ namespace Content.Client.Construction.UI
 
         private bool CraftingAvailable
         {
-            get => _uiManager.GetActiveUIWidget<GameTopMenuBar>().CraftingButton.Visible;
+            get => _gameHud.CraftingButtonVisible;
             set
             {
-                _uiManager.GetActiveUIWidget<GameTopMenuBar>().CraftingButton.Visible = value;
+                _gameHud.CraftingButtonVisible = value;
                 if (!value)
                     _constructionView.Close();
             }
@@ -69,10 +76,13 @@ namespace Content.Client.Construction.UI
         /// <summary>
         /// Constructs a new instance of <see cref="ConstructionMenuPresenter" />.
         /// </summary>
-        public ConstructionMenuPresenter()
+        /// <param name="gameHud">GUI that is being presented to.</param>
+        public ConstructionMenuPresenter(IGameHud gameHud)
         {
             // This is a lot easier than a factory
             IoCManager.InjectDependencies(this);
+
+            _gameHud = gameHud;
             _constructionView = new ConstructionMenu();
 
             // This is required so that if we load after the system is initialized, we can bind to it immediately
@@ -84,7 +94,7 @@ namespace Content.Client.Construction.UI
 
             _placementManager.PlacementChanged += OnPlacementChanged;
 
-            _constructionView.OnClose += () => _uiManager.GetActiveUIWidget<GameTopMenuBar>().CraftingButton.Pressed = false;
+            _constructionView.OnClose += () => _gameHud.CraftingButtonDown = false;
             _constructionView.ClearAllGhosts += (_, _) => _constructionSystem?.ClearAllGhosts();
             _constructionView.PopulateRecipes += OnViewPopulateRecipes;
             _constructionView.RecipeSelected += OnViewRecipeSelected;
@@ -100,11 +110,12 @@ namespace Content.Client.Construction.UI
             PopulateCategories();
             OnViewPopulateRecipes(_constructionView, (string.Empty, string.Empty));
 
+            _gameHud.CraftingButtonToggled += OnHudCraftingButtonToggled;
         }
 
-        public void OnHudCraftingButtonToggled(ButtonToggledEventArgs args)
+        private void OnHudCraftingButtonToggled(bool b)
         {
-            WindowOpen = args.Pressed;
+            WindowOpen = b;
         }
 
         /// <inheritdoc />
@@ -117,6 +128,8 @@ namespace Content.Client.Construction.UI
             _systemManager.SystemUnloaded -= OnSystemUnloaded;
 
             _placementManager.PlacementChanged -= OnPlacementChanged;
+
+            _gameHud.CraftingButtonToggled -= OnHudCraftingButtonToggled;
         }
 
         private void OnPlacementChanged(object? sender, EventArgs e)
@@ -154,7 +167,7 @@ namespace Content.Client.Construction.UI
                         continue;
                 }
 
-                if (!string.IsNullOrEmpty(category) && category != "construction-category-all")
+                if (!string.IsNullOrEmpty(category) && category != Loc.GetString("construction-presenter-category-all"))
                 {
                     if (recipe.Category != category)
                         continue;
@@ -178,11 +191,11 @@ namespace Content.Client.Construction.UI
             var uniqueCategories = new HashSet<string>();
 
             // hard-coded to show all recipes
-            uniqueCategories.Add("construction-category-all");
+            uniqueCategories.Add(Loc.GetString("construction-presenter-category-all"));
 
             foreach (var prototype in _prototypeManager.EnumeratePrototypes<ConstructionPrototype>())
             {
-                var category = prototype.Category;
+                var category = Loc.GetString(prototype.Category);
 
                 if (!string.IsNullOrEmpty(category))
                     uniqueCategories.Add(category);
@@ -190,13 +203,13 @@ namespace Content.Client.Construction.UI
 
             _constructionView.Category.Clear();
 
-            var array = uniqueCategories.OrderBy(Loc.GetString).ToArray();
+            var array = uniqueCategories.ToArray();
             Array.Sort(array);
 
             for (var i = 0; i < array.Length; i++)
             {
                 var category = array[i];
-                _constructionView.Category.AddItem(Loc.GetString(category), i);
+                _constructionView.Category.AddItem(category, i);
             }
 
             _constructionView.Categories = array;
@@ -204,9 +217,8 @@ namespace Content.Client.Construction.UI
 
         private void PopulateInfo(ConstructionPrototype prototype)
         {
-            var spriteSys = _systemManager.GetEntitySystem<SpriteSystem>();
             _constructionView.ClearRecipeInfo();
-            _constructionView.SetRecipeInfo(prototype.Name, prototype.Description, spriteSys.Frame0(prototype.Icon), prototype.Type != ConstructionType.Item);
+            _constructionView.SetRecipeInfo(prototype.Name, prototype.Description, prototype.Icon.Frame0(), prototype.Type != ConstructionType.Item);
 
             var stepList = _constructionView.RecipeStepList;
             GenerateStepList(prototype, stepList);
@@ -217,24 +229,19 @@ namespace Content.Client.Construction.UI
             if (_constructionSystem?.GetGuide(prototype) is not { } guide)
                 return;
 
-            var spriteSys = _systemManager.GetEntitySystem<SpriteSystem>();
-
             foreach (var entry in guide.Entries)
             {
                 var text = entry.Arguments != null
                     ? Loc.GetString(entry.Localization, entry.Arguments) : Loc.GetString(entry.Localization);
 
                 if (entry.EntryNumber is {} number)
-                {
                     text = Loc.GetString("construction-presenter-step-wrapper",
                         ("step-number", number), ("text", text));
-                }
 
                 // The padding needs to be applied regardless of text length... (See PadLeft documentation)
                 text = text.PadLeft(text.Length + entry.Padding);
 
-                var icon = entry.Icon != null ? spriteSys.Frame0(entry.Icon) : Texture.Transparent;
-                stepList.AddItem(text, icon, false);
+                stepList.AddItem(text, entry.Icon?.Frame0(), false);
             }
         }
 
@@ -288,7 +295,7 @@ namespace Content.Client.Construction.UI
         {
             if (_selected == null || _selected.Type != ConstructionType.Structure) return;
 
-            var constructSystem = _systemManager.GetEntitySystem<ConstructionSystem>();
+            var constructSystem = EntitySystem.Get<ConstructionSystem>();
 
             _placementManager.BeginPlacing(new PlacementInformation()
             {
@@ -337,10 +344,7 @@ namespace Content.Client.Construction.UI
             system.ToggleCraftingWindow += SystemOnToggleMenu;
             system.CraftingAvailabilityChanged += SystemCraftingAvailabilityChanged;
             system.ConstructionGuideAvailable += SystemGuideAvailable;
-            if (_uiManager.GetActiveUIWidgetOrNull<GameTopMenuBar>() != null)
-            {
-                CraftingAvailable = system.CraftingEnabled;
-            }
+            CraftingAvailable = system.CraftingEnabled;
         }
 
         private void UnbindFromSystem()
@@ -358,8 +362,6 @@ namespace Content.Client.Construction.UI
 
         private void SystemCraftingAvailabilityChanged(object? sender, CraftingAvailabilityChangedArgs e)
         {
-            if (_uiManager.ActiveScreen == null)
-                return;
             CraftingAvailable = e.Available;
         }
 
@@ -373,7 +375,7 @@ namespace Content.Client.Construction.UI
                 if (IsAtFront)
                 {
                     WindowOpen = false;
-                    _uiManager.GetActiveUIWidget<GameTopMenuBar>().CraftingButton.Pressed = false; // This does not call CraftingButtonToggled
+                    _gameHud.CraftingButtonDown = false; // This does not call CraftingButtonToggled
                 }
                 else
                     _constructionView.MoveToFront();
@@ -381,7 +383,7 @@ namespace Content.Client.Construction.UI
             else
             {
                 WindowOpen = true;
-                _uiManager.GetActiveUIWidget<GameTopMenuBar>().CraftingButton.Pressed = true; // This does not call CraftingButtonToggled
+                _gameHud.CraftingButtonDown = true; // This does not call CraftingButtonToggled
             }
         }
 

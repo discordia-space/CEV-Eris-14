@@ -7,12 +7,9 @@ using Content.Server.GameTicking;
 using Content.Shared.Administration;
 using Content.Shared.Administration.Logs;
 using Content.Shared.CCVar;
-using Content.Shared.Database;
 using Content.Shared.Eui;
-using Microsoft.Extensions.ObjectPool;
 using Robust.Shared.Configuration;
 using Robust.Shared.Timing;
-using Robust.Shared.Utility;
 using static Content.Shared.Administration.Logs.AdminLogsEuiMsg;
 
 namespace Content.Server.Administration.Logs;
@@ -31,9 +28,6 @@ public sealed class AdminLogsEui : BaseEui
     private readonly Dictionary<Guid, string> _players = new();
     private CancellationTokenSource _logSendCancellation = new();
     private LogFilter _filter;
-
-    private DefaultObjectPool<List<SharedAdminLog>> _adminLogListPool =
-        new(new ListPolicy<SharedAdminLog>());
 
     public AdminLogsEui()
     {
@@ -141,23 +135,18 @@ public sealed class AdminLogsEui : BaseEui
         }
     }
 
-    public void SetLogFilter(string? search = null, bool invertTypes = false, HashSet<LogType>? types = null)
-    {
-        var message = new SetLogFilter(
-            search,
-            invertTypes,
-            types);
-
-        SendMessage(message);
-    }
-
     private async void SendLogs(bool replace)
     {
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        var logs = await Task.Run(async () => await _adminLogs.All(_filter, _adminLogListPool.Get),
-            _filter.CancellationToken);
+        // TODO ADMIN LOGS array pool
+        List<SharedAdminLog> logs = default!;
+
+        await Task.Run(async () =>
+        {
+            logs = await _adminLogs.All(_filter);
+        }, _filter.CancellationToken);
 
         if (logs.Count > 0)
         {
@@ -178,8 +167,6 @@ public sealed class AdminLogsEui : BaseEui
         SendMessage(message);
 
         _sawmill.Info($"Sent {logs.Count} logs to {Player.Name} in {stopwatch.Elapsed.TotalMilliseconds} ms");
-
-        _adminLogListPool.Return(logs);
     }
 
     public override void Closed()
