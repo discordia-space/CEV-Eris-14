@@ -1,7 +1,7 @@
 using System.Threading;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Prototypes;
-using Content.Shared.Sound;
+using Robust.Shared.Audio;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype;
 
 namespace Content.Server.Medical.Components
@@ -39,7 +39,11 @@ namespace Content.Server.Medical.Components
         [DataField("delay")]
         public float Delay = 3f;
 
-        public CancellationTokenSource? CancelToken = null;
+        /// <summary>
+        /// Delay multiplier when healing yourself.
+        /// </summary>
+        [DataField("selfHealPenaltyMultiplier")]
+        public float SelfHealPenaltyMultiplier = 3f;
 
         /// <summary>
         ///     Sound played on healing begin

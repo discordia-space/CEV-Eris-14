@@ -71,8 +71,8 @@ public sealed class TargetOutlineSystem : EntitySystem
     {
         base.Initialize();
 
-        _shaderTargetValid = _prototypeManager.Index<ShaderPrototype>(ShaderTargetValid).Instance();
-        _shaderTargetInvalid = _prototypeManager.Index<ShaderPrototype>(ShaderTargetInvalid).Instance();
+        _shaderTargetValid = _prototypeManager.Index<ShaderPrototype>(ShaderTargetValid).InstanceUnique();
+        _shaderTargetInvalid = _prototypeManager.Index<ShaderPrototype>(ShaderTargetInvalid).InstanceUnique();
     }
 
     public void Disable()
@@ -117,7 +117,7 @@ public sealed class TargetOutlineSystem : EntitySystem
         // TODO: Duplicated in SpriteSystem and DragDropSystem. Should probably be cached somewhere for a frame?
         var mousePos = _eyeManager.ScreenToMap(_inputManager.MouseScreenPosition).Position;
         var bounds = new Box2(mousePos - LookupSize / 2f, mousePos + LookupSize / 2f);
-        var pvsEntities = _lookup.GetEntitiesIntersecting(_eyeManager.CurrentMap, bounds, LookupFlags.Approximate | LookupFlags.Anchored);
+        var pvsEntities = _lookup.GetEntitiesIntersecting(_eyeManager.CurrentMap, bounds, LookupFlags.Approximate | LookupFlags.Static);
         var spriteQuery = GetEntityQuery<SpriteComponent>();
 
         foreach (var entity in pvsEntities)
@@ -143,7 +143,7 @@ public sealed class TargetOutlineSystem : EntitySystem
             if (!valid)
             {
                 // was this previously valid?
-                if (_highlightedSprites.Remove(sprite))
+                if (_highlightedSprites.Remove(sprite) && (sprite.PostShader == _shaderTargetValid || sprite.PostShader == _shaderTargetInvalid))
                 {
                     sprite.PostShader = null;
                     sprite.RenderOrder = 0;
@@ -162,6 +162,11 @@ public sealed class TargetOutlineSystem : EntitySystem
                 valid = (origin - target).LengthSquared <= Range;
             }
 
+            if (sprite.PostShader != null &&
+                sprite.PostShader != _shaderTargetValid &&
+                sprite.PostShader != _shaderTargetInvalid)
+                return;
+
             // highlight depending on whether its in or out of range
             sprite.PostShader = valid ? _shaderTargetValid : _shaderTargetInvalid;
             sprite.RenderOrder = EntityManager.CurrentTick.Value;
@@ -173,6 +178,9 @@ public sealed class TargetOutlineSystem : EntitySystem
     {
         foreach (var sprite in _highlightedSprites)
         {
+            if (sprite.PostShader != _shaderTargetValid && sprite.PostShader != _shaderTargetInvalid)
+                continue;
+
             sprite.PostShader = null;
             sprite.RenderOrder = 0;
         }

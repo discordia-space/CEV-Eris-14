@@ -2,15 +2,13 @@
   name: space tick
   id: MobTick
   parent: SimpleSpaceMobBase
-  description: It's a space tick, watch out for its nasty bite. Centcomm reports that 90 percent of cargo leg amputations are due to space tick bites.
+  description: It's a space tick, watch out for its nasty bite. CentCom reports that 90 percent of cargo leg amputations are due to space tick bites.
   components:
-  - type: PlayerInputMover
-  - type: PlayerMobMover
-  - type: UtilityAI
-    behaviorSets:
-    - Idle
-    - UnarmedAttackHostiles
-  - type: AiFactionTag
+  - type: InputMover
+  - type: MobMover
+  - type: HTN
+    rootTask: SimpleHostileCompound
+  - type: Faction
     factions:
     - SimpleHostile
   - type: Sprite
@@ -29,16 +27,22 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.20
-      mass: 2.5
+      density: 20
       mask:
       - SmallMobMask
       layer:
       - SmallMobLayer
   - type: MobState
+    allowedStates:
+      - Alive
+      - Dead
+  - type: MobThresholds
     thresholds:
       0: Alive
       15: Dead
-  - type: MovementIgnoreGravity
+  - type: Stamina
+    excess: 15
+  - type: MovementAlwaysTouching
   - type: Appearance
   - type: DamageStateVisuals
     states:
@@ -58,26 +62,24 @@
       autoPopulate: false
       name: action-name-disarm
   - type: MeleeWeapon
-    range: 0.5
-    arcwidth: 0
-    arc: bite
+    hidden: true
+    soundHit:
+        path: /Audio/Effects/bite.ogg
+    angle: 0
+    animation: WeaponArcBite
     damage:
       groups:
         Brute: 2
-  - type: MeleeChemicalInjector
   - type: SolutionContainerManager
     solutions:
       melee:
         reagents:
         - ReagentId: Toxin
           Quantity: 5
-  - type: RefillableSolution
+  - type: MeleeChemicalInjector
     solution: melee
-  - type: InjectableSolution
-    solution: melee
-  - type: SolutionTransfer
-    maxTransferAmount: 5
   - type: GhostTakeoverAvailable
+    prob: 0.33
     makeSentient: true
     name: space tick
     description: |

@@ -1,5 +1,5 @@
 - type: entity
-  id: VehicleBase
+  id: BaseVehicle
   save: false
   abstract: true
   name: Vehicle
@@ -10,14 +10,18 @@
   - type: AmbientSound
     sound: "/Audio/Effects/Vehicle/vehicleengineidle.ogg"
     range: 10
-    volume: -1
-  - type: PlayerInputMover
+    volume: -5
+    enabled: false
+  - type: InputMover
   - type: InteractionOutline
   - type: Vehicle
   - type: MovementSpeedModifier
-    baseWalkSpeed : 7
-    baseSprintSpeed : 7
-  - type: Eye
+    weightlessModifier: 0
+    acceleration: 2
+    friction: 2
+    frictionNoInput: 6
+    baseWalkSpeed: 4.5
+    baseSprintSpeed: 6
   - type: Tag
   - type: Pullable
   - type: Physics
@@ -28,12 +32,12 @@
     - shape:
         !type:PhysShapeCircle
         radius: 0.4
-      mass: 180
+      density: 360
       restitution: 0.0
       mask:
       - MobMask
       layer:
-      - MobLayer
+      - TableLayer
   - type: VehicleVisuals
   - type: Appearance
   - type: Repairable
@@ -62,13 +66,16 @@
           requireAll: true
           tags:
           - VehicleKey
-        insertSound: /Audio/Effects/Vehicle/vehiclestartup.ogg
+        insertSound:
+          path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          params:
+            volume: -3
   - type: StaticPrice
     price: 750 # Grand Theft Auto.
 
 - type: entity
-  id: VehiclePussyWagon
-  parent: VehicleBase
+  id: VehicleJanicart
+  parent: BaseVehicle
   name: janicart
   description: The janitor's trusty steed.
   components:
@@ -76,21 +83,17 @@
     northOverride: -0.15
     southOverride: 0.22
   - type: Sprite
-    sprite: Objects/Vehicles/pussywagon.rsi
+    sprite: Objects/Vehicles/janicart.rsi
     layers:
     - state: vehicle
       map: ["enum.VehicleVisualLayers.AutoAnimate"]
     netsync: false
     noRot: true
-  - type: Access
-    tags:
-    - Maintenance
-    - Janitor
   - type: UnpoweredFlashlight
     toggleAction:
       name: action-name-toggle-light
       description: action-description-toggle-light
-      icon: Objects/Tools/flashlight.rsi/flashlight.png
+      icon: { sprite: Objects/Tools/flashlight.rsi, state: flashlight }
       iconOn: Objects/Tools/flashlight.rsi/flashlight-on.png
       event: !type:ToggleActionEvent
   - type: PointLight
@@ -113,7 +116,7 @@
       - !type:ExplodeBehavior
       - !type:SpawnEntitiesBehavior # in future should also emit a cloud of hot gas
         spawn:
-          VehiclePussyWagonDestroyed:
+          VehicleJanicartDestroyed:
             min: 1
             max: 1
   - type: ItemSlots
@@ -124,8 +127,11 @@
           requireAll: true
           tags:
           - VehicleKey
-          - PussyWagonKeys
-        insertSound: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          - JanicartKeys
+        insertSound:
+          path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          params:
+            volume: -3
       trashbag_slot:
         name: Bag
         whitelist:
@@ -137,25 +143,22 @@
         whitelist:
           tags:
             - TrashBag
+    sprite: Objects/Vehicles/janicart.rsi
   - type: Appearance
-    visuals:
-      - type: MappedItemVisualizer
-        sprite: Objects/Vehicles/pussywagon.rsi
 
 - type: entity
-  id: VehiclePussyWagonDestroyed
+  id: VehicleJanicartDestroyed
   parent: MachineFrameDestroyed
   name: destroyed janicart
-  description: R.I.P. (Rest In Pussy)
   components:
   - type: Sprite
-    sprite: Objects/Vehicles/pussywagon.rsi
+    sprite: Objects/Vehicles/janicart.rsi
     state: destroyed
     netsync: false
 
 - type: entity
   id: VehicleSecway
-  parent: VehicleBase
+  parent: BaseVehicle
   name: secway
   description: The future of transportation. Popularized by St. James, the patron saint of security officers and internet forum moderators.
   components:
@@ -165,13 +168,6 @@
     southOverride: 0.1
     hornSound:
       path: /Audio/Effects/Vehicle/policesiren.ogg
-    hornAction:
-      name: action-name-siren
-      description: action-desc-siren
-      icon: Objects/Fun/bikehorn.rsi/icon.png
-      iconOn: Objects/Fun/bikehorn.rsi/icon.png
-      event: !type:ToggleActionEvent
-    hornIsSiren: true
   - type: Sprite
     sprite: Objects/Vehicles/secway.rsi
     layers:
@@ -179,18 +175,14 @@
       map: ["enum.VehicleVisualLayers.AutoAnimate"]
     netsync: false
     noRot: true
-  - type: Access
-    tags:
-    - Security
-    - Brig
-    - Maintenance
-    - Service
   - type: Strap
     buckleOffset: "0.15, -0.05"
     maxBuckleDistance: 1
   - type: MovementSpeedModifier
-    baseWalkSpeed : 8
-    baseSprintSpeed : 8
+    acceleration: 1
+    friction: 1
+    baseWalkSpeed: 4.5
+    baseSprintSpeed: 6
   - type: Armor
     modifiers:
       coeffecients:
@@ -206,10 +198,13 @@
           tags:
           - VehicleKey
           - SecwayKeys
-        insertSound: /Audio/Effects/Vehicle/vehiclestartup.ogg
+        insertSound:
+          path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          params:
+            volume: -3
 
 - type: entity
-  parent: VehicleBase
+  parent: BaseVehicle
   id: VehicleATV
   name: ATV
   description: All-Tile Vehicle.
@@ -224,15 +219,13 @@
       map: ["enum.VehicleVisualLayers.AutoAnimate"]
     netsync: false
     noRot: true
-  - type: Access
-    tags:
-    - Cargo
-    - Maintenance
   - type: RandomMetadata
-    descriptionSet: ATVDescriptions
+    descriptionSegments: [ATVDescriptions]
   - type: MovementSpeedModifier
-    baseWalkSpeed : 8
-    baseSprintSpeed : 8
+    acceleration: 1
+    friction: 1
+    baseWalkSpeed: 4.5
+    baseSprintSpeed: 7
   - type: Strap
     buckleOffset: "0.1, -0.05"
     maxBuckleDistance: 1
@@ -240,7 +233,7 @@
     toggleAction:
       name: action-name-toggle-light
       description: action-description-toggle-light
-      icon: Objects/Tools/flashlight.rsi/flashlight.png
+      icon: { sprite: Objects/Tools/flashlight.rsi, state: flashlight }
       iconOn: Objects/Tools/flashlight.rsi/flashlight-on.png
       event: !type:ToggleActionEvent
   - type: PointLight
@@ -258,11 +251,14 @@
           tags:
           - VehicleKey
           - ATVKeys
-        insertSound: /Audio/Effects/Vehicle/vehiclestartup.ogg
+        insertSound:
+          path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          params:
+            volume: -3
 
 - type: entity
   id: VehicleSyndicateSegway
-  parent: VehicleBase
+  parent: BaseVehicle
   name: syndicate segway
   description: Be an enemy of the corporation, in style.
   components:
@@ -272,13 +268,6 @@
       southOverride: 0.1
       hornSound:
         path: /Audio/Effects/Vehicle/policesiren.ogg
-      hornAction:
-        name: action-name-siren
-        description: action-desc-siren
-        icon: Objects/Fun/bikehorn.rsi/icon.png
-        iconOn: Objects/Fun/bikehorn.rsi/icon.png
-        event: !type:ToggleActionEvent
-      hornIsSiren: true
     - type: Sprite
       sprite: Objects/Vehicles/syndicatesegway.rsi
       layers:
@@ -286,16 +275,9 @@
           map: ["enum.VehicleVisualLayers.AutoAnimate"]
       netsync: false
       noRot: true
-    - type: Access
-      tags:
-        - Maintenance
-        - Service
     - type: Strap
       buckleOffset: "0.15, -0.05"
       maxBuckleDistance: 1
-    - type: MovementSpeedModifier
-      baseWalkSpeed : 8
-      baseSprintSpeed : 8
     - type: Armor
       modifiers:
         coeffecients:
@@ -311,4 +293,58 @@
             tags:
               - VehicleKey
               - SyndicateSegwayKeys
-          insertSound: /Audio/Effects/Vehicle/vehiclestartup.ogg
+          insertSound:
+            path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+            params:
+              volume: -3
+
+- type: entity
+  parent: BaseVehicle
+  id: VehicleSkeletonMotorcycle
+  name: skeleton motorcycle
+  description: Bad to the Bone.
+  components:
+    - type: Vehicle
+      northOverride: -0.1
+      southOverride: 0.1
+    - type: Sprite
+      sprite: Objects/Vehicles/motorbike.rsi
+      layers:
+        - state: vehicle
+          map: ["enum.VehicleVisualLayers.AutoAnimate"]
+      netsync: false
+      noRot: true
+    - type: Strap
+      buckleOffset: "0.1, -0.05"
+      maxBuckleDistance: 1
+    - type: MovementSpeedModifier
+      acceleration: 2
+      friction: 1.5
+      baseWalkSpeed: 4.5
+      baseSprintSpeed: 7
+    - type: UnpoweredFlashlight
+      toggleAction:
+        name: action-name-toggle-light
+        description: action-description-toggle-light
+        icon: { sprite: Objects/Tools/flashlight.rsi, state: flashlight }
+        iconOn: Objects/Tools/flashlight.rsi/flashlight-on.png
+        event: !type:ToggleActionEvent
+    - type: PointLight
+      enabled: false
+      radius: 3.5
+      softness: 2
+      mask: /Textures/Effects/LightMasks/cone.png
+      autoRot: true
+    - type: ItemSlots
+      slots:
+        key_slot:
+          name: Keys
+          whitelist:
+            requireAll: true
+            tags:
+              - VehicleKey
+              - SkeletonMotorcycleKeys
+          insertSound:
+            path: /Audio/Effects/Vehicle/vehiclestartup.ogg
+            params:
+              volume: -3

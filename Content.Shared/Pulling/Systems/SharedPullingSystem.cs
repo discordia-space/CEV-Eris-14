@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Content.Shared.Alert;
 using Content.Shared.GameTicking;
+using Content.Shared.Gravity;
 using Content.Shared.Input;
 using Content.Shared.Movement.Components;
 using Content.Shared.Physics.Pull;
@@ -10,6 +11,7 @@ using JetBrains.Annotations;
 using Robust.Shared.Containers;
 using Robust.Shared.Input.Binding;
 using Robust.Shared.Map;
+using Robust.Shared.Physics;
 using Robust.Shared.Players;
 
 namespace Content.Shared.Pulling
@@ -18,6 +20,7 @@ namespace Content.Shared.Pulling
     public abstract partial class SharedPullingSystem : EntitySystem
     {
         [Dependency] private readonly SharedPullingStateManagementSystem _pullSm = default!;
+        [Dependency] private readonly SharedGravitySystem _gravity = default!;
         [Dependency] private readonly AlertsSystem _alertsSystem = default!;
 
         /// <summary>
@@ -41,6 +44,7 @@ namespace Content.Shared.Pulling
             SubscribeLocalEvent<PullStartedMessage>(OnPullStarted);
             SubscribeLocalEvent<PullStoppedMessage>(OnPullStopped);
             SubscribeLocalEvent<EntInsertedIntoContainerMessage>(HandleContainerInsert);
+            SubscribeLocalEvent<SharedPullableComponent, JointRemovedEvent>(OnJointRemoved);
 
             SubscribeLocalEvent<SharedPullableComponent, PullStartedMessage>(PullableHandlePullStarted);
             SubscribeLocalEvent<SharedPullableComponent, PullStoppedMessage>(PullableHandlePullStopped);
@@ -50,6 +54,28 @@ namespace Content.Shared.Pulling
             CommandBinds.Builder
                 .Bind(ContentKeyFunctions.MovePulledObject, new PointerInputCmdHandler(HandleMovePulledObject))
                 .Register<SharedPullingSystem>();
+        }
+
+        private void OnJointRemoved(EntityUid uid, SharedPullableComponent component, JointRemovedEvent args)
+        {
+            if (component.Puller != args.OtherBody.Owner)
+                return;
+
+            // Do we have some other join with our Puller?
+            // or alternatively:
+            // TODO track the relevant joint.
+
+            if (TryComp(uid, out JointComponent? joints))
+            {
+                foreach (var jt in joints.GetJoints.Values)
+                {
+                    if (jt.BodyAUid == component.Puller || jt.BodyBUid == component.Puller)
+                        return;
+                }
+            }
+
+            // No more joints with puller -> force stop pull.
+            _pullSm.ForceDisconnectPullable(component);
         }
 
         private void AddPullVerbs(EntityUid uid, SharedPullableComponent component, GetVerbsEvent<Verb> args)
@@ -67,6 +93,7 @@ namespace Content.Shared.Pulling
                 Verb verb = new();
                 verb.Text = Loc.GetString("pulling-verb-get-data-text-stop-pulling");
                 verb.Act = () => TryStopPull(component, args.User);
+                verb.DoContactInteraction = false; // pulling handle its own contact interaction.
                 args.Verbs.Add(verb);
             }
             else if (CanPull(args.User, args.Target))
@@ -74,6 +101,7 @@ namespace Content.Shared.Pulling
                 Verb verb = new();
                 verb.Text = Loc.GetString("pulling-verb-get-data-text");
                 verb.Act = () => TryStartPull(args.User, args.Target);
+                verb.DoContactInteraction = false; // pulling handle its own contact interaction.
                 args.Verbs.Add(verb);
             }
         }
@@ -93,6 +121,11 @@ namespace Content.Shared.Pulling
                 return;
 
             _alertsSystem.ClearAlert(component.Owner, AlertType.Pulled);
+        }
+
+        public bool IsPulled(EntityUid uid, SharedPullableComponent? component = null)
+        {
+            return Resolve(uid, ref component, false) && component.BeingPulled;
         }
 
         public override void Update(float frameTime)
@@ -168,7 +201,7 @@ namespace Content.Shared.Pulling
             }
 
             if (_containerSystem.IsEntityInContainer(player) ||
-                player.IsWeightless(entityManager: EntityManager))
+                _gravity.IsWeightless(player))
                 return false;
 
             TryMoveTo(pullable, coords);
