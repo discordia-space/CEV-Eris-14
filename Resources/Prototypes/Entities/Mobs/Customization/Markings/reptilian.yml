@@ -44,6 +44,26 @@
     state: frills_big
 
 - type: marking
+  id: LizardFrillsAxolotl
+  bodyPart: HeadSide
+  markingCategory: HeadSide
+  speciesRestriction: [Reptilian]
+  sprites:
+  - sprite: Mobs/Customization/reptilian_parts.rsi
+    state: frills_axolotl
+
+- type: marking
+  id: LizardFrillsHood
+  bodyPart: HeadSide
+  markingCategory: HeadSide
+  speciesRestriction: [Reptilian]
+  sprites:
+  - sprite: Mobs/Customization/reptilian_parts.rsi
+    state: frills_hood_primary
+  - sprite: Mobs/Customization/reptilian_parts.rsi
+    state: frills_hood_secondary
+
+- type: marking
   id: LizardHornsAngler
   bodyPart: HeadTop
   markingCategory: HeadTop
@@ -137,7 +157,7 @@
   id: LizardSnoutRound
   bodyPart: Snout
   markingCategory: Snout
-  followSkinColor: true
+  forcedColoring: true
   speciesRestriction: [Reptilian]
   sprites:
   - sprite: Mobs/Customization/reptilian_parts.rsi
@@ -147,7 +167,7 @@
   id: LizardSnoutSharp
   bodyPart: Snout
   markingCategory: Snout
-  followSkinColor: true
+  forcedColoring: true
   speciesRestriction: [Reptilian]
   sprites:
   - sprite: Mobs/Customization/reptilian_parts.rsi
@@ -157,7 +177,6 @@
   id: LizardChestTiger
   bodyPart: Chest
   markingCategory: Chest
-  followSkinColor: false
   speciesRestriction: [Reptilian]
   sprites:
   - sprite: Mobs/Customization/reptilian_parts.rsi

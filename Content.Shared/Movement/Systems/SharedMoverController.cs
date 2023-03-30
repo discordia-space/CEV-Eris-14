@@ -1,21 +1,28 @@
-using System.Diagnostics.CodeAnalysis;
-using Content.Shared.Audio;
 using Content.Shared.CCVar;
 using Content.Shared.Friction;
+using Content.Shared.Gravity;
 using Content.Shared.Inventory;
 using Content.Shared.Maps;
-using Content.Shared.MobState.Components;
 using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Events;
 using Content.Shared.Pulling.Components;
 using Content.Shared.Tag;
 using Robust.Shared.Audio;
 using Robust.Shared.Configuration;
+using Robust.Shared.Containers;
 using Robust.Shared.Map;
 using Robust.Shared.Physics;
 using Robust.Shared.Physics.Controllers;
-using Robust.Shared.Player;
+using Robust.Shared.Timing;
 using Robust.Shared.Utility;
+using System.Diagnostics.CodeAnalysis;
+using Content.Shared.Mobs.Systems;
+using Content.Shared.Mech.Components;
+using Content.Shared.Parallax.Biomes;
+using Robust.Shared.Map.Components;
+using Robust.Shared.Noise;
+using Robust.Shared.Physics.Components;
+using Robust.Shared.Physics.Systems;
 
 namespace Content.Shared.Movement.Systems
 {
@@ -26,10 +33,16 @@ namespace Content.Shared.Movement.Systems
     public abstract partial class SharedMoverController : VirtualController
     {
         [Dependency] private readonly IConfigurationManager _configManager = default!;
+        [Dependency] protected readonly IGameTiming Timing = default!;
         [Dependency] private readonly IMapManager _mapManager = default!;
         [Dependency] private readonly ITileDefinitionManager _tileDefinitionManager = default!;
         [Dependency] private readonly InventorySystem _inventory = default!;
-        [Dependency] private readonly SharedPhysicsSystem _physics = default!;
+        [Dependency] private readonly SharedContainerSystem _container = default!;
+        [Dependency] private readonly EntityLookupSystem _lookup = default!;
+        [Dependency] private readonly SharedGravitySystem _gravity = default!;
+        [Dependency] private readonly MobStateSystem _mobState = default!;
+        [Dependency] private readonly SharedAudioSystem _audio = default!;
+        [Dependency] private readonly SharedTransformSystem _transform = default!;
         [Dependency] private readonly TagSystem _tags = default!;
 
         private const float StepSoundMoveDistanceRunning = 2;
@@ -39,45 +52,12 @@ namespace Content.Shared.Movement.Systems
         private const float FootstepVolume = 3f;
         private const float FootstepWalkingAddedVolumeMultiplier = 0f;
 
-        /// <summary>
-        /// <see cref="CCVars.MinimumFrictionSpeed"/>
-        /// </summary>
-        private float _minimumFrictionSpeed;
+        protected ISawmill Sawmill = default!;
 
         /// <summary>
         /// <see cref="CCVars.StopSpeed"/>
         /// </summary>
         private float _stopSpeed;
-
-        /// <summary>
-        /// <see cref="CCVars.MobAcceleration"/>
-        /// </summary>
-        private float _mobAcceleration;
-
-        /// <summary>
-        /// <see cref="CCVars.MobFriction"/>
-        /// </summary>
-        private float _frictionVelocity;
-
-        /// <summary>
-        /// <see cref="CCVars.MobWeightlessAcceleration"/>
-        /// </summary>
-        private float _mobWeightlessAcceleration;
-
-        /// <summary>
-        /// <see cref="CCVars.MobWeightlessFriction"/>
-        /// </summary>
-        private float _weightlessFrictionVelocity;
-
-        /// <summary>
-        /// <see cref="CCVars.MobWeightlessFrictionNoInput"/>
-        /// </summary>
-        private float _weightlessFrictionVelocityNoInput;
-
-        /// <summary>
-        /// <see cref="CCVars.MobWeightlessModifier"/>
-        /// </summary>
-        private float _mobWeightlessModifier;
 
         private bool _relativeMovement;
 
@@ -89,45 +69,25 @@ namespace Content.Shared.Movement.Systems
         public override void Initialize()
         {
             base.Initialize();
+            Sawmill = Logger.GetSawmill("mover");
+            InitializeFootsteps();
             InitializeInput();
-            InitializePushing();
-            // Hello
+            InitializeMob();
+            InitializeRelay();
             _configManager.OnValueChanged(CCVars.RelativeMovement, SetRelativeMovement, true);
-            _configManager.OnValueChanged(CCVars.MinimumFrictionSpeed, SetMinimumFrictionSpeed, true);
-            _configManager.OnValueChanged(CCVars.MobFriction, SetFrictionVelocity, true);
-            _configManager.OnValueChanged(CCVars.MobWeightlessFriction, SetWeightlessFrictionVelocity, true);
             _configManager.OnValueChanged(CCVars.StopSpeed, SetStopSpeed, true);
-            _configManager.OnValueChanged(CCVars.MobAcceleration, SetMobAcceleration, true);
-            _configManager.OnValueChanged(CCVars.MobWeightlessAcceleration, SetMobWeightlessAcceleration, true);
-            _configManager.OnValueChanged(CCVars.MobWeightlessFrictionNoInput, SetWeightlessFrictionNoInput, true);
-            _configManager.OnValueChanged(CCVars.MobWeightlessModifier, SetMobWeightlessModifier, true);
-            UpdatesBefore.Add(typeof(SharedTileFrictionController));
+            UpdatesBefore.Add(typeof(TileFrictionController));
         }
 
         private void SetRelativeMovement(bool value) => _relativeMovement = value;
-        private void SetMinimumFrictionSpeed(float value) => _minimumFrictionSpeed = value;
         private void SetStopSpeed(float value) => _stopSpeed = value;
-        private void SetFrictionVelocity(float value) => _frictionVelocity = value;
-        private void SetWeightlessFrictionVelocity(float value) => _weightlessFrictionVelocity = value;
-        private void SetMobAcceleration(float value) => _mobAcceleration = value;
-        private void SetMobWeightlessAcceleration(float value) => _mobWeightlessAcceleration = value;
-        private void SetWeightlessFrictionNoInput(float value) => _weightlessFrictionVelocityNoInput = value;
-        private void SetMobWeightlessModifier(float value) => _mobWeightlessModifier = value;
 
         public override void Shutdown()
         {
             base.Shutdown();
             ShutdownInput();
-            ShutdownPushing();
             _configManager.UnsubValueChanged(CCVars.RelativeMovement, SetRelativeMovement);
-            _configManager.UnsubValueChanged(CCVars.MinimumFrictionSpeed, SetMinimumFrictionSpeed);
             _configManager.UnsubValueChanged(CCVars.StopSpeed, SetStopSpeed);
-            _configManager.UnsubValueChanged(CCVars.MobFriction, SetFrictionVelocity);
-            _configManager.UnsubValueChanged(CCVars.MobWeightlessFriction, SetWeightlessFrictionVelocity);
-            _configManager.UnsubValueChanged(CCVars.MobAcceleration, SetMobAcceleration);
-            _configManager.UnsubValueChanged(CCVars.MobWeightlessAcceleration, SetMobWeightlessAcceleration);
-            _configManager.UnsubValueChanged(CCVars.MobWeightlessFrictionNoInput, SetWeightlessFrictionNoInput);
-            _configManager.UnsubValueChanged(CCVars.MobWeightlessModifier, SetMobWeightlessModifier);
         }
 
         public override void UpdateAfterSolve(bool prediction, float frameTime)
@@ -136,65 +96,143 @@ namespace Content.Shared.Movement.Systems
             UsedMobMovement.Clear();
         }
 
-        protected Angle GetParentGridAngle(TransformComponent xform, IMoverComponent mover)
-        {
-            if (!_mapManager.TryGetGrid(xform.GridUid, out var grid))
-                return mover.LastGridAngle;
-
-            return grid.WorldRotation;
-        }
-
-        /// <summary>
-        ///     A generic kinematic mover for entities.
-        /// </summary>
-        protected void HandleKinematicMovement(IMoverComponent mover, PhysicsComponent physicsComponent)
-        {
-            var (walkDir, sprintDir) = mover.VelocityDir;
-
-            var transform = EntityManager.GetComponent<TransformComponent>(mover.Owner);
-            var parentRotation = GetParentGridAngle(transform, mover);
-
-            // Regular movement.
-            // Target velocity.
-            var moveSpeedComponent = CompOrNull<MovementSpeedModifierComponent>(mover.Owner);
-            var walkSpeed = moveSpeedComponent?.CurrentWalkSpeed ?? MovementSpeedModifierComponent.DefaultBaseWalkSpeed;
-            var sprintSpeed = moveSpeedComponent?.CurrentSprintSpeed ?? MovementSpeedModifierComponent.DefaultBaseSprintSpeed;
-            var total = walkDir * walkSpeed + sprintDir * sprintSpeed;
-
-            var worldTotal = _relativeMovement ? parentRotation.RotateVec(total) : total;
-
-            if (transform.GridUid != null)
-                mover.LastGridAngle = parentRotation;
-
-            if (worldTotal != Vector2.Zero)
-                transform.LocalRotation = transform.GridUid != null
-                    ? total.ToWorldAngle()
-                    : worldTotal.ToWorldAngle();
-
-            _physics.SetLinearVelocity(physicsComponent, worldTotal);
-        }
-
         /// <summary>
         ///     Movement while considering actionblockers, weightlessness, etc.
         /// </summary>
         protected void HandleMobMovement(
-            IMoverComponent mover,
+            EntityUid uid,
+            InputMoverComponent mover,
+            EntityUid physicsUid,
             PhysicsComponent physicsComponent,
-            IMobMoverComponent mobMover,
             TransformComponent xform,
-            float frameTime)
+            float frameTime,
+            EntityQuery<TransformComponent> xformQuery,
+            EntityQuery<InputMoverComponent> moverQuery,
+            EntityQuery<MovementRelayTargetComponent> relayTargetQuery)
         {
-            DebugTools.Assert(!UsedMobMovement.ContainsKey(mover.Owner));
+            DebugTools.Assert(!UsedMobMovement.ContainsKey(uid));
 
-            if (!UseMobMovement(mover, physicsComponent))
+            bool canMove = mover.CanMove;
+            if (relayTargetQuery.TryGetComponent(uid, out var relayTarget) && relayTarget.Entities.Count > 0)
             {
-                UsedMobMovement[mover.Owner] = false;
+                DebugTools.Assert(relayTarget.Entities.Count <= 1, "Multiple relayed movers are not supported at the moment");
+
+                bool found = false;
+                foreach (var ent in relayTarget.Entities)
+                {
+                    if (_mobState.IsIncapacitated(ent) || !moverQuery.TryGetComponent(ent, out var relayedMover))
+                        continue;
+
+                    found = true;
+                    mover.RelativeEntity = relayedMover.RelativeEntity;
+                    mover.RelativeRotation = relayedMover.RelativeRotation;
+                    mover.TargetRelativeRotation = relayedMover.TargetRelativeRotation;
+                    break;
+                }
+
+                // lets just hope that this is the same entity that set the movement keys/direction.
+                canMove &= found;
+            }
+
+            // Update relative movement
+            if (mover.LerpAccumulator > 0f)
+            {
+                Dirty(mover);
+                mover.LerpAccumulator -= frameTime;
+
+                if (mover.LerpAccumulator <= 0f)
+                {
+                    mover.LerpAccumulator = 0f;
+                    var relative = xform.GridUid;
+                    relative ??= xform.MapUid;
+
+                    // So essentially what we want:
+                    // 1. If we go from grid to map then preserve our rotation and continue as usual
+                    // 2. If we go from grid -> grid then (after lerp time) snap to nearest cardinal (probably imperceptible)
+                    // 3. If we go from map -> grid then (after lerp time) snap to nearest cardinal
+
+                    if (!mover.RelativeEntity.Equals(relative))
+                    {
+                        // Okay need to get our old relative rotation with respect to our new relative rotation
+                        // e.g. if we were right side up on our current grid need to get what that is on our new grid.
+                        var currentRotation = Angle.Zero;
+                        var targetRotation = Angle.Zero;
+
+                        // Get our current relative rotation
+                        if (xformQuery.TryGetComponent(mover.RelativeEntity, out var oldRelativeXform))
+                        {
+                            currentRotation = oldRelativeXform.WorldRotation + mover.RelativeRotation;
+                        }
+
+                        if (xformQuery.TryGetComponent(relative, out var relativeXform))
+                        {
+                            // This is our current rotation relative to our new parent.
+                            mover.RelativeRotation = (currentRotation - relativeXform.WorldRotation).FlipPositive();
+                        }
+
+                        // If we went from grid -> map we'll preserve our worldrotation
+                        if (relative != null && _mapManager.IsMap(relative.Value))
+                        {
+                            targetRotation = currentRotation.FlipPositive().Reduced();
+                        }
+                        // If we went from grid -> grid OR grid -> map then snap the target to cardinal and lerp there.
+                        // OR just rotate to zero (depending on cvar)
+                        else if (relative != null && _mapManager.IsGrid(relative.Value))
+                        {
+                            if (CameraRotationLocked)
+                                targetRotation = Angle.Zero;
+                            else
+                                targetRotation = mover.RelativeRotation.GetCardinalDir().ToAngle().Reduced();
+                        }
+
+                        mover.RelativeEntity = relative;
+                        mover.TargetRelativeRotation = targetRotation;
+                    }
+                }
+            }
+
+            var angleDiff = Angle.ShortestDistance(mover.RelativeRotation, mover.TargetRelativeRotation);
+
+            // if we've just traversed then lerp to our target rotation.
+            if (!angleDiff.EqualsApprox(Angle.Zero, 0.001))
+            {
+                var adjustment = angleDiff * 5f * frameTime;
+                var minAdjustment = 0.01 * frameTime;
+
+                if (angleDiff < 0)
+                {
+                    adjustment = Math.Min(adjustment, -minAdjustment);
+                    adjustment = Math.Clamp(adjustment, angleDiff, -angleDiff);
+                }
+                else
+                {
+                    adjustment = Math.Max(adjustment, minAdjustment);
+                    adjustment = Math.Clamp(adjustment, -angleDiff, angleDiff);
+                }
+
+                mover.RelativeRotation += adjustment;
+                mover.RelativeRotation.FlipPositive();
+                Dirty(mover);
+            }
+            else if (!angleDiff.Equals(Angle.Zero))
+            {
+                mover.TargetRelativeRotation.FlipPositive();
+                mover.RelativeRotation = mover.TargetRelativeRotation;
+                Dirty(mover);
+            }
+
+            if (!canMove
+                || physicsComponent.BodyStatus != BodyStatus.OnGround
+                || TryComp(uid, out SharedPullableComponent? pullable) && pullable.BeingPulled)
+            {
+                UsedMobMovement[uid] = false;
                 return;
             }
 
-            UsedMobMovement[mover.Owner] = true;
-            var weightless = mover.Owner.IsWeightless(physicsComponent, mapManager: _mapManager, entityManager: EntityManager);
-            var (walkDir, sprintDir) = mover.VelocityDir;
+            UsedMobMovement[uid] = true;
+            // Specifically don't use mover.Owner because that may be different to the actual physics body being moved.
+            var weightless = _gravity.IsWeightless(physicsUid, physicsComponent, xform);
+            var (walkDir, sprintDir) = GetVelocityInput(mover);
             var touching = false;
 
             // Handle wall-pushes.
@@ -206,27 +244,26 @@ namespace Content.Shared.Movement.Systems
                 if (!touching)
                 {
                     var ev = new CanWeightlessMoveEvent();
-                    RaiseLocalEvent(xform.Owner, ref ev);
+                    RaiseLocalEvent(uid, ref ev);
                     // No gravity: is our entity touching anything?
-                    touching = ev.CanMove || IsAroundCollider(_physics, xform, mobMover, physicsComponent);
-                }
+                    touching = ev.CanMove;
 
-                if (!touching)
-                {
-                    if (xform.GridUid != null)
-                        mover.LastGridAngle = GetParentGridAngle(xform, mover);
+                    if (!touching && TryComp<MobMoverComponent>(uid, out var mobMover))
+                        touching |= IsAroundCollider(PhysicsSystem, xform, mobMover, physicsComponent);
                 }
             }
 
             // Regular movement.
             // Target velocity.
             // This is relative to the map / grid we're on.
-            var moveSpeedComponent = CompOrNull<MovementSpeedModifierComponent>(mover.Owner);
+            var moveSpeedComponent = CompOrNull<MovementSpeedModifierComponent>(uid);
+
             var walkSpeed = moveSpeedComponent?.CurrentWalkSpeed ?? MovementSpeedModifierComponent.DefaultBaseWalkSpeed;
             var sprintSpeed = moveSpeedComponent?.CurrentSprintSpeed ?? MovementSpeedModifierComponent.DefaultBaseSprintSpeed;
+
             var total = walkDir * walkSpeed + sprintDir * sprintSpeed;
 
-            var parentRotation = GetParentGridAngle(xform, mover);
+            var parentRotation = GetParentGridAngle(mover, xformQuery);
             var worldTotal = _relativeMovement ? parentRotation.RotateVec(total) : total;
 
             DebugTools.Assert(MathHelper.CloseToPercent(total.Length, worldTotal.Length));
@@ -239,56 +276,59 @@ namespace Content.Shared.Movement.Systems
             if (weightless)
             {
                 if (worldTotal != Vector2.Zero && touching)
-                    friction = _weightlessFrictionVelocity;
+                    friction = moveSpeedComponent?.WeightlessFriction ?? MovementSpeedModifierComponent.DefaultWeightlessFriction;
                 else
-                    friction = _weightlessFrictionVelocityNoInput;
+                    friction = moveSpeedComponent?.WeightlessFrictionNoInput ?? MovementSpeedModifierComponent.DefaultWeightlessFrictionNoInput;
 
-                weightlessModifier = _mobWeightlessModifier;
-                accel = _mobWeightlessAcceleration;
+                weightlessModifier = moveSpeedComponent?.WeightlessModifier ?? MovementSpeedModifierComponent.DefaultWeightlessModifier;
+                accel = moveSpeedComponent?.WeightlessAcceleration ?? MovementSpeedModifierComponent.DefaultWeightlessAcceleration;
             }
             else
             {
-                friction = _frictionVelocity;
+                if (worldTotal != Vector2.Zero || moveSpeedComponent?.FrictionNoInput == null)
+                {
+                    friction = moveSpeedComponent?.Friction ?? MovementSpeedModifierComponent.DefaultFriction;
+                }
+                else
+                {
+                    friction = moveSpeedComponent.FrictionNoInput ?? MovementSpeedModifierComponent.DefaultFrictionNoInput;
+                }
+
                 weightlessModifier = 1f;
-                accel = _mobAcceleration;
+                accel = moveSpeedComponent?.Acceleration ?? MovementSpeedModifierComponent.DefaultAcceleration;
             }
 
-            var profile = new MobMovementProfileEvent(
-                touching,
-                weightless,
-                friction,
-                weightlessModifier,
-                accel);
-
-            RaiseLocalEvent(xform.Owner, ref profile);
-
-            if (profile.Override)
-            {
-                friction = profile.Friction;
-                weightlessModifier = profile.WeightlessModifier;
-                accel = profile.Acceleration;
-            }
-
-            Friction(frameTime, friction, ref velocity);
-
-            if (xform.GridUid != EntityUid.Invalid)
-                mover.LastGridAngle = parentRotation;
+            var minimumFrictionSpeed = moveSpeedComponent?.MinimumFrictionSpeed ?? MovementSpeedModifierComponent.DefaultMinimumFrictionSpeed;
+            Friction(minimumFrictionSpeed, frameTime, friction, ref velocity);
 
             if (worldTotal != Vector2.Zero)
             {
-                // This should have its event run during island solver soooo
-                xform.DeferUpdates = true;
-                xform.LocalRotation = xform.GridUid != null
-                    ? total.ToWorldAngle()
-                    : worldTotal.ToWorldAngle();
-                xform.DeferUpdates = false;
+                var worldRot = _transform.GetWorldRotation(xform);
+                _transform.SetLocalRotation(xform, xform.LocalRotation + worldTotal.ToWorldAngle() - worldRot);
+                // TODO apparently this results in a duplicate move event because "This should have its event run during
+                // island solver"??. So maybe SetRotation needs an argument to avoid raising an event?
 
-                if (!weightless && TryGetSound(mover, mobMover, xform, out var variation, out var sound))
+                if (!weightless && TryComp<MobMoverComponent>(mover.Owner, out var mobMover) &&
+                    TryGetSound(weightless, mover, mobMover, xform, out var sound))
                 {
                     var soundModifier = mover.Sprinting ? 1.0f : FootstepWalkingAddedVolumeMultiplier;
-                    SoundSystem.Play(sound,
-                        GetSoundPlayers(mover.Owner),
-                        mover.Owner, AudioHelpers.WithVariation(variation).WithVolume(FootstepVolume * soundModifier));
+
+                    var audioParams = sound.Params
+                        .WithVolume(FootstepVolume * soundModifier)
+                        .WithVariation(sound.Params.Variation ?? FootstepVariation);
+
+                    // If we're a relay target then predict the sound for all relays.
+                    if (relayTarget != null)
+                    {
+                        foreach (var ent in relayTarget.Entities)
+                        {
+                            _audio.PlayPredicted(sound, uid, ent, audioParams);
+                        }
+                    }
+                    else
+                    {
+                        _audio.PlayPredicted(sound, uid, uid, audioParams);
+                    }
                 }
             }
 
@@ -297,14 +337,17 @@ namespace Content.Shared.Movement.Systems
             if (!weightless || touching)
                 Accelerate(ref velocity, in worldTotal, accel, frameTime);
 
-            _physics.SetLinearVelocity(physicsComponent, velocity);
+            PhysicsSystem.SetLinearVelocity(physicsUid, velocity, body: physicsComponent);
+
+            // Ensures that players do not spiiiiiiin
+            PhysicsSystem.SetAngularVelocity(physicsUid, 0, body: physicsComponent);
         }
 
-        private void Friction(float frameTime, float friction, ref Vector2 velocity)
+        private void Friction(float minimumFrictionSpeed, float frameTime, float friction, ref Vector2 velocity)
         {
             var speed = velocity.Length;
 
-            if (speed < _minimumFrictionSpeed) return;
+            if (speed < minimumFrictionSpeed) return;
 
             var drop = 0f;
 
@@ -340,21 +383,12 @@ namespace Content.Shared.Movement.Systems
             return UsedMobMovement.TryGetValue(uid, out var used) && used;
         }
 
-        protected bool UseMobMovement(IMoverComponent mover, PhysicsComponent body)
-        {
-            return mover.CanMove &&
-                   body.BodyStatus == BodyStatus.OnGround &&
-                   HasComp<MobStateComponent>(body.Owner) &&
-                   // If we're being pulled then don't mess with our velocity.
-                   (!TryComp(body.Owner, out SharedPullableComponent? pullable) || !pullable.BeingPulled);
-        }
-
         /// <summary>
         ///     Used for weightlessness to determine if we are near a wall.
         /// </summary>
-        private bool IsAroundCollider(SharedPhysicsSystem broadPhaseSystem, TransformComponent transform, IMobMoverComponent mover, IPhysBody collider)
+        private bool IsAroundCollider(SharedPhysicsSystem broadPhaseSystem, TransformComponent transform, MobMoverComponent mover, PhysicsComponent collider)
         {
-            var enlargedAABB = collider.GetWorldAABB().Enlarged(mover.GrabRange);
+            var enlargedAABB = _lookup.GetWorldAABB(collider.Owner, transform).Enlarged(mover.GrabRangeVV);
 
             foreach (var otherCollider in broadPhaseSystem.GetCollidingEntities(transform.MapID, enlargedAABB))
             {
@@ -376,24 +410,19 @@ namespace Content.Shared.Movement.Systems
             return false;
         }
 
-        // TODO: Predicted audio moment.
-        protected abstract Filter GetSoundPlayers(EntityUid mover);
-
         protected abstract bool CanSound();
 
-        private bool TryGetSound(IMoverComponent mover, IMobMoverComponent mobMover, TransformComponent xform, out float variation, [NotNullWhen(true)] out string? sound)
+        private bool TryGetSound(bool weightless, InputMoverComponent mover, MobMoverComponent mobMover, TransformComponent xform, [NotNullWhen(true)] out SoundSpecifier? sound)
         {
             sound = null;
-            variation = 0f;
 
             if (!CanSound() || !_tags.HasTag(mover.Owner, "FootstepSound")) return false;
 
             var coordinates = xform.Coordinates;
-            var gridId = coordinates.GetGridUid(EntityManager);
             var distanceNeeded = mover.Sprinting ? StepSoundMoveDistanceRunning : StepSoundMoveDistanceWalking;
 
             // Handle footsteps.
-            if (_mapManager.GridExists(gridId))
+            if (!weightless)
             {
                 // Can happen when teleporting between grids.
                 if (!coordinates.TryDistance(EntityManager, mobMover.LastPosition, out var distance) ||
@@ -412,51 +441,71 @@ namespace Content.Shared.Movement.Systems
                 return false;
             }
 
-            DebugTools.Assert(gridId != null);
             mobMover.LastPosition = coordinates;
 
             if (mobMover.StepSoundDistance < distanceNeeded) return false;
 
             mobMover.StepSoundDistance -= distanceNeeded;
 
-            if (_inventory.TryGetSlotEntity(mover.Owner, "shoes", out var shoes) &&
-                EntityManager.TryGetComponent<FootstepModifierComponent>(shoes, out var modifier))
+            if (TryComp<FootstepModifierComponent>(mover.Owner, out var moverModifier))
             {
-                sound = modifier.SoundCollection.GetSound();
-                variation = modifier.Variation;
+                sound = moverModifier.Sound;
                 return true;
             }
 
-            return TryGetFootstepSound(gridId!.Value, coordinates, out variation, out sound);
+            if (_inventory.TryGetSlotEntity(mover.Owner, "shoes", out var shoes) &&
+                TryComp<FootstepModifierComponent>(shoes, out var modifier))
+            {
+                sound = modifier.Sound;
+                return true;
+            }
+
+            return TryGetFootstepSound(xform, shoes != null, out sound);
         }
 
-        private bool TryGetFootstepSound(EntityUid gridId, EntityCoordinates coordinates, out float variation, [NotNullWhen(true)] out string? sound)
+        private bool TryGetFootstepSound(TransformComponent xform, bool haveShoes, [NotNullWhen(true)] out SoundSpecifier? sound)
         {
-            variation = 0f;
             sound = null;
-            var grid = _mapManager.GetGrid(gridId);
-            var tile = grid.GetTileRef(coordinates);
+            MapGridComponent? grid;
 
-            if (tile.IsSpace(_tileDefinitionManager)) return false;
+            // Fallback to the map?
+            if (xform.GridUid == null)
+            {
+                if (TryComp<FootstepModifierComponent>(xform.MapUid, out var modifier))
+                {
+                    sound = modifier.Sound;
+                    return true;
+                }
+
+                return false;
+            }
+
+            grid = _mapManager.GetGrid(xform.GridUid.Value);
+            var position = grid.LocalToTile(xform.Coordinates);
 
             // If the coordinates have a FootstepModifier component
             // i.e. component that emit sound on footsteps emit that sound
-            foreach (var maybeFootstep in grid.GetAnchoredEntities(tile.GridIndices))
+            var anchored = grid.GetAnchoredEntitiesEnumerator(position);
+
+            while (anchored.MoveNext(out var maybeFootstep))
             {
-                if (EntityManager.TryGetComponent(maybeFootstep, out FootstepModifierComponent? footstep))
+                if (TryComp<FootstepModifierComponent>(maybeFootstep, out var footstep))
                 {
-                    sound = footstep.SoundCollection.GetSound();
-                    variation = footstep.Variation;
+                    sound = footstep.Sound;
                     return true;
                 }
             }
 
-            // Walking on a tile.
-            var def = (ContentTileDefinition) _tileDefinitionManager[tile.Tile.TypeId];
-            sound = def.FootstepSounds?.GetSound();
-            variation = FootstepVariation;
+            if (!grid.TryGetTileRef(position, out var tileRef))
+            {
+                sound = null;
+                return false;
+            }
 
-            return !string.IsNullOrEmpty(sound);
+            // Walking on a tile.
+            var def = (ContentTileDefinition) _tileDefinitionManager[tileRef.Tile.TypeId];
+            sound = haveShoes ? def.FootstepSounds : def.BarestepSounds;
+            return sound != null;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Content.Server.Construction.Completions
         {
             if (entityManager.TryGetComponent<MachineFrameComponent>(uid, out var machineFrame))
             {
-                machineFrame.RegenerateProgress();
+                entityManager.EntitySysManager.GetEntitySystem<MachineFrameSystem>().RegenerateProgress(machineFrame);
             }
         }
     }

@@ -1,21 +1,10 @@
-using Content.Shared.Shuttles.Components;
-
 namespace Content.Server.Shuttles.Components
 {
     [RegisterComponent]
     public sealed class ShuttleComponent : Component
     {
-        /// <summary>
-        /// Should controls be enabled or disabled on this shuttle.
-        /// </summary>
-        [ViewVariables(VVAccess.ReadWrite)]
-        public bool CanPilot = true;
-
         [ViewVariables]
         public bool Enabled = true;
-
-        [ViewVariables]
-        public ShuttleMode Mode = ShuttleMode.Cruise;
 
         /// <summary>
         /// The cached thrust available for each cardinal direction
@@ -31,7 +20,7 @@ namespace Content.Server.Shuttles.Components
         /// <summary>
         /// The thrusters contributing to the angular impulse of the shuttle.
         /// </summary>
-        public readonly List<ThrusterComponent> AngularThrusters = new List<ThrusterComponent>();
+        public readonly List<ThrusterComponent> AngularThrusters = new();
 
         [ViewVariables]
         public float AngularThrust = 0f;

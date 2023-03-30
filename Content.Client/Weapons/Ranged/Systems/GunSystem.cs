@@ -1,5 +1,7 @@
 using Content.Client.Items;
 using Content.Client.Weapons.Ranged.Components;
+using Content.Shared.Camera;
+using Content.Shared.Spawners.Components;
 using Content.Shared.Weapons.Ranged;
 using Content.Shared.Weapons.Ranged.Components;
 using Content.Shared.Weapons.Ranged.Events;
@@ -9,11 +11,9 @@ using Robust.Client.GameObjects;
 using Robust.Client.Graphics;
 using Robust.Client.Input;
 using Robust.Client.Player;
-using Robust.Shared.Audio;
+using Robust.Shared.Animations;
 using Robust.Shared.Input;
 using Robust.Shared.Map;
-using Robust.Shared.Player;
-using Robust.Shared.Timing;
 using Robust.Shared.Utility;
 using SharedGunSystem = Content.Shared.Weapons.Ranged.Systems.SharedGunSystem;
 
@@ -25,15 +25,17 @@ public sealed partial class GunSystem : SharedGunSystem
     [Dependency] private readonly IInputManager _inputManager = default!;
     [Dependency] private readonly IPlayerManager _player = default!;
     [Dependency] private readonly AnimationPlayerSystem _animPlayer = default!;
-    [Dependency] private readonly EffectSystem _effects = default!;
     [Dependency] private readonly InputSystem _inputSystem = default!;
+    [Dependency] private readonly SharedCameraRecoilSystem _recoil = default!;
 
     public bool SpreadOverlay
     {
         get => _spreadOverlay;
         set
         {
-            if (_spreadOverlay == value) return;
+            if (_spreadOverlay == value)
+                return;
+
             _spreadOverlay = value;
             var overlayManager = IoCManager.Resolve<IOverlayManager>();
 
@@ -41,10 +43,10 @@ public sealed partial class GunSystem : SharedGunSystem
             {
                 overlayManager.AddOverlay(new GunSpreadOverlay(
                     EntityManager,
-                    IoCManager.Resolve<IEyeManager>(),
-                    IoCManager.Resolve<IGameTiming>(),
-                    IoCManager.Resolve<IInputManager>(),
-                    IoCManager.Resolve<IPlayerManager>(),
+                    _eyeManager,
+                    Timing,
+                    _inputManager,
+                    _player,
                     this));
             }
             else
@@ -61,6 +63,7 @@ public sealed partial class GunSystem : SharedGunSystem
         base.Initialize();
         UpdatesOutsidePrediction = true;
         SubscribeLocalEvent<AmmoCounterComponent, ItemStatusCollectMessage>(OnAmmoCounterCollect);
+        SubscribeAllEvent<MuzzleFlashEvent>(OnMuzzleFlash);
 
         // Plays animated effects on the client.
         SubscribeNetworkEvent<HitscanEvent>(OnHitscan);
@@ -69,12 +72,21 @@ public sealed partial class GunSystem : SharedGunSystem
         InitializeSpentAmmo();
     }
 
+    private void OnMuzzleFlash(MuzzleFlashEvent args)
+    {
+        CreateEffect(args.Uid, args);
+    }
+
     private void OnHitscan(HitscanEvent ev)
     {
         // ALL I WANT IS AN ANIMATED EFFECT
         foreach (var a in ev.Sprites)
         {
-            if (a.Sprite is not SpriteSpecifier.Rsi rsi) continue;
+            if (a.Sprite is not SpriteSpecifier.Rsi rsi ||
+                Deleted(a.coordinates.EntityId))
+            {
+                continue;
+            }
 
             var ent = Spawn("HitscanEffect", a.coordinates);
             var sprite = Comp<SpriteComponent>(ent);
@@ -119,9 +131,8 @@ public sealed partial class GunSystem : SharedGunSystem
         }
 
         var entity = entityNull.Value;
-        var gun = GetGun(entity);
 
-        if (gun == null)
+        if (!TryGetGun(entity, out var gunUid, out var gun))
         {
             return;
         }
@@ -129,7 +140,7 @@ public sealed partial class GunSystem : SharedGunSystem
         if (_inputSystem.CmdStates.GetState(EngineKeyFunctions.Use) != BoundKeyState.Down)
         {
             if (gun.ShotCounter != 0)
-                EntityManager.RaisePredictiveEvent(new RequestStopShootEvent { Gun = gun.Owner });
+                EntityManager.RaisePredictiveEvent(new RequestStopShootEvent { Gun = gunUid });
             return;
         }
 
@@ -137,85 +148,193 @@ public sealed partial class GunSystem : SharedGunSystem
             return;
 
         var mousePos = _eyeManager.ScreenToMap(_inputManager.MouseScreenPosition);
-        EntityCoordinates coordinates;
 
-        // Bro why would I want a ternary here
-        // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-        if (MapManager.TryFindGridAt(mousePos, out var grid))
+        if (mousePos.MapId == MapId.Nullspace)
         {
-            coordinates = EntityCoordinates.FromMap(grid.GridEntityId, mousePos, EntityManager);
+            if (gun.ShotCounter != 0)
+                EntityManager.RaisePredictiveEvent(new RequestStopShootEvent { Gun = gunUid });
+
+            return;
         }
-        else
-        {
-            coordinates = EntityCoordinates.FromMap(MapManager.GetMapEntityId(mousePos.MapId), mousePos, EntityManager);
-        }
+
+        // Define target coordinates relative to gun entity, so that network latency on moving grids doesn't fuck up the target location.
+        var coordinates = EntityCoordinates.FromMap(entity, mousePos, Transform, EntityManager);
 
         Sawmill.Debug($"Sending shoot request tick {Timing.CurTick} / {Timing.CurTime}");
 
         EntityManager.RaisePredictiveEvent(new RequestShootEvent
         {
             Coordinates = coordinates,
-            Gun = gun.Owner,
+            Gun = gunUid,
         });
     }
 
-    public override void Shoot(GunComponent gun, List<IShootable> ammo, EntityCoordinates fromCoordinates, EntityCoordinates toCoordinates, EntityUid? user = null)
+    public override void Shoot(EntityUid gunUid, GunComponent gun, List<(EntityUid? Entity, IShootable Shootable)> ammo,
+        EntityCoordinates fromCoordinates, EntityCoordinates toCoordinates, EntityUid? user = null, bool throwItems = false)
     {
         // Rather than splitting client / server for every ammo provider it's easier
         // to just delete the spawned entities. This is for programmer sanity despite the wasted perf.
         // This also means any ammo specific stuff can be grabbed as necessary.
-        foreach (var ent in ammo)
+        var direction = fromCoordinates.ToMapPos(EntityManager, Transform) - toCoordinates.ToMapPos(EntityManager, Transform);
+
+        foreach (var (ent, shootable) in ammo)
         {
-            switch (ent)
+            if (throwItems)
+            {
+                Recoil(user, direction);
+                if (ent!.Value.IsClientSide())
+                    Del(ent.Value);
+                else
+                    RemComp<AmmoComponent>(ent.Value);
+                continue;
+            }
+
+            switch (shootable)
             {
                 case CartridgeAmmoComponent cartridge:
                     if (!cartridge.Spent)
                     {
-                        SetCartridgeSpent(cartridge, true);
-                        MuzzleFlash(gun.Owner, cartridge, user);
-                        PlaySound(gun.Owner, gun.SoundGunshot?.GetSound(Random, ProtoManager), user);
+                        SetCartridgeSpent(ent!.Value, cartridge, true);
+                        MuzzleFlash(gunUid, cartridge, user);
+                        Audio.PlayPredicted(gun.SoundGunshot, gunUid, user);
+                        Recoil(user, direction);
                         // TODO: Can't predict entity deletions.
                         //if (cartridge.DeleteOnSpawn)
                         //    Del(cartridge.Owner);
                     }
                     else
                     {
-                        PlaySound(gun.Owner, gun.SoundEmpty?.GetSound(Random, ProtoManager), user);
+                        Audio.PlayPredicted(gun.SoundEmpty, gunUid, user);
                     }
 
-                    if (cartridge.Owner.IsClientSide())
-                        Del(cartridge.Owner);
+                    if (ent!.Value.IsClientSide())
+                        Del(ent.Value);
 
                     break;
                 case AmmoComponent newAmmo:
-                    MuzzleFlash(gun.Owner, newAmmo, user);
-                    PlaySound(gun.Owner, gun.SoundGunshot?.GetSound(Random, ProtoManager), user);
-                    if (newAmmo.Owner.IsClientSide())
-                        Del(newAmmo.Owner);
+                    MuzzleFlash(gunUid, newAmmo, user);
+                    Audio.PlayPredicted(gun.SoundGunshot, gunUid, user);
+                    Recoil(user, direction);
+                    if (ent!.Value.IsClientSide())
+                        Del(ent.Value);
                     else
-                        RemComp<AmmoComponent>(newAmmo.Owner);
+                        RemComp<AmmoComponent>(ent.Value);
                     break;
                 case HitscanPrototype:
-                    PlaySound(gun.Owner, gun.SoundGunshot?.GetSound(Random, ProtoManager), user);
+                    Audio.PlayPredicted(gun.SoundGunshot, gunUid, user);
+                    Recoil(user, direction);
                     break;
             }
         }
     }
 
-    protected override void PlaySound(EntityUid gun, string? sound, EntityUid? user = null)
+    private void Recoil(EntityUid? user, Vector2 recoil)
     {
-        if (string.IsNullOrEmpty(sound) || user == null || !Timing.IsFirstTimePredicted) return;
-        SoundSystem.Play(sound, Filter.Local(), gun);
+        if (!Timing.IsFirstTimePredicted || user == null || recoil == Vector2.Zero)
+            return;
+
+        _recoil.KickCamera(user.Value, recoil.Normalized * 0.5f);
     }
 
     protected override void Popup(string message, EntityUid? uid, EntityUid? user)
     {
-        if (uid == null || user == null || !Timing.IsFirstTimePredicted) return;
-        PopupSystem.PopupEntity(message, uid.Value, Filter.Entities(user.Value));
+        if (uid == null || user == null || !Timing.IsFirstTimePredicted)
+            return;
+
+        PopupSystem.PopupEntity(message, uid.Value, user.Value);
     }
 
-    protected override void CreateEffect(EffectSystemMessage message, EntityUid? user = null)
+    protected override void CreateEffect(EntityUid uid, MuzzleFlashEvent message, EntityUid? user = null)
     {
-        _effects.CreateEffect(message);
+        if (!Timing.IsFirstTimePredicted)
+            return;
+
+        EntityCoordinates coordinates;
+
+        if (message.MatchRotation)
+            coordinates = new EntityCoordinates(uid, Vector2.Zero);
+        else if (TryComp<TransformComponent>(uid, out var xform))
+            coordinates = xform.Coordinates;
+        else
+            return;
+
+        if (!coordinates.IsValid(EntityManager))
+            return;
+
+        var ent = Spawn(message.Prototype, coordinates);
+
+        var effectXform = Transform(ent);
+        effectXform.LocalRotation -= MathF.PI / 2;
+        effectXform.LocalPosition += new Vector2(0f, -0.5f);
+
+        var lifetime = 0.4f;
+
+        if (TryComp<TimedDespawnComponent>(uid, out var despawn))
+        {
+            lifetime = despawn.Lifetime;
+        }
+
+        var anim = new Animation()
+        {
+            Length = TimeSpan.FromSeconds(lifetime),
+            AnimationTracks =
+            {
+                new AnimationTrackComponentProperty
+                {
+                    ComponentType = typeof(SpriteComponent),
+                    Property = nameof(SpriteComponent.Color),
+                    InterpolationMode = AnimationInterpolationMode.Linear,
+                    KeyFrames =
+                    {
+                        new AnimationTrackProperty.KeyFrame(Color.White.WithAlpha(1f), 0),
+                        new AnimationTrackProperty.KeyFrame(Color.White.WithAlpha(0f), lifetime)
+                    }
+                }
+            }
+        };
+
+        _animPlayer.Play(ent, anim, "muzzle-flash");
+        var light = EnsureComp<PointLightComponent>(uid);
+
+        light.NetSyncEnabled = false;
+        light.Enabled = true;
+        light.Color = Color.FromHex("#cc8e2b");
+        light.Radius = 2f;
+        light.Energy = 5f;
+
+        var animTwo = new Animation()
+        {
+            Length = TimeSpan.FromSeconds(lifetime),
+            AnimationTracks =
+            {
+                new AnimationTrackComponentProperty
+                {
+                    ComponentType = typeof(PointLightComponent),
+                    Property = nameof(PointLightComponent.Energy),
+                    InterpolationMode = AnimationInterpolationMode.Linear,
+                    KeyFrames =
+                    {
+                        new AnimationTrackProperty.KeyFrame(5f, 0),
+                        new AnimationTrackProperty.KeyFrame(0f, lifetime)
+                    }
+                },
+                new AnimationTrackComponentProperty
+                {
+                    ComponentType = typeof(PointLightComponent),
+                    Property = nameof(PointLightComponent.Enabled),
+                    InterpolationMode = AnimationInterpolationMode.Linear,
+                    KeyFrames =
+                    {
+                        new AnimationTrackProperty.KeyFrame(true, 0),
+                        new AnimationTrackProperty.KeyFrame(false, lifetime)
+                    }
+                }
+            }
+        };
+
+        var uidPlayer = EnsureComp<AnimationPlayerComponent>(uid);
+
+        _animPlayer.Stop(uid, uidPlayer, "muzzle-flash-light");
+        _animPlayer.Play(uid, uidPlayer, animTwo,"muzzle-flash-light");
     }
 }

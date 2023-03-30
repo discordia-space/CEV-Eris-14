@@ -1,12 +1,15 @@
 ﻿using Content.Server.Storage.Components;
 using Content.Shared.Rounding;
 using Content.Shared.Storage.Components;
+using Robust.Server.GameObjects;
 using Robust.Shared.Containers;
 
 namespace Content.Server.Storage.EntitySystems;
 
 public sealed class StorageFillVisualizerSystem : EntitySystem
 {
+    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
+
     public override void Initialize()
     {
         base.Initialize();
@@ -36,7 +39,10 @@ public sealed class StorageFillVisualizerSystem : EntitySystem
         if (!Resolve(uid, ref storage, ref appearance, ref component, false))
             return;
 
+        if (component.MaxFillLevels < 1)
+            return;
+
         var level = ContentHelpers.RoundToEqualLevels(storage.StorageUsed, storage.StorageCapacityMax, component.MaxFillLevels);
-        appearance.SetData(StorageFillVisuals.FillLevel, level);
+        _appearance.SetData(uid, StorageFillVisuals.FillLevel, level, appearance);
     }
 }

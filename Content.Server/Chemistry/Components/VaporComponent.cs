@@ -1,21 +1,16 @@
 ﻿using Content.Shared.FixedPoint;
-using Content.Shared.Vapor;
-using Robust.Shared.Map;
 
 namespace Content.Server.Chemistry.Components
 {
     [RegisterComponent]
-    internal sealed class VaporComponent : SharedVaporComponent
+    public sealed class VaporComponent : Component
     {
-        [ViewVariables]
-        [DataField("transferAmount")]
-        internal FixedPoint2 TransferAmount = FixedPoint2.New(0.5);
+        public const string SolutionName = "vapor";
 
-        internal bool Reached;
-        internal float ReactTimer;
-        internal float Timer;
-        internal EntityCoordinates Target;
-        internal bool Active;
-        internal float AliveTime;
+        [DataField("transferAmount")]
+        public FixedPoint2 TransferAmount = FixedPoint2.New(0.5);
+
+        public float ReactTimer;
+        public bool Active;
     }
 }
